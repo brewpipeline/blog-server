@@ -1,0 +1,35 @@
+[package]
+name = "blog-server-api"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies.screw-components]
+git = "https://github.com/Tikitko/screw.git"
+#path = "../../screw/screw-components"
+package = "screw-components"
+
+[dependencies.screw-core]
+git = "https://github.com/Tikitko/screw.git"
+#path = "../../screw/screw-core"
+package = "screw-core"
+
+[dependencies.screw-api]
+git = "https://github.com/Tikitko/screw.git"
+#path = "../../screw/screw-api"
+package = "screw-api"
+features = ["ws", "json_converter"]
+
+[dependencies.screw-ws]
+git = "https://github.com/Tikitko/screw.git"
+#path = "../../screw/screw-ws"
+package = "screw-ws"
+
+[dependencies]
+blog-server-services = { path = "../blog-server-services" }
+tokio = { version = "1.27.0", features = ["full"] }
+hyper = { version = "0.14.26", features = ["full"] }
+serde = { version = "1.0.160", features = ["derive"] }
+rbs = { version = "4.3" }
+rbatis = { version = "4.3" }
+rbdc-sqlite = { version = "4.3" }
+async-trait = { version = "0.1.68" }

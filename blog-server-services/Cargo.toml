@@ -1,0 +1,18 @@
+[package]
+name = "blog-server-services"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies.screw-components]
+git = "https://github.com/Tikitko/screw.git"
+#path = "../../screw/screw-components"
+package = "screw-components"
+
+[dependencies]
+rbs = { version = "4.3" }
+rbatis = { version = "4.3" }
+async-trait = { version = "0.1.68" }
+serde = { version = "1.0.160", features = ["derive"] }
+serde_repr = { version = "0.1.12" }
+serde_json = { version = "1.0.96" }
+chrono = { version = "0.4.24" }
