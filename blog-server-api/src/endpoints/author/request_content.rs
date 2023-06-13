@@ -15,9 +15,9 @@ where
 {
     type Data = ();
 
-    fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
+    fn create(mut origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
         Self {
-            authorname: origin_content.path.get("authorname").map(|i| i.to_owned()),
+            authorname: origin_content.query.remove("authorname"),
             user_service: origin_content.extensions.resolve(),
         }
     }

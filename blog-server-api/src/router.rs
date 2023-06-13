@@ -21,22 +21,21 @@ async fn not_found_fallback_handler<Extensions>(
 pub fn make_router<Extensions: ExtensionsProviderType>(
 ) -> router::second::Router<Request<Extensions>, Response> {
     router::first::Router::with_fallback_handler(not_found_fallback_handler).and_routes(|r| {
-        r.scoped("/api", |r| {
-            r.convertable(
-                routes::Converters {
-                    request_converter: JsonApiRequestConverter,
-                    response_converter: JsonApiResponseConverter {
-                        pretty_printed: false,
-                    },
+        r.scoped_convertable(
+            "/api",
+            routes::Converters {
+                request_converter: JsonApiRequestConverter,
+                response_converter: JsonApiResponseConverter {
+                    pretty_printed: false,
                 },
-                |r| {
-                    r.route(
-                        route::first::Route::with_method(&Method::GET)
-                            .and_path("/authors/{authorname}")
-                            .and_handler(author::http_handler),
-                    )
-                },
-            )
-        })
+            },
+            |r| {
+                r.route(
+                    route::first::Route::with_method(&Method::GET)
+                        .and_path("/author")
+                        .and_handler(author::http_handler),
+                )
+            },
+        )
     })
 }
