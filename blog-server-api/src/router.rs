@@ -2,13 +2,13 @@ use crate::extensions::ExtensionsProviderType;
 
 use super::endpoints::*;
 use hyper::{Body, Method, StatusCode};
-use screw_api::json_converter::{JsonApiRequestConverter, JsonApiResponseConverter};
-use screw_core::routing::request::DirectedRequest;
+use screw_api::json_converter::*;
 use screw_core::routing::*;
-use screw_core::{Request, Response};
+use screw_core::request::*;
+use screw_core::response::*;
 
 async fn not_found_fallback_handler<Extensions>(
-    _: DirectedRequest<Request<Extensions>>,
+    _: router::RoutedRequest<Request<Extensions>>,
 ) -> Response {
     Response {
         http: hyper::Response::builder()
