@@ -34,7 +34,7 @@ impl ApiResponseContentFailure for AuthorResponseContentFailure {
                 format!("database error: {}", reason)
             }
             AuthorResponseContentFailure::NameMissing => {
-                "author name is missed in request URL".to_string()
+                "author name is missing in request URL".to_string()
             }
             AuthorResponseContentFailure::NotFound => {
                 "author record not found in database".to_string()

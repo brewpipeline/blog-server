@@ -1,7 +1,7 @@
-use std::sync::Arc;
 use blog_server_services::instances::create_rbatis_user_service;
 use blog_server_services::traits::user_service::UserService;
 use rbatis::rbatis::RBatis;
+use std::sync::Arc;
 
 pub trait Resolve<T>: Send + Sync {
     fn resolve(&self) -> T;

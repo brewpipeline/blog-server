@@ -1,8 +1,7 @@
+use crate::extensions::Resolve;
 use blog_server_services::traits::user_service::*;
 use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
 use std::sync::Arc;
-
-use crate::extensions::Resolve;
 
 pub struct AuthorRequestContent {
     pub(super) authorname: Option<String>,
@@ -15,9 +14,9 @@ where
 {
     type Data = ();
 
-    fn create(mut origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
+    fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
         Self {
-            authorname: origin_content.query.remove("authorname"),
+            authorname: origin_content.path.get("authorname").map(|n| n.to_owned()),
             user_service: origin_content.extensions.resolve(),
         }
     }
