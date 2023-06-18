@@ -1,6 +1,7 @@
 mod endpoints;
 mod extensions;
 mod router;
+mod utils;
 
 const SERVER_ADDRESS: &str = "127.0.0.1:3000";
 

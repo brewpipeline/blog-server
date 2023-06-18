@@ -1,4 +1,4 @@
-use blog_server_services::traits::user_service::User;
+use blog_server_services::traits::author_service::Author as ServiceAuthor;
 use hyper::StatusCode;
 use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
 use serde::Serialize;
@@ -11,7 +11,6 @@ pub struct Author {
     last_name: Option<String>,
     mobile: Option<String>,
     email: Option<String>,
-    password_hash: String,
     registered_at: i64,
     status: Option<String>,
 }
@@ -22,18 +21,17 @@ pub struct AuthorResponseContentSuccess {
     author: Author,
 }
 
-impl Into<AuthorResponseContentSuccess> for User {
+impl Into<AuthorResponseContentSuccess> for ServiceAuthor {
     fn into(self) -> AuthorResponseContentSuccess {
         AuthorResponseContentSuccess {
             author: Author {
-                authorname: self.username,
+                authorname: self.authorname,
                 first_name: self.first_name,
                 middle_name: self.middle_name,
                 last_name: self.last_name,
                 mobile: self.mobile,
                 email: self.email,
-                password_hash: self.password_hash,
-                registered_at: self.registered_at.unix_timestamp(),
+                registered_at: self.registered_at,
                 status: self.status,
             },
         }

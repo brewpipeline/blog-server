@@ -49,7 +49,7 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
             routes::Converters {
                 request_converter: JsonApiRequestConverter,
                 response_converter: JsonApiResponseConverter {
-                    pretty_printed: true,
+                    pretty_printed: cfg!(debug_assertions),
                 },
             },
             |r| {
@@ -57,6 +57,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                     route::first::Route::with_method(&hyper::Method::GET)
                         .and_path("/author/{authorname:[^/]*}")
                         .and_handler(author::http_handler),
+                )
+                .route(
+                    route::first::Route::with_method(&hyper::Method::POST)
+                        .and_path("/login")
+                        .and_handler(login::http_handler),
                 )
                 .route(
                     route::first::Route::with_any_methods()

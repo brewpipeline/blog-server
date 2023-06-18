@@ -1,10 +1,9 @@
-use rbatis::rbdc::datetime::DateTime;
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct User {
-    pub username: String,
+pub struct Author {
+    pub authorname: String,
     #[serde(rename = "firstName")]
     pub first_name: Option<String>,
     #[serde(rename = "middleName")]
@@ -16,12 +15,12 @@ pub struct User {
     #[serde(rename = "passwordHash")]
     pub password_hash: String,
     #[serde(rename = "registeredAt")]
-    pub registered_at: DateTime,
+    pub registered_at: i64,
     pub status: Option<String>,
 }
 
 #[async_trait]
-pub trait UserService: Send + Sync {
-    async fn get_user(&self, username: &String) -> DResult<Option<User>>;
-    async fn create_user(&self, user: &User) -> DResult<()>;
+pub trait AuthorService: Send + Sync {
+    async fn get_author(&self, authorname: &String) -> DResult<Option<Author>>;
+    async fn create_author(&self, author: &Author) -> DResult<()>;
 }

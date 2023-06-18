@@ -3,42 +3,35 @@ use super::response_content_failure::AuthorResponseContentFailure;
 use super::response_content_failure::AuthorResponseContentFailure::*;
 use super::response_content_success::AuthorResponseContentSuccess;
 use crate::extensions::Resolve;
-use blog_server_services::traits::user_service::UserService;
+use blog_server_services::traits::author_service::AuthorService;
 use screw_api::request::ApiRequest;
-use screw_api::response::{ApiResponse, ApiResponseContent, ApiResponseContent::*};
+use screw_api::response::ApiResponse;
 use std::sync::Arc;
 
 async fn handler(
-    authorname: Option<String>,
-    user_service: Arc<Box<dyn UserService>>,
-) -> ApiResponseContent<AuthorResponseContentSuccess, AuthorResponseContentFailure> {
-    let Some(username) = authorname else {
-        return Failure(NameMissing)
-    };
-    if username.is_empty() {
-        return Failure(NameMissing);
+    authorname: String,
+    author_service: Arc<Box<dyn AuthorService>>,
+) -> Result<AuthorResponseContentSuccess, AuthorResponseContentFailure> {
+    if authorname.is_empty() {
+        return Err(NameEmpty);
     }
-    match user_service.get_user(&username).await {
-        Ok(user) => {
-            if let Some(user) = user {
-                Success(user.into())
-            } else {
-                Failure(NotFound)
-            }
-        }
-        Err(err) => Failure(DatabaseError {
-            reason: err.to_string(),
-        }),
-    }
+
+    let author = author_service
+        .get_author(&authorname)
+        .await
+        .map_err(|e| DatabaseError {
+            reason: e.to_string(),
+        })?
+        .ok_or(NotFound)?;
+
+    Ok(author.into())
 }
 
 pub async fn http_handler<Extensions>(
     request: ApiRequest<AuthorRequestContent, Extensions>,
 ) -> ApiResponse<AuthorResponseContentSuccess, AuthorResponseContentFailure>
 where
-    Extensions: Resolve<Arc<Box<dyn UserService>>>,
+    Extensions: Resolve<Arc<Box<dyn AuthorService>>>,
 {
-    ApiResponse {
-        content: handler(request.content.authorname, request.content.user_service).await,
-    }
+    ApiResponse::from(handler(request.content.authorname, request.content.author_service).await)
 }

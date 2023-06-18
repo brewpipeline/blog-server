@@ -3,7 +3,7 @@ use screw_api::response::{ApiResponseContentBase, ApiResponseContentFailure};
 
 pub enum AuthorResponseContentFailure {
     DatabaseError { reason: String },
-    NameMissing,
+    NameEmpty,
     NotFound,
 }
 
@@ -13,8 +13,8 @@ impl ApiResponseContentBase for AuthorResponseContentFailure {
             AuthorResponseContentFailure::DatabaseError { reason: _ } => {
                 &StatusCode::INTERNAL_SERVER_ERROR
             }
-            AuthorResponseContentFailure::NameMissing => &StatusCode::BAD_REQUEST,
-            AuthorResponseContentFailure::NotFound => &StatusCode::BAD_REQUEST,
+            AuthorResponseContentFailure::NameEmpty => &StatusCode::BAD_REQUEST,
+            AuthorResponseContentFailure::NotFound => &StatusCode::NOT_FOUND,
         }
     }
 }
@@ -23,7 +23,7 @@ impl ApiResponseContentFailure for AuthorResponseContentFailure {
     fn identifier(&self) -> &'static str {
         match self {
             AuthorResponseContentFailure::DatabaseError { reason: _ } => "AUTHOR_DATABASE_ERROR",
-            AuthorResponseContentFailure::NameMissing => "AUTHOR_NAME_MISSING",
+            AuthorResponseContentFailure::NameEmpty => "AUTHOR_NAME_EMPTY",
             AuthorResponseContentFailure::NotFound => "AUTHOR_NOT_FOUND",
         }
     }
@@ -31,10 +31,14 @@ impl ApiResponseContentFailure for AuthorResponseContentFailure {
     fn reason(&self) -> Option<String> {
         Some(match self {
             AuthorResponseContentFailure::DatabaseError { reason } => {
-                format!("database error: {}", reason)
+                if cfg!(debug_assertions) {
+                    format!("database error: {}", reason)
+                } else {
+                    "internal database error".to_string()
+                }
             }
-            AuthorResponseContentFailure::NameMissing => {
-                "author name is missing in request URL".to_string()
+            AuthorResponseContentFailure::NameEmpty => {
+                "author name is empty in request URL".to_string()
             }
             AuthorResponseContentFailure::NotFound => {
                 "author record not found in database".to_string()
