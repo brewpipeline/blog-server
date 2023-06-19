@@ -64,6 +64,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                         .and_handler(login::http_handler),
                 )
                 .route(
+                    route::first::Route::with_method(&hyper::Method::GET)
+                        .and_path("/me")
+                        .and_handler(me::http_handler),
+                )
+                .route(
                     route::first::Route::with_any_methods()
                         .and_path("/{_:.*}")
                         .and_handler(api_not_found_fallback_handler),

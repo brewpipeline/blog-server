@@ -41,7 +41,7 @@ async fn handler(
         },
     })?;
 
-    let token = login::create_login_token(author).map_err(|e| TokenGeneratingError {
+    let token = login::token(author).map_err(|e| TokenGeneratingError {
         reason: e.to_string(),
     })?;
 

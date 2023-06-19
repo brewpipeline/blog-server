@@ -1,4 +1,5 @@
 mod endpoints;
+mod entities;
 mod extensions;
 mod router;
 mod utils;
