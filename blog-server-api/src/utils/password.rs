@@ -14,9 +14,9 @@ pub fn hash(password: &String) -> Result<String> {
 }
 
 pub fn verify(password: &String, password_hash: &String) -> Result<()> {
-    let parsed_hash = PasswordHash::new(password_hash)?;
+    let password_hash = PasswordHash::new(password_hash)?;
 
-    let verify_result = Argon2::default().verify_password(password.as_bytes(), &parsed_hash);
+    Argon2::default().verify_password(password.as_bytes(), &password_hash)?;
 
-    verify_result
+    Ok(())
 }

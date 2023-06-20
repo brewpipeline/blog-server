@@ -63,8 +63,7 @@ pub async fn author(
         .map_err(|e| Error::DatabaseError(e))?
         .ok_or(Error::AuthorNotFound)?;
 
-    let _ =
-        super::jwt::decode::<Data>(token, &author.password_hash).map_err(|e| Error::Token(e))?;
+    super::jwt::decode::<Data>(token, &author.password_hash).map_err(|e| Error::Token(e))?;
 
     Ok(author)
 }
