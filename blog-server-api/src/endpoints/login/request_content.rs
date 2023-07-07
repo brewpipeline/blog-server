@@ -6,8 +6,9 @@ use serde::Deserialize;
 use std::sync::Arc;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LoginRequestContentData {
-    pub authorname: String,
+    pub slug: String,
     pub password: String,
 }
 

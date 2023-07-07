@@ -61,7 +61,7 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                     )
                     .route(
                         route::first::Route::with_method(&hyper::Method::GET)
-                            .and_path("/{authorname:[^/]*}")
+                            .and_path("/{slug:[^/]*}")
                             .and_handler(author::http_handler),
                     )
                 })

@@ -8,8 +8,8 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 #[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct Data {
-    #[serde(rename = "authorId")]
     author_id: i64,
     exp: u64,
 }

@@ -9,15 +9,15 @@ use screw_api::response::ApiResponse;
 use std::sync::Arc;
 
 async fn handler(
-    authorname: String,
+    slug: String,
     author_service: Arc<Box<dyn AuthorService>>,
 ) -> Result<AuthorResponseContentSuccess, AuthorResponseContentFailure> {
-    if authorname.is_empty() {
-        return Err(NameEmpty);
+    if slug.is_empty() {
+        return Err(SlugEmpty);
     }
 
     let author = author_service
-        .get_author_by_name(&authorname)
+        .get_author_by_slug(&slug)
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
@@ -33,5 +33,5 @@ pub async fn http_handler<Extensions>(
 where
     Extensions: Resolve<Arc<Box<dyn AuthorService>>>,
 {
-    ApiResponse::from(handler(request.content.authorname, request.content.author_service).await)
+    ApiResponse::from(handler(request.content.slug, request.content.author_service).await)
 }

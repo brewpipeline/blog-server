@@ -2,20 +2,16 @@ use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Author {
     pub id: Option<i64>,
-    pub authorname: String,
-    #[serde(rename = "firstName")]
+    pub slug: String,
     pub first_name: Option<String>,
-    #[serde(rename = "middleName")]
     pub middle_name: Option<String>,
-    #[serde(rename = "lastName")]
     pub last_name: Option<String>,
     pub mobile: Option<String>,
     pub email: Option<String>,
-    #[serde(rename = "passwordHash")]
     pub password_hash: String,
-    #[serde(rename = "registeredAt")]
     pub registered_at: i64,
     pub status: Option<String>,
 }
@@ -23,6 +19,6 @@ pub struct Author {
 #[async_trait]
 pub trait AuthorService: Send + Sync {
     async fn get_author_by_id(&self, id: &i64) -> DResult<Option<Author>>;
-    async fn get_author_by_name(&self, authorname: &String) -> DResult<Option<Author>>;
+    async fn get_author_by_slug(&self, slug: &String) -> DResult<Option<Author>>;
     async fn create_author(&self, author: &Author) -> DResult<()>;
 }

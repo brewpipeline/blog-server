@@ -5,7 +5,7 @@ use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
 use serde::Serialize;
 
 #[derive(Serialize, Debug, Clone)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub struct AuthorResponseContentSuccess {
     author: Author,
 }

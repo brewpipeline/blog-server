@@ -1,6 +1,6 @@
 CREATE TABLE `author` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `authorname` VARCHAR(50) NOT NULL,
+  `slug` VARCHAR(100) NOT NULL,
   `firstName` VARCHAR(50) NULL DEFAULT NULL,
   `middleName` VARCHAR(50) NULL DEFAULT NULL,
   `lastName` VARCHAR(50) NULL DEFAULT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE `author` (
   `registeredAt` TIMESTAMP NOT NULL,
   `status` TINYTEXT NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE INDEX `uq_authorname` (`authorname` ASC),
+  UNIQUE INDEX `uq_slug` (`slug` ASC),
   UNIQUE INDEX `uq_mobile` (`mobile` ASC),
   UNIQUE INDEX `uq_email` (`email` ASC) );
 

@@ -17,7 +17,9 @@ async fn main() -> screw_components::dyn_result::DResult<()> {
             .and_extensions(extensions::make_extensions(rbatis)),
     );
 
-    let addr = std::env::var("SERVER_ADDRESS").expect("SERVER_ADDRESS expected in env vars").parse()?;
+    let addr = std::env::var("SERVER_ADDRESS")
+        .expect("SERVER_ADDRESS expected in env vars")
+        .parse()?;
     println!("Listening on http://{}", addr);
     hyper::Server::bind(&addr).serve(server_service).await?;
 
@@ -28,7 +30,9 @@ pub async fn init_db() -> rbatis::RBatis {
     let rb = rbatis::RBatis::new();
     rb.init(
         rbdc_mysql::driver::MysqlDriver {},
-        std::env::var("MYSQL_URL").expect("MYSQL_URL expected in env vars").as_str(),
+        std::env::var("MYSQL_URL")
+            .expect("MYSQL_URL expected in env vars")
+            .as_str(),
     )
     .unwrap();
 

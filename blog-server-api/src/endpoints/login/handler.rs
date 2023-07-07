@@ -15,19 +15,16 @@ async fn handler(
     login_data: DResult<LoginRequestContentData>,
     author_service: Arc<Box<dyn AuthorService>>,
 ) -> Result<LoginResponseContentSuccess, LoginResponseContentFailure> {
-    let LoginRequestContentData {
-        authorname,
-        password,
-    } = login_data.map_err(|e| ParamsDecodeError {
+    let LoginRequestContentData { slug, password } = login_data.map_err(|e| ParamsDecodeError {
         reason: e.to_string(),
     })?;
 
-    if authorname.is_empty() {
-        return Err(NameEmpty);
+    if slug.is_empty() {
+        return Err(SlugEmpty);
     }
 
     let author = author_service
-        .get_author_by_name(&authorname)
+        .get_author_by_slug(&slug)
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),

@@ -4,7 +4,7 @@ use screw_api::response::{ApiResponseContentBase, ApiResponseContentFailure};
 pub enum LoginResponseContentFailure {
     DatabaseError { reason: String },
     ParamsDecodeError { reason: String },
-    NameEmpty,
+    SlugEmpty,
     NotFound,
     PasswordVerificationError { reason: String },
     WrongPassword,
@@ -20,7 +20,7 @@ impl ApiResponseContentBase for LoginResponseContentFailure {
             LoginResponseContentFailure::ParamsDecodeError { reason: _ } => {
                 &StatusCode::BAD_REQUEST
             }
-            LoginResponseContentFailure::NameEmpty => &StatusCode::BAD_REQUEST,
+            LoginResponseContentFailure::SlugEmpty => &StatusCode::BAD_REQUEST,
             LoginResponseContentFailure::NotFound => &StatusCode::NOT_FOUND,
             LoginResponseContentFailure::PasswordVerificationError { reason: _ } => {
                 &StatusCode::INTERNAL_SERVER_ERROR
@@ -38,7 +38,7 @@ impl ApiResponseContentFailure for LoginResponseContentFailure {
         match self {
             LoginResponseContentFailure::DatabaseError { reason: _ } => "LOGIN_DATABASE_ERROR",
             LoginResponseContentFailure::ParamsDecodeError { reason: _ } => "LOGIN_PARAMS_ERROR",
-            LoginResponseContentFailure::NameEmpty => "LOGIN_AUTHOR_NAME_EMPTY",
+            LoginResponseContentFailure::SlugEmpty => "LOGIN_AUTHOR_SLUG_EMPTY",
             LoginResponseContentFailure::NotFound => "LOGIN_AUTHOR_NOT_FOUND",
             LoginResponseContentFailure::PasswordVerificationError { reason: _ } => {
                 "LOGIN_PASSWORD_VERIFICATION_ERROR"
@@ -62,7 +62,7 @@ impl ApiResponseContentFailure for LoginResponseContentFailure {
             LoginResponseContentFailure::ParamsDecodeError { reason } => {
                 format!("params error: {}", reason)
             }
-            LoginResponseContentFailure::NameEmpty => "author name is empty in params".to_string(),
+            LoginResponseContentFailure::SlugEmpty => "author slug is empty in params".to_string(),
             LoginResponseContentFailure::NotFound => {
                 "author record not found in database".to_string()
             }
