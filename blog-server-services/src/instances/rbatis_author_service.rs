@@ -14,7 +14,14 @@ struct RbatisAuthorService {
 
 #[async_trait]
 impl AuthorService for RbatisAuthorService {
-    async fn get_author(&self, authorname: &String) -> DResult<Option<Author>> {
+    async fn get_author_by_id(&self, id: &i64) -> DResult<Option<Author>> {
+        Ok(
+            Author::select_by_column(&mut self.rb.clone(), "id", id)
+                .await?
+                .pop(),
+        )
+    }
+    async fn get_author_by_name(&self, authorname: &String) -> DResult<Option<Author>> {
         Ok(
             Author::select_by_column(&mut self.rb.clone(), "authorname", authorname)
                 .await?

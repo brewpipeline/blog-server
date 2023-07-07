@@ -27,7 +27,7 @@ async fn handler(
     }
 
     let author = author_service
-        .get_author(&authorname)
+        .get_author_by_name(&authorname)
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),

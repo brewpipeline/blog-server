@@ -3,6 +3,7 @@ use serde::Serialize;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Author {
+    id: i64,
     authorname: String,
     first_name: Option<String>,
     middle_name: Option<String>,
@@ -16,6 +17,7 @@ pub struct Author {
 impl Into<Author> for ServiceAuthor {
     fn into(self) -> Author {
         Author {
+            id: self.id.expect("should convert only full authors"),
             authorname: self.authorname,
             first_name: self.first_name,
             middle_name: self.middle_name,

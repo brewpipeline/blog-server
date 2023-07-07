@@ -9,14 +9,15 @@ use std::sync::Arc;
 
 #[derive(Deserialize, Serialize)]
 struct Data {
-    authorname: String,
+    #[serde(rename = "authorId")]
+    author_id: i64,
     exp: u64,
 }
 
 pub fn token(author: Author) -> JwtResult<String> {
     super::jwt::encode(
         &Data {
-            authorname: author.authorname,
+            author_id: author.id.expect("should convert only full authors"),
             exp: jsonwebtoken::get_current_timestamp() + (60 * 60 * 24 * 31),
         },
         &author.password_hash,
@@ -38,7 +39,7 @@ impl Display for Error {
             Error::TokenHeaderCorrupted(e) => write!(f, "{}", e.to_string()),
             Error::Token(e) => write!(f, "{}", e.to_string()),
             Error::DatabaseError(e) => write!(f, "{}", e.to_string()),
-            Error::AuthorNotFound => write!(f, "authot not found"),
+            Error::AuthorNotFound => write!(f, "author not found"),
         }
     }
 }
@@ -58,7 +59,7 @@ pub async fn author(
         super::jwt::insecure_decode::<Data>(token).map_err(|e| Error::Token(e))?;
 
     let author = author_service
-        .get_author(&insecure_login_data.authorname)
+        .get_author_by_id(&insecure_login_data.author_id)
         .await
         .map_err(|e| Error::DatabaseError(e))?
         .ok_or(Error::AuthorNotFound)?;

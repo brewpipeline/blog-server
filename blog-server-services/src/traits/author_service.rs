@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Author {
+    pub id: Option<i64>,
     pub authorname: String,
     #[serde(rename = "firstName")]
     pub first_name: Option<String>,
@@ -21,6 +22,7 @@ pub struct Author {
 
 #[async_trait]
 pub trait AuthorService: Send + Sync {
-    async fn get_author(&self, authorname: &String) -> DResult<Option<Author>>;
+    async fn get_author_by_id(&self, id: &i64) -> DResult<Option<Author>>;
+    async fn get_author_by_name(&self, authorname: &String) -> DResult<Option<Author>>;
     async fn create_author(&self, author: &Author) -> DResult<()>;
 }

@@ -6,10 +6,10 @@ mod extensions;
 mod router;
 mod utils;
 
-const SERVER_ADDRESS: &str = "127.0.0.1:3000";
-
 #[tokio::main]
 async fn main() -> screw_components::dyn_result::DResult<()> {
+    dotenv::dotenv().ok();
+
     let rbatis = init_db().await;
 
     let server_service = screw_core::server::ServerService::with_responder_factory(
@@ -17,7 +17,7 @@ async fn main() -> screw_components::dyn_result::DResult<()> {
             .and_extensions(extensions::make_extensions(rbatis)),
     );
 
-    let addr = SERVER_ADDRESS.parse()?;
+    let addr = std::env::var("SERVER_ADDRESS").expect("SERVER_ADDRESS expected in env vars").parse()?;
     println!("Listening on http://{}", addr);
     hyper::Server::bind(&addr).serve(server_service).await?;
 
@@ -27,12 +27,12 @@ async fn main() -> screw_components::dyn_result::DResult<()> {
 pub async fn init_db() -> rbatis::RBatis {
     let rb = rbatis::RBatis::new();
     rb.init(
-        rbdc_sqlite::driver::SqliteDriver {},
-        "sqlite://target/blog.db",
+        rbdc_mysql::driver::MysqlDriver {},
+        std::env::var("MYSQL_URL").expect("MYSQL_URL expected in env vars").as_str(),
     )
     .unwrap();
 
-    // let sql = std::fs::read_to_string("./table_mysql.sql").unwrap();
-    // let _ = rb.exec(&sql, vec![]).await;
+    let sql = std::fs::read_to_string("./table_mysql.sql").unwrap();
+    let _ = rb.exec(&sql, vec![]).await;
     return rb;
 }
