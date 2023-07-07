@@ -14,6 +14,13 @@ CREATE TABLE `author` (
   UNIQUE INDEX `uq_mobile` (`mobile` ASC),
   UNIQUE INDEX `uq_email` (`email` ASC) );
 
+CREATE TABLE `post_tag` (
+  `postId` BIGINT NOT NULL,
+  `tagId` BIGINT NOT NULL,
+  PRIMARY KEY (`postId`, `tagId`),
+  INDEX `idx_pt_tag` (`tagId` ASC),
+  INDEX `idx_pt_post` (`postId` ASC));
+
 CREATE TABLE `post` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `authorId` BIGINT NOT NULL,
@@ -26,10 +33,28 @@ CREATE TABLE `post` (
   PRIMARY KEY (`id`),
   UNIQUE INDEX `uq_slug` (`slug` ASC),
   INDEX `idx_post_author` (`authorId` ASC),
-  CONSTRAINT `fk_post_author_id`
+  CONSTRAINT `fk_post_author`
     FOREIGN KEY (`authorId`)
     REFERENCES `author` (`id`)
     ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_post_pt`
+    FOREIGN KEY (`id`)
+    REFERENCES `post_tag` (`postId`)
+    ON DELETE CASCADE
+    ON UPDATE NO ACTION);
+
+CREATE TABLE `tag` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `title` VARCHAR(75) NOT NULL,
+  `published` TINYINT(1) NOT NULL DEFAULT 0,
+  `slug` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `uq_slug` (`slug` ASC),
+  CONSTRAINT `fk_tag_pt`
+    FOREIGN KEY (`id`)
+    REFERENCES `post_tag` (`tagId`)
+    ON DELETE CASCADE
     ON UPDATE NO ACTION);
 
 CREATE TABLE `post_comment` (
@@ -49,30 +74,5 @@ CREATE TABLE `post_comment` (
   CONSTRAINT `fk_comment_author`
     FOREIGN KEY (`authorId`)
     REFERENCES `author` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION);
-
-CREATE TABLE `tag` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `title` VARCHAR(75) NOT NULL,
-  `published` TINYINT(1) NOT NULL DEFAULT 0,
-  `slug` VARCHAR(100) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE INDEX `uq_slug` (`slug` ASC));
-
-CREATE TABLE `post_tag` (
-  `postId` BIGINT NOT NULL,
-  `tagId` BIGINT NOT NULL,
-  PRIMARY KEY (`postId`, `tagId`),
-  INDEX `idx_pc_tag` (`tagId` ASC),
-  INDEX `idx_pc_post` (`postId` ASC),
-  CONSTRAINT `fk_pc_post`
-    FOREIGN KEY (`postId`)
-    REFERENCES `post` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_pc_tag`
-    FOREIGN KEY (`tagId`)
-    REFERENCES `tag` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION);
