@@ -14,7 +14,7 @@ CREATE TABLE `author` (
   UNIQUE INDEX `uq_mobile` (`mobile` ASC),
   UNIQUE INDEX `uq_email` (`email` ASC) );
 
-  CREATE TABLE `post` (
+CREATE TABLE `post` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `authorId` BIGINT NOT NULL,
   `title` VARCHAR(75) NOT NULL,
