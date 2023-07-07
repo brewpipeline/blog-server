@@ -1,28 +1,28 @@
 use hyper::StatusCode;
 use screw_api::response::{ApiResponseContentBase, ApiResponseContentFailure};
 
-pub enum MeResponseContentFailure {
+pub enum AuthorMeResponseContentFailure {
     Unauthorized { reason: String },
 }
 
-impl ApiResponseContentBase for MeResponseContentFailure {
+impl ApiResponseContentBase for AuthorMeResponseContentFailure {
     fn status_code(&self) -> &'static StatusCode {
         match self {
-            MeResponseContentFailure::Unauthorized { reason: _ } => &StatusCode::UNAUTHORIZED,
+            AuthorMeResponseContentFailure::Unauthorized { reason: _ } => &StatusCode::UNAUTHORIZED,
         }
     }
 }
 
-impl ApiResponseContentFailure for MeResponseContentFailure {
+impl ApiResponseContentFailure for AuthorMeResponseContentFailure {
     fn identifier(&self) -> &'static str {
         match self {
-            MeResponseContentFailure::Unauthorized { reason: _ } => "ME_UNAUTHORIZED",
+            AuthorMeResponseContentFailure::Unauthorized { reason: _ } => "AUTHOR_ME_UNAUTHORIZED",
         }
     }
 
     fn reason(&self) -> Option<String> {
         Some(match self {
-            MeResponseContentFailure::Unauthorized { reason } => {
+            AuthorMeResponseContentFailure::Unauthorized { reason } => {
                 if cfg!(debug_assertions) {
                     format!("unauthorized error: {}", reason)
                 } else {

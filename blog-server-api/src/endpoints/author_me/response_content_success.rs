@@ -6,29 +6,29 @@ use serde::Serialize;
 
 #[derive(Serialize, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
-pub struct MeResponseContentSuccess {
+pub struct AuthorMeResponseContentSuccess {
     author: Author,
 }
 
-impl Into<MeResponseContentSuccess> for ServiceAuthor {
-    fn into(self) -> MeResponseContentSuccess {
-        MeResponseContentSuccess {
+impl Into<AuthorMeResponseContentSuccess> for ServiceAuthor {
+    fn into(self) -> AuthorMeResponseContentSuccess {
+        AuthorMeResponseContentSuccess {
             author: self.into(),
         }
     }
 }
 
-impl ApiResponseContentBase for MeResponseContentSuccess {
+impl ApiResponseContentBase for AuthorMeResponseContentSuccess {
     fn status_code(&self) -> &'static StatusCode {
         &StatusCode::OK
     }
 }
 
-impl ApiResponseContentSuccess for MeResponseContentSuccess {
+impl ApiResponseContentSuccess for AuthorMeResponseContentSuccess {
     type Data = Self;
 
     fn identifier(&self) -> &'static str {
-        "ME_OK"
+        "AUTHOR_ME_OK"
     }
 
     fn description(&self) -> Option<String> {
