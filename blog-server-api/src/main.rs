@@ -29,14 +29,14 @@ async fn main() -> screw_components::dyn_result::DResult<()> {
 pub async fn init_db() -> rbatis::RBatis {
     let rb = rbatis::RBatis::new();
     rb.init(
-        rbdc_mysql::driver::MysqlDriver {},
-        std::env::var("MYSQL_URL")
-            .expect("MYSQL_URL expected in env vars")
+        rbdc_pg::driver::PgDriver {},
+        std::env::var("PG_URL")
+            .expect("PG_URL expected in env vars")
             .as_str(),
     )
     .unwrap();
 
-    let sql = std::fs::read_to_string("./table_mysql.sql").unwrap();
+    let sql = std::fs::read_to_string("./table_pg.sql").unwrap();
     let _ = rb.exec(&sql, vec![]).await;
     return rb;
 }
