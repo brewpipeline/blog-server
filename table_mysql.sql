@@ -1,47 +1,35 @@
 CREATE TABLE `author` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `slug` VARCHAR(100) NOT NULL,
-  `firstName` VARCHAR(50) NULL DEFAULT NULL,
-  `middleName` VARCHAR(50) NULL DEFAULT NULL,
-  `lastName` VARCHAR(50) NULL DEFAULT NULL,
+  `first_name` VARCHAR(50) NULL DEFAULT NULL,
+  `middle_name` VARCHAR(50) NULL DEFAULT NULL,
+  `last_name` VARCHAR(50) NULL DEFAULT NULL,
   `mobile` VARCHAR(15) NULL,
   `email` VARCHAR(50) NULL,
-  `passwordHash` VARCHAR(100) NOT NULL,
-  `registeredAt` TIMESTAMP NOT NULL,
+  `password_hash` VARCHAR(100) NOT NULL,
+  `registered_at` TIMESTAMP NOT NULL,
   `status` TINYTEXT NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE INDEX `uq_slug` (`slug` ASC),
   UNIQUE INDEX `uq_mobile` (`mobile` ASC),
   UNIQUE INDEX `uq_email` (`email` ASC) );
 
-CREATE TABLE `post_tag` (
-  `postId` BIGINT NOT NULL,
-  `tagId` BIGINT NOT NULL,
-  PRIMARY KEY (`postId`, `tagId`),
-  INDEX `idx_pt_tag` (`tagId` ASC),
-  INDEX `idx_pt_post` (`postId` ASC));
-
 CREATE TABLE `post` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `authorId` BIGINT NOT NULL,
+  `author_id` BIGINT NOT NULL,
   `title` VARCHAR(75) NOT NULL,
   `slug` VARCHAR(100) NOT NULL,
   `summary` TINYTEXT NULL,
   `published` TINYINT(1) NOT NULL DEFAULT 0,
-  `createdAt` TIMESTAMP NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
   `content` TEXT NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE INDEX `uq_slug` (`slug` ASC),
-  INDEX `idx_post_author` (`authorId` ASC),
+  INDEX `idx_post_author` (`author_id` ASC),
   CONSTRAINT `fk_post_author`
-    FOREIGN KEY (`authorId`)
+    FOREIGN KEY (`author_id`)
     REFERENCES `author` (`id`)
     ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_post_pt`
-    FOREIGN KEY (`id`)
-    REFERENCES `post_tag` (`postId`)
-    ON DELETE CASCADE
     ON UPDATE NO ACTION);
 
 CREATE TABLE `tag` (
@@ -50,29 +38,41 @@ CREATE TABLE `tag` (
   `published` TINYINT(1) NOT NULL DEFAULT 0,
   `slug` VARCHAR(100) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE INDEX `uq_slug` (`slug` ASC),
-  CONSTRAINT `fk_tag_pt`
-    FOREIGN KEY (`id`)
-    REFERENCES `post_tag` (`tagId`)
-    ON DELETE CASCADE
+  UNIQUE INDEX `uq_slug` (`slug` ASC));
+
+CREATE TABLE `post_tag` (
+  `post_id` BIGINT NOT NULL,
+  `tag_id` BIGINT NOT NULL,
+  PRIMARY KEY (`post_id`, `tag_id`),
+  INDEX `idx_pt_tag` (`tag_id` ASC),
+  INDEX `idx_pt_post` (`post_id` ASC),
+  CONSTRAINT `fk_pt_post`
+    FOREIGN KEY (`post_id`)
+    REFERENCES `post` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_pt_tag`
+    FOREIGN KEY (`tag_id`)
+    REFERENCES `tag` (`id`)
+    ON DELETE NO ACTION
     ON UPDATE NO ACTION);
 
 CREATE TABLE `post_comment` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `postId` BIGINT NOT NULL,
-  `authorId` BIGINT NOT NULL,
+  `post_id` BIGINT NOT NULL,
+  `author_id` BIGINT NOT NULL,
   `published` TINYINT(1) NOT NULL DEFAULT 0,
-  `createdAt` TIMESTAMP NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
   `content` TEXT NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  INDEX `idx_comment_post` (`postId` ASC),
+  INDEX `idx_comment_post` (`post_id` ASC),
   CONSTRAINT `fk_comment_post`
-    FOREIGN KEY (`postId`)
+    FOREIGN KEY (`post_id`)
     REFERENCES `post` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_comment_author`
-    FOREIGN KEY (`authorId`)
+    FOREIGN KEY (`author_id`)
     REFERENCES `author` (`id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION);

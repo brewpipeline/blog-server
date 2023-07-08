@@ -17,10 +17,10 @@ struct Data {
 pub fn token(author: Author) -> JwtResult<String> {
     super::jwt::encode(
         &Data {
-            author_id: author.id.expect("should convert only full authors"),
+            author_id: author.id,
             exp: jsonwebtoken::get_current_timestamp() + (60 * 60 * 24 * 31),
         },
-        &author.password_hash,
+        &author.base.password_hash,
     )
 }
 
@@ -64,7 +64,7 @@ pub async fn author(
         .map_err(|e| Error::DatabaseError(e))?
         .ok_or(Error::AuthorNotFound)?;
 
-    super::jwt::decode::<Data>(token, &author.password_hash).map_err(|e| Error::Token(e))?;
+    super::jwt::decode::<Data>(token, &author.base.password_hash).map_err(|e| Error::Token(e))?;
 
     Ok(author)
 }

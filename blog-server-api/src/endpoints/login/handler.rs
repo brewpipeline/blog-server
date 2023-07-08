@@ -31,7 +31,7 @@ async fn handler(
         })?
         .ok_or(NotFound)?;
 
-    password::verify(&password, &author.password_hash).map_err(|e| match e {
+    password::verify(&password, &author.base.password_hash).map_err(|e| match e {
         Error::Password => WrongPassword,
         _ => PasswordVerificationError {
             reason: e.to_string(),

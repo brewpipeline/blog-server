@@ -18,15 +18,15 @@ pub struct Author {
 impl Into<Author> for ServiceAuthor {
     fn into(self) -> Author {
         Author {
-            id: self.id.expect("should convert only full authors"),
-            slug: self.slug,
-            first_name: self.first_name,
-            middle_name: self.middle_name,
-            last_name: self.last_name,
-            mobile: self.mobile,
-            email: self.email,
-            registered_at: self.registered_at,
-            status: self.status,
+            id: self.id,
+            slug: self.base.slug,
+            first_name: self.base.first_name,
+            middle_name: self.base.middle_name,
+            last_name: self.base.last_name,
+            mobile: self.base.mobile,
+            email: self.base.email,
+            registered_at: self.base.registered_at,
+            status: self.base.status,
         }
     }
 }
