@@ -9,40 +9,48 @@ pub fn create_rbatis_post_service(rb: RBatis) -> Box<dyn PostService> {
 impl_insert!(BasePost {}, "post");
 
 impl Post {
-    #[sql("
+    #[sql(
+        "
         SELECT COUNT(*) 
         FROM post
-    ")]
+    "
+    )]
     async fn count(rb: &RBatis) -> rbatis::Result<i64> {
         impled!()
     }
-    #[sql("
+    #[sql(
+        "
         SELECT post.*, author.slug AS author_slug 
         FROM post 
         LEFT JOIN author ON post.author_id = author.id
         WHERE post.id = #{id} 
         LIMIT 1
-    ")]
+    "
+    )]
     async fn select_by_id(rb: &RBatis, id: &i64) -> rbatis::Result<Option<Post>> {
         impled!()
     }
-    #[sql("
+    #[sql(
+        "
         SELECT post.*, author.slug AS author_slug 
         FROM post 
         LEFT JOIN author ON post.author_id = author.id 
         WHERE post.slug = #{slug} 
         LIMIT 1
-    ")]
+    "
+    )]
     async fn select_by_slug(rb: &RBatis, slug: &String) -> rbatis::Result<Option<Post>> {
         impled!()
     }
-    #[sql("
+    #[sql(
+        "
         SELECT post.*, author.slug AS author_slug 
         FROM post 
         LEFT JOIN author ON post.author_id = author.id 
         LIMIT #{limit} 
         OFFSET #{offset}
-    ")]
+    "
+    )]
     async fn select_all_with_limit_and_offset(
         rb: &RBatis,
         limit: &i64,

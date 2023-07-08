@@ -3,7 +3,7 @@ use super::response_content_failure::LoginResponseContentFailure;
 use super::response_content_failure::LoginResponseContentFailure::*;
 use super::response_content_success::LoginResponseContentSuccess;
 use crate::extensions::Resolve;
-use crate::utils::{login, password};
+use crate::utils::{auth, password};
 use blog_server_services::traits::author_service::AuthorService;
 use password_hash::Error;
 use screw_api::request::ApiRequest;
@@ -38,7 +38,7 @@ async fn handler(
         },
     })?;
 
-    let token = login::token(author).map_err(|e| TokenGeneratingError {
+    let token = auth::token(author).map_err(|e| TokenGeneratingError {
         reason: e.to_string(),
     })?;
 

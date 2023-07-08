@@ -3,7 +3,7 @@ use super::response_content_failure::AuthorMeResponseContentFailure;
 use super::response_content_failure::AuthorMeResponseContentFailure::*;
 use super::response_content_success::AuthorMeResponseContentSuccess;
 use crate::extensions::Resolve;
-use crate::utils::login;
+use crate::utils::auth;
 use blog_server_services::traits::author_service::{Author, AuthorService};
 use screw_api::request::ApiRequest;
 use screw_api::response::ApiResponse;
@@ -11,7 +11,7 @@ use screw_components::dyn_fn::DFuture;
 use std::sync::Arc;
 
 async fn handler(
-    auth_author_future: DFuture<Result<Author, login::Error>>,
+    auth_author_future: DFuture<Result<Author, auth::Error>>,
 ) -> Result<AuthorMeResponseContentSuccess, AuthorMeResponseContentFailure> {
     auth_author_future
         .await

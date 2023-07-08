@@ -12,10 +12,12 @@ impl_select!(Author {select_by_slug(slug: &String) -> Option => "`WHERE slug = #
 impl_select!(Author {select_all_with_offset_and_limit(offset: &i64, limit: &i64) => "`LIMIT #{limit} OFFSET #{offset}`"});
 
 impl Author {
-    #[sql("
+    #[sql(
+        "
         SELECT COUNT(*) 
         FROM author
-    ")]
+    "
+    )]
     async fn count(rb: &RBatis) -> rbatis::Result<i64> {
         impled!()
     }
