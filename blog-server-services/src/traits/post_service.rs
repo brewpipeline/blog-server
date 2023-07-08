@@ -7,8 +7,8 @@ pub struct BasePost {
     pub author_id: i64,
     pub title: String,
     pub slug: String,
-    pub summary: String,
-    pub published: bool,
+    pub summary: Option<String>,
+    pub published: u8,
     pub created_at: i64,
     pub content: Option<String>,
 }
@@ -20,6 +20,7 @@ pub struct Post {
     pub author_slug: String,
     pub author_first_name: Option<String>,
     pub author_last_name: Option<String>,
+    pub tags: String,
     #[serde(flatten)]
     pub base: BasePost,
 }

@@ -9,46 +9,70 @@ pub fn create_rbatis_post_service(rb: RBatis) -> Box<dyn PostService> {
 impl_insert!(BasePost {}, "post");
 
 impl Post {
-    #[sql(
+    #[py_sql(
         "
-        SELECT COUNT(*)
-        FROM post
+        SELECT COUNT(*) \
+        FROM post \
     "
     )]
     async fn count(rb: &RBatis) -> rbatis::Result<i64> {
         impled!()
     }
-    #[sql(
+    #[py_sql(
         "
-        SELECT post.*, author.slug AS author_slug, author.first_name AS author_first_name, author.last_name AS author_last_name
-        FROM post
-        LEFT JOIN author ON post.author_id = author.id
-        WHERE post.id = #{id}
-        LIMIT 1
+        SELECT \
+            post.*, \
+            author.slug AS author_slug, \
+            author.first_name AS author_first_name, \
+            author.last_name AS author_last_name, \
+            GROUP_CONCAT(CONCAT_WS(',', tag.slug, tag.title) SEPARATOR ';') as tags \
+        FROM post \
+        LEFT JOIN author ON post.author_id = author.id \
+        LEFT JOIN post_tag ON post_tag.post_id  = post.id \
+        LEFT JOIN tag ON tag.id = post_tag.tag_id \
+        WHERE post.id = #{id} \
+        GROUP BY post.id \
+        LIMIT 1 \
     "
     )]
     async fn select_by_id(rb: &RBatis, id: &i64) -> rbatis::Result<Option<Post>> {
         impled!()
     }
-    #[sql(
+    #[py_sql(
         "
-        SELECT post.*, author.slug AS author_slug, author.first_name AS author_first_name, author.last_name AS author_last_name
-        FROM post
-        LEFT JOIN author ON post.author_id = author.id
-        WHERE post.slug = #{slug}
-        LIMIT 1
+        SELECT \
+            post.*, \
+            author.slug AS author_slug, \
+            author.first_name AS author_first_name, \
+            author.last_name AS author_last_name, \
+            GROUP_CONCAT(CONCAT_WS(',', tag.slug, tag.title) SEPARATOR ';') as tags \
+        FROM post \
+        LEFT JOIN author ON post.author_id = author.id \
+        LEFT JOIN post_tag ON post_tag.post_id  = post.id \
+        LEFT JOIN tag ON tag.id = post_tag.tag_id \
+        WHERE post.slug = #{slug} \
+        GROUP BY post.id \
+        LIMIT 1 \
     "
     )]
     async fn select_by_slug(rb: &RBatis, slug: &String) -> rbatis::Result<Option<Post>> {
         impled!()
     }
-    #[sql(
+    #[py_sql(
         "
-        SELECT post.*, author.slug AS author_slug, author.first_name AS author_first_name, author.last_name AS author_last_name
-        FROM post
-        LEFT JOIN author ON post.author_id = author.id
-        LIMIT #{limit}
-        OFFSET #{offset}
+        SELECT \
+            post.*, \
+            author.slug AS author_slug, \
+            author.first_name AS author_first_name, \
+            author.last_name AS author_last_name, \
+            GROUP_CONCAT(CONCAT_WS(',', tag.slug, tag.title) SEPARATOR ';') as tags \
+        FROM post \
+        LEFT JOIN author ON post.author_id = author.id \
+        LEFT JOIN post_tag ON post_tag.post_id  = post.id \
+        LEFT JOIN tag ON tag.id = post_tag.tag_id \
+        GROUP BY post.id \
+        LIMIT #{limit} \
+        OFFSET #{offset} \
     "
     )]
     async fn select_all_with_limit_and_offset(

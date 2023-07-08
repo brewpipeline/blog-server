@@ -71,6 +71,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                         .and_handler(authors::http_handler),
                 )
                 .route(
+                    route::first::Route::with_method(&hyper::Method::GET)
+                        .and_path("/posts")
+                        .and_handler(posts::http_handler),
+                )
+                .route(
                     route::first::Route::with_method(&hyper::Method::POST)
                         .and_path("/login")
                         .and_handler(login::http_handler),
