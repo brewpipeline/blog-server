@@ -1,4 +1,4 @@
-use blog_server_services::instances::{create_rbatis_author_service, create_rbatis_post_service};
+use blog_server_services::impls::{create_rbatis_author_service, create_rbatis_post_service};
 use blog_server_services::traits::author_service::AuthorService;
 use blog_server_services::traits::post_service::PostService;
 use rbatis::rbatis::RBatis;

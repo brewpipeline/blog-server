@@ -1,4 +1,4 @@
-pub mod instances;
+pub mod impls;
 pub mod traits;
 
 #[macro_use]
