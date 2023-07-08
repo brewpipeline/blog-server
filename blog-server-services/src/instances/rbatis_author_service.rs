@@ -1,6 +1,5 @@
 use crate::traits::author_service::{Author, AuthorService};
 use rbatis::rbatis::RBatis;
-use rbs::to_value;
 use screw_components::dyn_result::DResult;
 
 pub fn create_rbatis_author_service(rb: RBatis) -> Box<dyn AuthorService> {
@@ -8,6 +7,7 @@ pub fn create_rbatis_author_service(rb: RBatis) -> Box<dyn AuthorService> {
 }
 
 crud!(Author {});
+impl_select!(Author{select_all_with_offset_and_limit(offset: &i64, limit: &i64) => "`LIMIT #{limit} OFFSET #{offset}`"});
 
 struct RbatisAuthorService {
     rb: RBatis,
@@ -22,22 +22,15 @@ impl AuthorService for RbatisAuthorService {
             .await?;
         Ok(count)
     }
-    async fn get_authors(&self, offset: &i64, limit: &i64) -> DResult<Vec<Author>> {
-        let authors: Vec<Author> = self
-            .rb
-            .query_decode(
-                "SELECT * FROM `author` LIMIT ? OFFSET ?",
-                vec![to_value!(limit), to_value!(offset)],
-            )
-            .await?;
-        Ok(authors)
+    async fn authors(&self, offset: &i64, limit: &i64) -> DResult<Vec<Author>> {
+        Ok(Author::select_all_with_offset_and_limit(&mut self.rb.clone(), offset, limit).await?)
     }
-    async fn get_author_by_id(&self, id: &i64) -> DResult<Option<Author>> {
+    async fn author_by_id(&self, id: &i64) -> DResult<Option<Author>> {
         Ok(Author::select_by_column(&mut self.rb.clone(), "id", id)
             .await?
             .pop())
     }
-    async fn get_author_by_slug(&self, slug: &String) -> DResult<Option<Author>> {
+    async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>> {
         Ok(Author::select_by_column(&mut self.rb.clone(), "slug", slug)
             .await?
             .pop())

@@ -18,7 +18,7 @@ async fn handler(
     let limit = limit.unwrap_or(50).max(0).min(50);
 
     let (authors_result, total_result) = join!(
-        author_service.get_authors(&offset, &limit),
+        author_service.authors(&offset, &limit),
         author_service.authors_count(),
     );
 

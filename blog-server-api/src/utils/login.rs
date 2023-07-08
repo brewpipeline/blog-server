@@ -59,7 +59,7 @@ pub async fn author(
         super::jwt::insecure_decode::<Data>(token).map_err(|e| Error::Token(e))?;
 
     let author = author_service
-        .get_author_by_id(&insecure_login_data.author_id)
+        .author_by_id(&insecure_login_data.author_id)
         .await
         .map_err(|e| Error::DatabaseError(e))?
         .ok_or(Error::AuthorNotFound)?;
