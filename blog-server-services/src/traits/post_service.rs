@@ -18,6 +18,8 @@ pub struct BasePost {
 pub struct Post {
     pub id: i64,
     pub author_slug: String,
+    pub author_first_name: Option<String>,
+    pub author_last_name: Option<String>,
     #[serde(flatten)]
     pub base: BasePost,
 }

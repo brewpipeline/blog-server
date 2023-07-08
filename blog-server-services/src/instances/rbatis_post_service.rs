@@ -11,7 +11,7 @@ impl_insert!(BasePost {}, "post");
 impl Post {
     #[sql(
         "
-        SELECT COUNT(*) 
+        SELECT COUNT(*)
         FROM post
     "
     )]
@@ -20,10 +20,10 @@ impl Post {
     }
     #[sql(
         "
-        SELECT post.*, author.slug AS author_slug 
-        FROM post 
+        SELECT post.*, author.slug AS author_slug, author.first_name AS author_first_name, author.last_name AS author_last_name
+        FROM post
         LEFT JOIN author ON post.author_id = author.id
-        WHERE post.id = #{id} 
+        WHERE post.id = #{id}
         LIMIT 1
     "
     )]
@@ -32,10 +32,10 @@ impl Post {
     }
     #[sql(
         "
-        SELECT post.*, author.slug AS author_slug 
-        FROM post 
-        LEFT JOIN author ON post.author_id = author.id 
-        WHERE post.slug = #{slug} 
+        SELECT post.*, author.slug AS author_slug, author.first_name AS author_first_name, author.last_name AS author_last_name
+        FROM post
+        LEFT JOIN author ON post.author_id = author.id
+        WHERE post.slug = #{slug}
         LIMIT 1
     "
     )]
@@ -44,10 +44,10 @@ impl Post {
     }
     #[sql(
         "
-        SELECT post.*, author.slug AS author_slug 
-        FROM post 
-        LEFT JOIN author ON post.author_id = author.id 
-        LIMIT #{limit} 
+        SELECT post.*, author.slug AS author_slug, author.first_name AS author_first_name, author.last_name AS author_last_name
+        FROM post
+        LEFT JOIN author ON post.author_id = author.id
+        LIMIT #{limit}
         OFFSET #{offset}
     "
     )]
