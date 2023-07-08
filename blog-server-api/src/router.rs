@@ -72,6 +72,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                 )
                 .route(
                     route::first::Route::with_method(&hyper::Method::GET)
+                        .and_path("/post/{slug:[^/]*}")
+                        .and_handler(post::http_handler),
+                )
+                .route(
+                    route::first::Route::with_method(&hyper::Method::GET)
                         .and_path("/posts")
                         .and_handler(posts::http_handler),
                 )
