@@ -11,7 +11,7 @@ impl_insert!(BasePost {}, "post");
 impl Post {
     #[py_sql(
         "
-        SELECT COUNT(*) \
+        SELECT COUNT(1) \
         FROM post \
     "
     )]
@@ -25,13 +25,13 @@ impl Post {
             author.slug AS author_slug, \
             author.first_name AS author_first_name, \
             author.last_name AS author_last_name, \
-            string_agg(CONCAT_WS(',', tag.slug, tag.title), ';') as tags \
+            string_agg(concat_ws(',', tag.slug, tag.title), ';') as tags \
         FROM post \
         LEFT JOIN author ON post.author_id = author.id \
         LEFT JOIN post_tag ON post_tag.post_id  = post.id \
         LEFT JOIN tag ON tag.id = post_tag.tag_id \
         WHERE post.id = #{id} \
-        GROUP BY post.Id, author.slug, author.first_name, author.last_name \
+        GROUP BY post.id, author.slug, author.first_name, author.last_name \
         LIMIT 1 \
     "
     )]
@@ -45,13 +45,13 @@ impl Post {
             author.slug AS author_slug, \
             author.first_name AS author_first_name, \
             author.last_name AS author_last_name, \
-            string_agg(CONCAT_WS(',', tag.slug, tag.title), ';') as tags \
+            string_agg(concat_ws(',', tag.slug, tag.title), ';') as tags \
         FROM post \
         LEFT JOIN author ON post.author_id = author.id \
         LEFT JOIN post_tag ON post_tag.post_id  = post.id \
         LEFT JOIN tag ON tag.id = post_tag.tag_id \
         WHERE post.slug = #{slug} \
-        GROUP BY post.Id, author.slug, author.first_name, author.last_name \
+        GROUP BY post.id, author.slug, author.first_name, author.last_name \
         LIMIT 1 \
     "
     )]
@@ -70,7 +70,7 @@ impl Post {
         JOIN author ON post.author_id = author.id \
         LEFT JOIN post_tag ON post_tag.post_id  = post.id \
         LEFT JOIN tag ON tag.id = post_tag.tag_id \
-        GROUP BY post.Id, author.slug, author.first_name, author.last_name \
+        GROUP BY post.id, author.slug, author.first_name, author.last_name \
         LIMIT #{limit} \
         OFFSET #{offset} \
     "
