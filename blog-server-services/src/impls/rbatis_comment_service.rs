@@ -29,7 +29,6 @@ impl Comment {
         FROM post_comment \
         JOIN author ON post_comment.author_id = author.id \
         WHERE post_comment.post_id = #{post_id} \
-        GROUP BY post_comment.id, author.slug, author.first_name, author.last_name \
         LIMIT #{limit} \
         OFFSET #{offset} \
     "
