@@ -14,7 +14,7 @@ impl_select!(Author {select_all_with_offset_and_limit(offset: &i64, limit: &i64)
 impl Author {
     #[py_sql(
         "
-        SELECT COUNT(*) \
+        SELECT COUNT(1) \
         FROM author \
     "
     )]
