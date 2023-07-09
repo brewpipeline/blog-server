@@ -29,7 +29,7 @@ async fn handler(
         .ok_or(PostNotFound)?;
 
     let offset = offset.unwrap_or(0).max(0);
-    let limit = limit.unwrap_or(50).max(0).min(50);
+    let limit = limit.unwrap_or(200).max(0).min(200);
 
     let (comments_result, total_result) = tokio::join!(
         comment_service.comments_by_post_id(&post.id, &offset, &limit),
