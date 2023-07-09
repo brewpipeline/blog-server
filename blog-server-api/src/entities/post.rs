@@ -16,22 +16,6 @@ pub struct Post {
 
 impl Into<Post> for ServicePost {
     fn into(self) -> Post {
-        // TODO: refactor next
-        let tags: Vec<Tag> = self
-            .tags
-            .split(";")
-            .filter_map(|t| {
-                let tag_parts: Vec<&str> = t.split(",").collect();
-                if tag_parts.len() == 2 {
-                    Some(Tag {
-                        title: tag_parts[1].to_owned(),
-                        slug: tag_parts[0].to_owned(),
-                    })
-                } else {
-                    None
-                }
-            })
-            .collect();
         Post {
             title: self.base.title,
             slug: self.base.slug,
@@ -43,7 +27,17 @@ impl Into<Post> for ServicePost {
                 first_name: self.author_first_name,
                 last_name: self.author_last_name,
             },
-            tags,
+            tags: match self.tags {
+                Some(v) => v
+                    .iter()
+                    .map(|v| Tag {
+                        title: v.title.to_owned(),
+                        //TODO: Change to ID
+                        slug: v.id.to_string(),
+                    })
+                    .collect(),
+                None => Vec::<Tag>::new(),
+            },
         }
     }
 }
