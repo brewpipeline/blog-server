@@ -7,7 +7,7 @@ use serde::Serialize;
 pub struct Comment {
     pub post_id: i64,
     pub created_at: i64,
-    pub content: Option<String>,
+    pub content: String,
     pub short_author: ShortAuthor,
 }
 

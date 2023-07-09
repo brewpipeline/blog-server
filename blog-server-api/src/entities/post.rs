@@ -7,7 +7,7 @@ use serde::Serialize;
 pub struct Post {
     pub title: String,
     pub slug: String,
-    pub summary: Option<String>,
+    pub summary: String,
     pub created_at: i64,
     pub content: Option<String>,
     pub short_author: ShortAuthor,

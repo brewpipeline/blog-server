@@ -7,7 +7,7 @@ pub struct BasePost {
     pub author_id: i64,
     pub title: String,
     pub slug: String,
-    pub summary: Option<String>,
+    pub summary: String,
     pub published: u8,
     pub created_at: i64,
     pub content: Option<String>,

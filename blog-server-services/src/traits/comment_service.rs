@@ -8,7 +8,7 @@ pub struct BaseComment {
     pub author_id: i64,
     pub created_at: i64,
     pub published: u8,
-    pub content: Option<String>,
+    pub content: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
