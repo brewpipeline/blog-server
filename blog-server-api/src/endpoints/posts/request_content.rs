@@ -4,6 +4,7 @@ use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
 use std::sync::Arc;
 
 pub struct PostsRequestContent {
+    pub(super) query: Option<String>,
     pub(super) offset: Option<i64>,
     pub(super) limit: Option<i64>,
     pub(super) post_service: Arc<Box<dyn PostService>>,
@@ -17,6 +18,7 @@ where
 
     fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
         Self {
+            query: origin_content.path.get("query").map(|n| n.to_owned()),
             offset: origin_content
                 .query
                 .get("offset")

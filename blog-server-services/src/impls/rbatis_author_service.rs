@@ -7,9 +7,14 @@ pub fn create_rbatis_author_service(rb: RBatis) -> Box<dyn AuthorService> {
 }
 
 impl_insert!(BaseAuthor {}, "author");
-impl_select!(Author {select_by_id(id: &i64) -> Option => "`WHERE id = #{id} LIMIT 1`"});
-impl_select!(Author {select_by_slug(slug: &String) -> Option => "`WHERE slug = #{slug} LIMIT 1`"});
-impl_select!(Author {select_all_with_offset_and_limit(offset: &i64, limit: &i64) => "`LIMIT #{limit} OFFSET #{offset}`"});
+impl_select!(Author {select_by_id(id: &i64) -> Option => 
+    "`WHERE id = #{id} LIMIT 1`"});
+impl_select!(Author {select_by_slug(slug: &String) -> Option => 
+    "`WHERE slug = #{slug} LIMIT 1`"});
+impl_select!(Author {select_all_with_offset_and_limit(offset: &i64, limit: &i64) => 
+    "`LIMIT #{limit} OFFSET #{offset}`"});
+impl_select!(Author {select_all_by_query_with_limit_and_offset(query: &String, offset: &i64, limit: &i64) => 
+    "`WHERE author.slug LIKE '%#{query}%' OR author.first_name LIKE '%#{query}%' OR author.middle_name LIKE '%#{query}%' OR author.last_name LIKE '%#{query}%' LIMIT #{limit} OFFSET #{offset}`"});
 
 impl Author {
     #[py_sql(
@@ -21,6 +26,16 @@ impl Author {
     async fn count(rb: &RBatis) -> rbatis::Result<i64> {
         impled!()
     }
+    #[py_sql(
+        "
+        SELECT COUNT(1) \
+        FROM author \
+        WHERE author.slug LIKE '%#{query}%' OR author.first_name LIKE '%#{query}%' OR author.middle_name LIKE '%#{query}%' OR author.last_name LIKE '%#{query}%' \
+    "
+    )]
+    async fn count_by_query(rb: &RBatis, query: &String) -> rbatis::Result<i64> {
+        impled!()
+    }
 }
 
 struct RbatisAuthorService {
@@ -29,6 +44,23 @@ struct RbatisAuthorService {
 
 #[async_trait]
 impl AuthorService for RbatisAuthorService {
+    async fn authors_count_by_query(&self, query: &String) -> DResult<i64> {
+        Ok(Author::count_by_query(&self.rb, query).await?)
+    }
+    async fn authors_by_query(
+        &self,
+        query: &String,
+        offset: &i64,
+        limit: &i64,
+    ) -> DResult<Vec<Author>> {
+        Ok(Author::select_all_by_query_with_limit_and_offset(
+            &mut self.rb.clone(),
+            query,
+            offset,
+            limit,
+        )
+        .await?)
+    }
     async fn authors_count(&self) -> DResult<i64> {
         Ok(Author::count(&self.rb).await?)
     }
