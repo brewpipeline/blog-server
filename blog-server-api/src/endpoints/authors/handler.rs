@@ -7,7 +7,6 @@ use blog_server_services::traits::author_service::AuthorService;
 use screw_api::request::ApiRequest;
 use screw_api::response::ApiResponse;
 use std::sync::Arc;
-use tokio::join;
 
 async fn handler(
     offset: Option<i64>,
@@ -17,7 +16,7 @@ async fn handler(
     let offset = offset.unwrap_or(0).max(0);
     let limit = limit.unwrap_or(50).max(0).min(50);
 
-    let (authors_result, total_result) = join!(
+    let (authors_result, total_result) = tokio::join!(
         author_service.authors(&offset, &limit),
         author_service.authors_count(),
     );

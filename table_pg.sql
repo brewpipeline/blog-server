@@ -23,7 +23,7 @@ CREATE TABLE post (
   author_id BIGINT NOT NULL,
   title VARCHAR(75) NOT NULL,
   slug VARCHAR(100) NOT NULL,
-  summary VARCHAR(255) NULL,
+  summary VARCHAR(255) NOT NULL,
   published SMALLINT NOT NULL DEFAULT 0,
   created_at TIMESTAMP(0) NOT NULL,
   content TEXT NULL DEFAULT NULL,
@@ -73,7 +73,7 @@ CREATE TABLE post_comment (
   author_id BIGINT NOT NULL,
   published SMALLINT NOT NULL DEFAULT 0,
   created_at TIMESTAMP(0) NOT NULL,
-  content TEXT NULL DEFAULT NULL,
+  content TEXT NOT NULL,
   PRIMARY KEY (id),
   CONSTRAINT fk_comment_post
     FOREIGN KEY (post_id)
