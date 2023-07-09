@@ -65,7 +65,7 @@ impl Post {
             author.slug AS author_slug, \
             author.first_name AS author_first_name, \
             author.last_name AS author_last_name, \
-            string_agg(concat_ws(',', tag.title, tag.slug), ';') as tags \
+            string_agg(concat_ws(',', tag.slug, tag.title), ';') as tags \
         FROM post \
         JOIN author ON post.author_id = author.id \
         LEFT JOIN post_tag ON post_tag.post_id  = post.id \
