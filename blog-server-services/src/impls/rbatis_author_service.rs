@@ -13,7 +13,7 @@ impl_select!(Author {select_by_slug(slug: &String) -> Option =>
     "`WHERE slug = #{slug} LIMIT 1`"});
 impl_select!(Author {select_all_with_offset_and_limit(offset: &i64, limit: &i64) => 
     "`LIMIT #{limit} OFFSET #{offset}`"});
-impl_select!(Author {select_all_by_query_with_limit_and_offset(query: &String, offset: &i64, limit: &i64) => 
+impl_select!(Author {select_all_by_query_with_offset_and_limit(query: &String, offset: &i64, limit: &i64) => 
     "`WHERE author.slug LIKE '%#{query}%' OR author.first_name LIKE '%#{query}%' OR author.middle_name LIKE '%#{query}%' OR author.last_name LIKE '%#{query}%' LIMIT #{limit} OFFSET #{offset}`"});
 
 impl Author {
@@ -53,7 +53,7 @@ impl AuthorService for RbatisAuthorService {
         offset: &i64,
         limit: &i64,
     ) -> DResult<Vec<Author>> {
-        Ok(Author::select_all_by_query_with_limit_and_offset(
+        Ok(Author::select_all_by_query_with_offset_and_limit(
             &mut self.rb.clone(),
             query,
             offset,
