@@ -27,7 +27,7 @@ impl Post {
             author.last_name AS author_last_name, \
             string_agg(concat_ws(',', tag.slug, tag.title), ';') as tags \
         FROM post \
-        LEFT JOIN author ON post.author_id = author.id \
+        JOIN author ON post.author_id = author.id \
         LEFT JOIN post_tag ON post_tag.post_id  = post.id \
         LEFT JOIN tag ON tag.id = post_tag.tag_id \
         WHERE post.id = #{id} \
@@ -47,7 +47,7 @@ impl Post {
             author.last_name AS author_last_name, \
             string_agg(concat_ws(',', tag.slug, tag.title), ';') as tags \
         FROM post \
-        LEFT JOIN author ON post.author_id = author.id \
+        JOIN author ON post.author_id = author.id \
         LEFT JOIN post_tag ON post_tag.post_id  = post.id \
         LEFT JOIN tag ON tag.id = post_tag.tag_id \
         WHERE post.slug = #{slug} \
