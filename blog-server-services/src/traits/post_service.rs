@@ -27,7 +27,8 @@ pub struct Post {
     pub author_slug: String,
     pub author_first_name: Option<String>,
     pub author_last_name: Option<String>,
-    pub tags: Option<Vec<Tag>>,
+    #[serde(default)]
+    pub tags: Vec<Tag>,
     #[serde(flatten)]
     pub base: BasePost,
 }

@@ -107,7 +107,7 @@ impl Post {
     }
 
     fn apply_tags(&mut self, tags: Vec<Tag>) {
-        self.tags = Some(tags);
+        self.tags = tags;
     }
 }
 

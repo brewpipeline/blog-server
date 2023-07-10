@@ -27,17 +27,15 @@ impl Into<Post> for ServicePost {
                 first_name: self.author_first_name,
                 last_name: self.author_last_name,
             },
-            tags: match self.tags {
-                Some(v) => v
-                    .into_iter()
-                    .map(|v| Tag {
-                        title: v.title,
-                        //TODO: Change to ID
-                        slug: v.id.to_string(),
-                    })
-                    .collect(),
-                None => vec![],
-            },
+            tags: self
+                .tags
+                .into_iter()
+                .map(|v| Tag {
+                    title: v.title,
+                    //TODO: Change to ID
+                    slug: v.id.to_string(),
+                })
+                .collect(),
         }
     }
 }
