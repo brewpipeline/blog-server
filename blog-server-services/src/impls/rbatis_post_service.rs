@@ -13,13 +13,13 @@ impl_insert!(BasePost {}, "post");
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct TagDto {
-    pub post_id: i64,
-    pub id: i64,
-    pub title: String,
+    post_id: i64,
+    id: i64,
+    title: String,
 }
 
-impl TagDto {
-    fn into_tag(self) -> Tag {
+impl Into<Tag> for TagDto {
+    fn into(self) -> Tag {
         Tag {
             id: self.id,
             title: self.title,
@@ -106,7 +106,7 @@ impl Post {
         impled!()
     }
 
-    fn feed(&mut self, tags: &Vec<Tag>) {
+    fn apply_tags(&mut self, tags: &Vec<Tag>) {
         self.tags = Some(tags.clone());
     }
 }
@@ -129,48 +129,56 @@ impl PostService for RbatisPostService {
             .into_iter()
             .fold(HashMap::new(), |mut map, dto| {
                 let key = dto.post_id;
-                let tag = dto.into_tag();
+                let tag = dto.into();
                 map.entry(key).or_insert_with(Vec::new).push(tag);
                 map
             });
 
         for post in posts.iter_mut() {
             match grouped_tags.get(&post.id) {
-                Some(tags) => post.feed(tags),
+                Some(tags) => post.apply_tags(tags),
                 None => {}
             }
         }
 
         Ok(posts)
     }
+
     async fn post_by_id(&self, id: &i64) -> DResult<Option<Post>> {
-        let mut post = Post::select_by_id(&self.rb, id)
-            .await?
-            .ok_or::<DError>("Could not find post by id".into())?;
+        let post_option = Post::select_by_id(&self.rb, id).await?;
+        match post_option {
+            None => Ok(None),
+            Some(mut post) => {
+                let post_tags = Post::select_tags_by_posts(&self.rb, vec![post.id])
+                    .await?
+                    .into_iter()
+                    .map(|tag| tag.into())
+                    .collect();
+                post.apply_tags(&post_tags);
 
-        let post_tags = Post::select_tags_by_posts(&self.rb, vec![post.id])
-            .await?
-            .into_iter()
-            .map(|tag| tag.into_tag())
-            .collect();
-        post.feed(&post_tags);
-
-        Ok(Some(post))
+                Ok(Some(post))
+            }
+        }
     }
+
     async fn post_by_slug(&self, slug: &String) -> DResult<Option<Post>> {
-        let mut post = Post::select_by_slug(&self.rb, slug)
-            .await?
-            .ok_or::<DError>("Could not find post by slug".into())?;
+        let post_option = Post::select_by_slug(&self.rb, slug).await?;
 
-        let post_tags = Post::select_tags_by_posts(&self.rb, vec![post.id])
-            .await?
-            .into_iter()
-            .map(|tag| tag.into_tag())
-            .collect();
-        post.feed(&post_tags);
+        match post_option {
+            None => Ok(None),
+            Some(mut post) => {
+                let post_tags = Post::select_tags_by_posts(&self.rb, vec![post.id])
+                    .await?
+                    .into_iter()
+                    .map(|tag| tag.into())
+                    .collect();
+                post.apply_tags(&post_tags);
 
-        Ok(Some(post))
+                Ok(Some(post))
+            }
+        }
     }
+
     async fn create_post(&self, post: &BasePost) -> DResult<i64> {
         let insert_result = BasePost::insert(&mut self.rb.clone(), post).await?;
         let last_insert_id = insert_result
