@@ -22,7 +22,7 @@ impl Post {
         "
         SELECT COUNT(1) \
         FROM post \
-        WHERE post.title LIKE '%#{query}%' OR post.summary LIKE '%#{query}%' OR post.content LIKE '%#{query}%' \
+        WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
     "
     )]
     async fn count_by_query(rb: &RBatis, query: &String) -> rbatis::Result<i64> {
@@ -104,7 +104,7 @@ impl Post {
         JOIN author ON post.author_id = author.id \
         LEFT JOIN post_tag ON post_tag.post_id  = post.id \
         LEFT JOIN tag ON tag.id = post_tag.tag_id \
-        WHERE post.title LIKE '%#{query}%' OR post.summary LIKE '%#{query}%' OR post.content LIKE '%#{query}%' \
+        WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
         GROUP BY post.id, author.slug, author.first_name, author.last_name \
         LIMIT #{limit} \
         OFFSET #{offset} \
