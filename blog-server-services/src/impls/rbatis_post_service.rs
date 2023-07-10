@@ -121,14 +121,10 @@ impl Post {
             post.*, \
             author.slug AS author_slug, \
             author.first_name AS author_first_name, \
-            author.last_name AS author_last_name, \
-            string_agg(concat_ws(',', tag.slug, tag.title), ';') as tags \
+            author.last_name AS author_last_name \
         FROM post \
         JOIN author ON post.author_id = author.id \
-        LEFT JOIN post_tag ON post_tag.post_id  = post.id \
-        LEFT JOIN tag ON tag.id = post_tag.tag_id \
         WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
-        GROUP BY post.id, author.slug, author.first_name, author.last_name \
         LIMIT #{limit} \
         OFFSET #{offset} \
     "
@@ -166,28 +162,14 @@ impl RbatisPostService {
             }
         }
     }
-}
 
-#[async_trait]
-impl PostService for RbatisPostService {
-    async fn posts_count_by_query(&self, query: &String) -> DResult<i64> {
-        Ok(Post::count_by_query(&self.rb, query).await?)
-    }
-    async fn posts_by_query(
-        &self,
-        query: &String,
-        offset: &i64,
-        limit: &i64,
-    ) -> DResult<Vec<Post>> {
-        Ok(Post::select_all_by_query_with_limit_and_offset(&self.rb, query, limit, offset).await?)
-    }
-    async fn posts_count(&self) -> DResult<i64> {
-        Ok(Post::count(&self.rb).await?)
-    }
-    async fn posts(&self, offset: &i64, limit: &i64) -> DResult<Vec<Post>> {
-        let mut posts = Post::select_posts(&self.rb, limit, offset).await?;
+    async fn saturate_posts_with_tags(&self, mut posts: Vec<Post>) -> DResult<Vec<Post>> {
+        if posts.is_empty() {
+            return Ok(posts);
+        }
 
         let post_ids = posts.iter().map(|post| post.id).collect();
+
         let mut grouped_tags: HashMap<i64, Vec<Tag>> =
             Post::select_tags_by_posts(&self.rb, post_ids)
                 .await?
@@ -207,6 +189,31 @@ impl PostService for RbatisPostService {
         }
 
         Ok(posts)
+    }
+}
+
+#[async_trait]
+impl PostService for RbatisPostService {
+    async fn posts_count_by_query(&self, query: &String) -> DResult<i64> {
+        Ok(Post::count_by_query(&self.rb, query).await?)
+    }
+    async fn posts_by_query(
+        &self,
+        query: &String,
+        offset: &i64,
+        limit: &i64,
+    ) -> DResult<Vec<Post>> {
+        let posts =
+            Post::select_all_by_query_with_limit_and_offset(&self.rb, query, limit, offset).await?;
+        RbatisPostService::saturate_posts_with_tags(&self, posts).await
+    }
+
+    async fn posts_count(&self) -> DResult<i64> {
+        Ok(Post::count(&self.rb).await?)
+    }
+    async fn posts(&self, offset: &i64, limit: &i64) -> DResult<Vec<Post>> {
+        let posts = Post::select_posts(&self.rb, limit, offset).await?;
+        RbatisPostService::saturate_posts_with_tags(&self, posts).await
     }
 
     async fn post_by_id(&self, id: &i64) -> DResult<Option<Post>> {
