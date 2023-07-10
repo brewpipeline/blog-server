@@ -115,6 +115,23 @@ struct RbatisPostService {
     rb: RBatis,
 }
 
+impl RbatisPostService {
+    async fn saturate_with_tags(&self, post_option: Option<Post>) -> DResult<Option<Post>> {
+        match post_option {
+            None => Ok(None),
+            Some(mut post) => {
+                let post_tags = Post::select_tags_by_posts(&self.rb, vec![post.id])
+                    .await?
+                    .into_iter()
+                    .map(|tag| tag.into())
+                    .collect();
+                post.apply_tags(post_tags);
+                Ok(Some(post))
+            }
+        }
+    }
+}
+
 #[async_trait]
 impl PostService for RbatisPostService {
     async fn posts_count(&self) -> DResult<i64> {
@@ -147,37 +164,12 @@ impl PostService for RbatisPostService {
 
     async fn post_by_id(&self, id: &i64) -> DResult<Option<Post>> {
         let post_option = Post::select_by_id(&self.rb, id).await?;
-        match post_option {
-            None => Ok(None),
-            Some(mut post) => {
-                let post_tags = Post::select_tags_by_posts(&self.rb, vec![post.id])
-                    .await?
-                    .into_iter()
-                    .map(|tag| tag.into())
-                    .collect();
-                post.apply_tags(post_tags);
-
-                Ok(Some(post))
-            }
-        }
+        RbatisPostService::saturate_with_tags(&self, post_option).await
     }
 
     async fn post_by_slug(&self, slug: &String) -> DResult<Option<Post>> {
         let post_option = Post::select_by_slug(&self.rb, slug).await?;
-
-        match post_option {
-            None => Ok(None),
-            Some(mut post) => {
-                let post_tags = Post::select_tags_by_posts(&self.rb, vec![post.id])
-                    .await?
-                    .into_iter()
-                    .map(|tag| tag.into())
-                    .collect();
-                post.apply_tags(post_tags);
-
-                Ok(Some(post))
-            }
-        }
+        RbatisPostService::saturate_with_tags(&self, post_option).await
     }
 
     async fn create_post(&self, post: &BasePost) -> DResult<i64> {
