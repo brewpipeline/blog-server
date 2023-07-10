@@ -29,14 +29,14 @@ impl Into<Post> for ServicePost {
             },
             tags: match self.tags {
                 Some(v) => v
-                    .iter()
+                    .into_iter()
                     .map(|v| Tag {
-                        title: v.title.to_owned(),
+                        title: v.title,
                         //TODO: Change to ID
                         slug: v.id.to_string(),
                     })
                     .collect(),
-                None => Vec::<Tag>::new(),
+                None => vec![],
             },
         }
     }

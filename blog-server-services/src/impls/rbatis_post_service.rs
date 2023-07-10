@@ -106,8 +106,8 @@ impl Post {
         impled!()
     }
 
-    fn apply_tags(&mut self, tags: &Vec<Tag>) {
-        self.tags = Some(tags.clone());
+    fn apply_tags(&mut self, tags: Vec<Tag>) {
+        self.tags = Some(tags);
     }
 }
 
@@ -124,18 +124,19 @@ impl PostService for RbatisPostService {
         let mut posts = Post::select_posts(&self.rb, limit, offset).await?;
 
         let post_ids = posts.iter().map(|post| post.id).collect();
-        let grouped_tags: HashMap<i64, Vec<Tag>> = Post::select_tags_by_posts(&self.rb, post_ids)
-            .await?
-            .into_iter()
-            .fold(HashMap::new(), |mut map, dto| {
-                let key = dto.post_id;
-                let tag = dto.into();
-                map.entry(key).or_insert_with(Vec::new).push(tag);
-                map
-            });
+        let mut grouped_tags: HashMap<i64, Vec<Tag>> =
+            Post::select_tags_by_posts(&self.rb, post_ids)
+                .await?
+                .into_iter()
+                .fold(HashMap::new(), |mut map, dto| {
+                    let key = dto.post_id;
+                    let tag = dto.into();
+                    map.entry(key).or_insert_with(Vec::new).push(tag);
+                    map
+                });
 
         for post in posts.iter_mut() {
-            match grouped_tags.get(&post.id) {
+            match grouped_tags.remove(&post.id) {
                 Some(tags) => post.apply_tags(tags),
                 None => {}
             }
@@ -154,7 +155,7 @@ impl PostService for RbatisPostService {
                     .into_iter()
                     .map(|tag| tag.into())
                     .collect();
-                post.apply_tags(&post_tags);
+                post.apply_tags(post_tags);
 
                 Ok(Some(post))
             }
@@ -172,7 +173,7 @@ impl PostService for RbatisPostService {
                     .into_iter()
                     .map(|tag| tag.into())
                     .collect();
-                post.apply_tags(&post_tags);
+                post.apply_tags(post_tags);
 
                 Ok(Some(post))
             }
