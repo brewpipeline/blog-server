@@ -39,6 +39,16 @@ impl Post {
     }
     #[py_sql(
         "
+        SELECT COUNT(1) \
+        FROM post \
+        WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
+    "
+    )]
+    async fn count_by_query(rb: &RBatis, query: &String) -> rbatis::Result<i64> {
+        impled!()
+    }
+    #[py_sql(
+        "
         SELECT \
             post.*, \
             author.slug AS author_slug, \
@@ -105,6 +115,32 @@ impl Post {
     async fn select_tags_by_posts(rb: &RBatis, post_ids: Vec<i64>) -> rbatis::Result<Vec<TagDto>> {
         impled!()
     }
+    #[py_sql(
+        "
+        SELECT \
+            post.*, \
+            author.slug AS author_slug, \
+            author.first_name AS author_first_name, \
+            author.last_name AS author_last_name, \
+            string_agg(concat_ws(',', tag.slug, tag.title), ';') as tags \
+        FROM post \
+        JOIN author ON post.author_id = author.id \
+        LEFT JOIN post_tag ON post_tag.post_id  = post.id \
+        LEFT JOIN tag ON tag.id = post_tag.tag_id \
+        WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
+        GROUP BY post.id, author.slug, author.first_name, author.last_name \
+        LIMIT #{limit} \
+        OFFSET #{offset} \
+    "
+    )]
+    async fn select_all_by_query_with_limit_and_offset(
+        rb: &RBatis,
+        query: &String,
+        limit: &i64,
+        offset: &i64,
+    ) -> rbatis::Result<Vec<Post>> {
+        impled!()
+    }
 
     fn apply_tags(&mut self, tags: Vec<Tag>) {
         self.tags = tags;
@@ -134,6 +170,17 @@ impl RbatisPostService {
 
 #[async_trait]
 impl PostService for RbatisPostService {
+    async fn posts_count_by_query(&self, query: &String) -> DResult<i64> {
+        Ok(Post::count_by_query(&self.rb, query).await?)
+    }
+    async fn posts_by_query(
+        &self,
+        query: &String,
+        offset: &i64,
+        limit: &i64,
+    ) -> DResult<Vec<Post>> {
+        Ok(Post::select_all_by_query_with_limit_and_offset(&self.rb, query, limit, offset).await?)
+    }
     async fn posts_count(&self) -> DResult<i64> {
         Ok(Post::count(&self.rb).await?)
     }

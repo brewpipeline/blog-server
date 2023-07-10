@@ -25,6 +25,13 @@ pub struct Author {
 
 #[async_trait]
 pub trait AuthorService: Send + Sync {
+    async fn authors_count_by_query(&self, query: &String) -> DResult<i64>;
+    async fn authors_by_query(
+        &self,
+        query: &String,
+        offset: &i64,
+        limit: &i64,
+    ) -> DResult<Vec<Author>>;
     async fn authors_count(&self) -> DResult<i64>;
     async fn authors(&self, offset: &i64, limit: &i64) -> DResult<Vec<Author>>;
     async fn author_by_id(&self, id: &i64) -> DResult<Option<Author>>;

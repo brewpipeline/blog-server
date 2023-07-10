@@ -80,6 +80,23 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                         .and_path("/posts")
                         .and_handler(posts::http_handler),
                 )
+                .scoped("/search", |r| {
+                    r.route(
+                        route::first::Route::with_method(&hyper::Method::GET)
+                            .and_path("/posts/{query:[^/]*}")
+                            .and_handler(posts::http_handler),
+                    )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::GET)
+                            .and_path("/authors/{query:[^/]*}")
+                            .and_handler(authors::http_handler),
+                    )
+                })
+                .route(
+                    route::first::Route::with_method(&hyper::Method::GET)
+                        .and_path("/comments/{post_slug:[^/]*}")
+                        .and_handler(comments::http_handler),
+                )
                 .route(
                     route::first::Route::with_method(&hyper::Method::POST)
                         .and_path("/login")
