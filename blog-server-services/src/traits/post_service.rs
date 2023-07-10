@@ -27,6 +27,9 @@ pub struct Post {
 
 #[async_trait]
 pub trait PostService: Send + Sync {
+    async fn posts_count_by_query(&self, query: &String) -> DResult<i64>;
+    async fn posts_by_query(&self, query: &String, offset: &i64, limit: &i64)
+        -> DResult<Vec<Post>>;
     async fn posts_count(&self) -> DResult<i64>;
     async fn posts(&self, offset: &i64, limit: &i64) -> DResult<Vec<Post>>;
     async fn post_by_id(&self, id: &i64) -> DResult<Option<Post>>;

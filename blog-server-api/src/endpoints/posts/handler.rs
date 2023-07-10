@@ -7,9 +7,9 @@ use blog_server_services::traits::post_service::PostService;
 use screw_api::request::ApiRequest;
 use screw_api::response::ApiResponse;
 use std::sync::Arc;
-use tokio::join;
 
 async fn handler(
+    query: Option<String>,
     offset: Option<i64>,
     limit: Option<i64>,
     post_service: Arc<Box<dyn PostService>>,
@@ -17,10 +17,17 @@ async fn handler(
     let offset = offset.unwrap_or(0).max(0);
     let limit = limit.unwrap_or(50).max(0).min(50);
 
-    let (posts_result, total_result) = join!(
-        post_service.posts(&offset, &limit),
-        post_service.posts_count(),
-    );
+    let (posts_result, total_result) = if let Some(query) = query {
+        tokio::join!(
+            post_service.posts_by_query(&query, &offset, &limit),
+            post_service.posts_count_by_query(&query),
+        )
+    } else {
+        tokio::join!(
+            post_service.posts(&offset, &limit),
+            post_service.posts_count(),
+        )
+    };
 
     let posts = posts_result
         .map_err(|e| DatabaseError {
@@ -50,6 +57,7 @@ where
 {
     ApiResponse::from(
         handler(
+            request.content.query,
             request.content.offset,
             request.content.limit,
             request.content.post_service,

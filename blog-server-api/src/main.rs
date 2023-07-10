@@ -26,8 +26,36 @@ async fn main() -> screw_components::dyn_result::DResult<()> {
     Ok(())
 }
 
+#[derive(Debug)]
+struct DbgRbatisIntercept;
+
+impl rbatis::intercept::Intercept for DbgRbatisIntercept {
+    fn before(
+        &self,
+        _task_id: i64,
+        _rb: &dyn rbatis::executor::Executor,
+        sql: &mut String,
+        args: &mut Vec<rbs::Value>,
+    ) -> Result<(), rbatis::Error> {
+        dbg!(sql);
+        dbg!(args);
+        Ok(())
+    }
+}
+
 pub async fn init_db() -> rbatis::RBatis {
-    let rb = rbatis::RBatis::new();
+    let opt = rbatis::RBatisOption {
+        intercepts: {
+            let intercepts: rbatis::dark_std::sync::SyncVec<
+                std::sync::Arc<dyn rbatis::intercept::Intercept>,
+            > = rbatis::dark_std::sync::SyncVec::new();
+            if cfg!(debug_assertions) {
+                intercepts.push(std::sync::Arc::new(DbgRbatisIntercept));
+            }
+            intercepts
+        },
+    };
+    let rb = rbatis::RBatis::new_with_opt(opt);
     rb.init(
         rbdc_pg::driver::PgDriver {},
         std::env::var("PG_URL")

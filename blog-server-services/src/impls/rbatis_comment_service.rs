@@ -33,7 +33,7 @@ impl Comment {
         OFFSET #{offset} \
     "
     )]
-    async fn select_all_with_post_id_and_limit_and_offset(
+    async fn select_all_by_post_id_with_limit_and_offset(
         rb: &RBatis,
         post_id: &i64,
         limit: &i64,
@@ -59,7 +59,7 @@ impl CommentService for RbatisCommentService {
         limit: &i64,
     ) -> DResult<Vec<Comment>> {
         Ok(
-            Comment::select_all_with_post_id_and_limit_and_offset(&self.rb, post_id, limit, offset)
+            Comment::select_all_by_post_id_with_limit_and_offset(&self.rb, post_id, limit, offset)
                 .await?,
         )
     }
