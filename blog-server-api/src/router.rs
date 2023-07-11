@@ -1,6 +1,6 @@
 use super::endpoints::*;
 use super::extensions::*;
-use screw_api::json_converter::*;
+use screw_api::json::*;
 use screw_api::request::*;
 use screw_api::response::*;
 use screw_core::request::*;
@@ -44,13 +44,10 @@ async fn api_not_found_fallback_handler<Extensions>(
 pub fn make_router<Extensions: ExtensionsProviderType>(
 ) -> router::second::Router<Request<Extensions>, Response> {
     router::first::Router::with_fallback_handler(not_found_fallback_handler).and_routes(|r| {
-        r.scoped_convertable(
+        r.scoped_middleware(
             "/api",
-            routes::Converters {
-                request_converter: JsonApiRequestConverter,
-                response_converter: JsonApiResponseConverter {
-                    pretty_printed: cfg!(debug_assertions),
-                },
+            JsonApiMiddlewareConverter {
+                pretty_printed: cfg!(debug_assertions),
             },
             |r| {
                 r.scoped("/author", |r| {

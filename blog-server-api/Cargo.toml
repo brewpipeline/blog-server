@@ -17,7 +17,7 @@ package = "screw-core"
 git = "https://github.com/Tikitko/screw.git"
 #path = "../../screw/screw-api"
 package = "screw-api"
-features = ["ws", "json_converter"]
+features = ["json"]
 
 [dependencies.screw-ws]
 git = "https://github.com/Tikitko/screw.git"
