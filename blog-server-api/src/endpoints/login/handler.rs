@@ -2,18 +2,14 @@ use super::request_content::{LoginRequestContent, LoginRequestContentData};
 use super::response_content_failure::LoginResponseContentFailure;
 use super::response_content_failure::LoginResponseContentFailure::*;
 use super::response_content_success::LoginResponseContentSuccess;
-use crate::extensions::Resolve;
 use crate::utils::{auth, password};
-use blog_server_services::traits::author_service::AuthorService;
 use password_hash::Error;
-use screw_api::request::ApiRequest;
-use screw_api::response::ApiResponse;
-use screw_components::dyn_result::DResult;
-use std::sync::Arc;
 
-async fn handler(
-    login_data: DResult<LoginRequestContentData>,
-    author_service: Arc<Box<dyn AuthorService>>,
+pub async fn http_handler(
+    (LoginRequestContent {
+        login_data,
+        author_service,
+    },): (LoginRequestContent,),
 ) -> Result<LoginResponseContentSuccess, LoginResponseContentFailure> {
     let LoginRequestContentData { slug, password } = login_data.map_err(|e| ParamsDecodeError {
         reason: e.to_string(),
@@ -43,13 +39,4 @@ async fn handler(
     })?;
 
     Ok(token.into())
-}
-
-pub async fn http_handler<Extensions>(
-    request: ApiRequest<LoginRequestContent, Extensions>,
-) -> ApiResponse<LoginResponseContentSuccess, LoginResponseContentFailure>
-where
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>>,
-{
-    ApiResponse::from(handler(request.content.login_data, request.content.author_service).await)
 }

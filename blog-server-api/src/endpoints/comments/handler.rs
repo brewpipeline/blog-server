@@ -2,19 +2,15 @@ use super::request_content::CommentsRequestContent;
 use super::response_content_failure::CommentsResponseContentFailure;
 use super::response_content_failure::CommentsResponseContentFailure::*;
 use super::response_content_success::CommentsResponseContentSuccess;
-use crate::extensions::Resolve;
-use blog_server_services::traits::comment_service::CommentService;
-use blog_server_services::traits::post_service::PostService;
-use screw_api::request::ApiRequest;
-use screw_api::response::ApiResponse;
-use std::sync::Arc;
 
-async fn handler(
-    post_slug: String,
-    offset: Option<i64>,
-    limit: Option<i64>,
-    comment_service: Arc<Box<dyn CommentService>>,
-    post_service: Arc<Box<dyn PostService>>,
+pub async fn http_handler(
+    (CommentsRequestContent {
+        post_slug,
+        offset,
+        limit,
+        comment_service,
+        post_service,
+    },): (CommentsRequestContent,),
 ) -> Result<CommentsResponseContentSuccess, CommentsResponseContentFailure> {
     if post_slug.is_empty() {
         return Err(PostSlugEmpty);
@@ -54,22 +50,4 @@ async fn handler(
         offset,
         limit,
     })
-}
-
-pub async fn http_handler<Extensions>(
-    request: ApiRequest<CommentsRequestContent, Extensions>,
-) -> ApiResponse<CommentsResponseContentSuccess, CommentsResponseContentFailure>
-where
-    Extensions: Resolve<Arc<Box<dyn CommentService>>> + Resolve<Arc<Box<dyn PostService>>>,
-{
-    ApiResponse::from(
-        handler(
-            request.content.post_slug,
-            request.content.offset,
-            request.content.limit,
-            request.content.comment_service,
-            request.content.post_service,
-        )
-        .await,
-    )
 }
