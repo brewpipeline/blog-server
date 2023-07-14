@@ -2,15 +2,12 @@ use super::request_content::AuthorRequestContent;
 use super::response_content_failure::AuthorResponseContentFailure;
 use super::response_content_failure::AuthorResponseContentFailure::*;
 use super::response_content_success::AuthorResponseContentSuccess;
-use crate::extensions::Resolve;
-use blog_server_services::traits::author_service::AuthorService;
-use screw_api::request::ApiRequest;
-use screw_api::response::ApiResponse;
-use std::sync::Arc;
 
-async fn handler(
-    slug: String,
-    author_service: Arc<Box<dyn AuthorService>>,
+pub async fn http_handler(
+    (AuthorRequestContent {
+        slug,
+        author_service,
+    },): (AuthorRequestContent,),
 ) -> Result<AuthorResponseContentSuccess, AuthorResponseContentFailure> {
     if slug.is_empty() {
         return Err(SlugEmpty);
@@ -25,13 +22,4 @@ async fn handler(
         .ok_or(NotFound)?;
 
     Ok(author.into())
-}
-
-pub async fn http_handler<Extensions>(
-    request: ApiRequest<AuthorRequestContent, Extensions>,
-) -> ApiResponse<AuthorResponseContentSuccess, AuthorResponseContentFailure>
-where
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>>,
-{
-    ApiResponse::from(handler(request.content.slug, request.content.author_service).await)
 }
