@@ -1,7 +1,7 @@
 use blog_server_services::traits::author_service::Author as ServiceAuthor;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShortAuthor {
     pub slug: String,

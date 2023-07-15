@@ -5,6 +5,7 @@ pub enum CreatePostContentFailure {
     DatabaseError { reason: String },
     ValidationError { reason: String },
     AlreadyExists,
+    InsertFailed,
 }
 
 impl ApiResponseContentBase for CreatePostContentFailure {
@@ -15,6 +16,7 @@ impl ApiResponseContentBase for CreatePostContentFailure {
             }
             CreatePostContentFailure::AlreadyExists => &StatusCode::BAD_REQUEST,
             CreatePostContentFailure::ValidationError { reason: _ } => &StatusCode::BAD_REQUEST,
+            CreatePostContentFailure::InsertFailed => &StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -25,6 +27,7 @@ impl ApiResponseContentFailure for CreatePostContentFailure {
             CreatePostContentFailure::DatabaseError { reason: _ } => "POST_DATABASE_ERROR",
             CreatePostContentFailure::ValidationError { reason: _ } => "POST_VALIDATION_ERROR",
             CreatePostContentFailure::AlreadyExists => "POST_ALREASY_EXISTS",
+            CreatePostContentFailure::InsertFailed => "COULD_NOT_FIND_CREATED_POST",
         }
     }
 
@@ -43,6 +46,7 @@ impl ApiResponseContentFailure for CreatePostContentFailure {
             CreatePostContentFailure::AlreadyExists => {
                 String::from("post with specified ID already exists")
             }
+            CreatePostContentFailure::InsertFailed => String::from("error while creating new post"),
         })
     }
 }

@@ -79,7 +79,7 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                 )
                 .route(
                     route::first::Route::with_method(&hyper::Method::POST)
-                        .and_path("/post/new")
+                        .and_path("/post")
                         .and_handler(create_post::http_handler),
                 )
                 .scoped("/search", |r| {

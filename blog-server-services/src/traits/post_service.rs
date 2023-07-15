@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub struct Tag {
     pub id: i64,
+    pub slug: String,
     pub title: String,
 }
 
@@ -16,7 +17,7 @@ pub struct BasePost {
     pub slug: String,
     pub summary: String,
     pub published: u8,
-    pub created_at: i64,
+    pub created_at: u64,
     pub content: Option<String>,
 }
 

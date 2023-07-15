@@ -1,6 +1,6 @@
 use crate::traits::post_service::{BasePost, Post, PostService, Tag};
 use rbatis::rbatis::RBatis;
-use screw_components::dyn_result::{DError, DResult};
+use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -15,6 +15,7 @@ impl_insert!(BasePost {}, "post");
 pub struct TagDto {
     post_id: i64,
     id: i64,
+    slug: String,
     title: String,
 }
 
@@ -23,6 +24,7 @@ impl Into<Tag> for TagDto {
         Tag {
             id: self.id,
             title: self.title,
+            slug: self.slug,
         }
     }
 }
@@ -102,6 +104,7 @@ impl Post {
         SELECT \
             tag.id, \
             tag.title, \
+            tag.slug, \
             post_tag.post_id \
         FROM post_tag \
         JOIN tag ON tag.id = post_tag.tag_id \
@@ -148,6 +151,17 @@ struct RbatisPostService {
 }
 
 impl RbatisPostService {
+    #[py_sql(
+        "
+        insert into post (author_id,title,slug,summary,published,created_at,content) VALUES 
+        (#{post.author_id},#{post.title},#{post.slug},#{post.summary},#{post.published},to_timestamp(#{post.created_at}),#{post.content})
+        returning id
+    "
+    )]
+    async fn test_insert(rb: &RBatis, post: &BasePost) -> rbatis::Result<i64> {
+        impled!()
+    }
+
     async fn saturate_with_tags(&self, post_option: Option<Post>) -> DResult<Option<Post>> {
         match post_option {
             None => Ok(None),
@@ -227,11 +241,7 @@ impl PostService for RbatisPostService {
     }
 
     async fn create_post(&self, post: &BasePost) -> DResult<i64> {
-        let insert_result = BasePost::insert(&mut self.rb.clone(), post).await?;
-        let last_insert_id = insert_result
-            .last_insert_id
-            .as_i64()
-            .ok_or::<DError>("wrond last_insert_id".into())?;
-        Ok(last_insert_id)
+        let test = RbatisPostService::test_insert(&self.rb, post).await?;
+        Ok(test)
     }
 }
