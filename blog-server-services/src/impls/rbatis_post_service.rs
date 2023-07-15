@@ -160,7 +160,7 @@ impl RbatisPostService {
         RETURNING id
     "
     )]
-    async fn test_insert(rb: &RBatis, post: &BasePost) -> rbatis::Result<i64> {
+    async fn insert_new_post(rb: &RBatis, post: &BasePost) -> rbatis::Result<i64> {
         impled!()
     }
 
@@ -243,7 +243,7 @@ impl PostService for RbatisPostService {
     }
 
     async fn create_post(&self, post: &BasePost) -> DResult<i64> {
-        let test = RbatisPostService::test_insert(&self.rb, post).await?;
+        let test = RbatisPostService::insert_new_post(&self.rb, post).await?;
         Ok(test)
     }
 }
