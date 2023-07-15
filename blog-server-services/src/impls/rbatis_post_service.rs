@@ -153,9 +153,11 @@ struct RbatisPostService {
 impl RbatisPostService {
     #[py_sql(
         "
-        insert into post (author_id,title,slug,summary,published,created_at,content) VALUES 
+        INSERT INTO post 
+        (author_id,title,slug,summary,published,created_at,content) 
+        VALUES 
         (#{post.author_id},#{post.title},#{post.slug},#{post.summary},#{post.published},to_timestamp(#{post.created_at}),#{post.content})
-        returning id
+        RETURNING id
     "
     )]
     async fn test_insert(rb: &RBatis, post: &BasePost) -> rbatis::Result<i64> {
