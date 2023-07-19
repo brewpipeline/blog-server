@@ -12,6 +12,7 @@ pub struct CreatePost {
     pub published: u8,
     pub content: Option<String>,
     pub tags: Vec<ShortTag>,
+    pub author_id: u64, //TODO replace with authorized user ID
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -21,9 +22,9 @@ pub struct ShortTag {
 }
 
 impl CreatePost {
-    pub fn into(self, author_id: u64) -> BasePost {
+    pub fn into(self) -> BasePost {
         BasePost {
-            author_id,
+            author_id: self.author_id,
             created_at: time_utils::now_as_secs(),
             title: self.title,
             slug: self.slug,
