@@ -21,7 +21,7 @@ pub struct ShortTag {
 }
 
 impl CreatePost {
-    pub fn into(self, author_id: i64) -> BasePost {
+    pub fn into(self, author_id: u64) -> BasePost {
         BasePost {
             author_id,
             created_at: time_utils::now_as_secs(),

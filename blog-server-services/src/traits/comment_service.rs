@@ -24,10 +24,10 @@ pub struct Comment {
 
 #[async_trait]
 pub trait CommentService: Send + Sync {
-    async fn comments_count_by_post_id(&self, post_id: &i64) -> DResult<i64>;
+    async fn comments_count_by_post_id(&self, post_id: &u64) -> DResult<i64>;
     async fn comments_by_post_id(
         &self,
-        post_id: &i64,
+        post_id: &u64,
         offset: &i64,
         limit: &i64,
     ) -> DResult<Vec<Comment>>;

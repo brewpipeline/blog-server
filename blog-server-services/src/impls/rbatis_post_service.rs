@@ -13,8 +13,8 @@ impl_insert!(BasePost {}, "post");
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct TagDto {
-    post_id: i64,
-    id: i64,
+    post_id: u64,
+    id: u64,
     slug: String,
     title: String,
 }
@@ -62,7 +62,7 @@ impl Post {
         LIMIT 1 \
     "
     )]
-    async fn select_by_id(rb: &RBatis, id: &i64) -> rbatis::Result<Option<Post>> {
+    async fn select_by_id(rb: &RBatis, id: &u64) -> rbatis::Result<Option<Post>> {
         impled!()
     }
     #[py_sql(
@@ -115,7 +115,7 @@ impl Post {
                 ) \
     "
     )]
-    async fn select_tags_by_posts(rb: &RBatis, post_ids: Vec<i64>) -> rbatis::Result<Vec<TagDto>> {
+    async fn select_tags_by_posts(rb: &RBatis, post_ids: Vec<u64>) -> rbatis::Result<Vec<TagDto>> {
         impled!()
     }
     #[py_sql(
@@ -160,7 +160,7 @@ impl RbatisPostService {
         RETURNING id
     "
     )]
-    async fn insert_new_post(rb: &RBatis, post: &BasePost) -> rbatis::Result<i64> {
+    async fn insert_new_post(rb: &RBatis, post: &BasePost) -> rbatis::Result<u64> {
         impled!()
     }
 
@@ -186,7 +186,7 @@ impl RbatisPostService {
 
         let post_ids = posts.iter().map(|post| post.id).collect();
 
-        let mut grouped_tags: HashMap<i64, Vec<Tag>> =
+        let mut grouped_tags: HashMap<u64, Vec<Tag>> =
             Post::select_tags_by_posts(&self.rb, post_ids)
                 .await?
                 .into_iter()
@@ -232,7 +232,7 @@ impl PostService for RbatisPostService {
         RbatisPostService::saturate_posts_with_tags(&self, posts).await
     }
 
-    async fn post_by_id(&self, id: &i64) -> DResult<Option<Post>> {
+    async fn post_by_id(&self, id: &u64) -> DResult<Option<Post>> {
         let post_option = Post::select_by_id(&self.rb, id).await?;
         RbatisPostService::saturate_with_tags(&self, post_option).await
     }
@@ -242,8 +242,8 @@ impl PostService for RbatisPostService {
         RbatisPostService::saturate_with_tags(&self, post_option).await
     }
 
-    async fn create_post(&self, post: &BasePost) -> DResult<i64> {
-        let test = RbatisPostService::insert_new_post(&self.rb, post).await?;
-        Ok(test)
+    async fn create_post(&self, post: &BasePost) -> DResult<u64> {
+        let inserted_id = RbatisPostService::insert_new_post(&self.rb, post).await?;
+        Ok(inserted_id)
     }
 }

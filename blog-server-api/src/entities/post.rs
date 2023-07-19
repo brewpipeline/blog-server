@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Post {
-    pub id: i64,
+    pub id: u64,
     pub title: String,
     pub slug: String,
     pub summary: String,
