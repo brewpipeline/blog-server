@@ -24,10 +24,12 @@ impl ApiResponseContentBase for CreatePostContentFailure {
 impl ApiResponseContentFailure for CreatePostContentFailure {
     fn identifier(&self) -> &'static str {
         match self {
-            CreatePostContentFailure::DatabaseError { reason: _ } => "POST_DATABASE_ERROR",
-            CreatePostContentFailure::ValidationError { reason: _ } => "POST_VALIDATION_ERROR",
-            CreatePostContentFailure::AlreadyExists => "POST_ALREASY_EXISTS",
-            CreatePostContentFailure::InsertFailed => "COULD_NOT_FIND_CREATED_POST",
+            CreatePostContentFailure::DatabaseError { reason: _ } => "CREATE_POST_DATABASE_ERROR",
+            CreatePostContentFailure::ValidationError { reason: _ } => {
+                "CREATE_POST_VALIDATION_ERROR"
+            }
+            CreatePostContentFailure::AlreadyExists => "CREATE_POST_ALREASY_EXISTS",
+            CreatePostContentFailure::InsertFailed => "CREATE_POST_COULD_NOT_FIND_CREATED_POST",
         }
     }
 
