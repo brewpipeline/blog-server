@@ -18,7 +18,7 @@ pub struct BaseAuthor {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct Author {
-    pub id: i64,
+    pub id: u64,
     #[serde(flatten)]
     pub base: BaseAuthor,
 }
@@ -34,7 +34,7 @@ pub trait AuthorService: Send + Sync {
     ) -> DResult<Vec<Author>>;
     async fn authors_count(&self) -> DResult<i64>;
     async fn authors(&self, offset: &i64, limit: &i64) -> DResult<Vec<Author>>;
-    async fn author_by_id(&self, id: &i64) -> DResult<Option<Author>>;
+    async fn author_by_id(&self, id: &u64) -> DResult<Option<Author>>;
     async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>>;
     async fn create_author(&self, author: &BaseAuthor) -> DResult<i64>;
 }

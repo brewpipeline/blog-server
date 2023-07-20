@@ -1,6 +1,6 @@
 use crate::traits::post_service::{BasePost, Post, PostService, Tag};
 use rbatis::rbatis::RBatis;
-use screw_components::dyn_result::{DError, DResult};
+use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -13,8 +13,9 @@ impl_insert!(BasePost {}, "post");
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct TagDto {
-    post_id: i64,
-    id: i64,
+    post_id: u64,
+    id: u64,
+    slug: String,
     title: String,
 }
 
@@ -23,6 +24,7 @@ impl Into<Tag> for TagDto {
         Tag {
             id: self.id,
             title: self.title,
+            slug: self.slug,
         }
     }
 }
@@ -60,7 +62,7 @@ impl Post {
         LIMIT 1 \
     "
     )]
-    async fn select_by_id(rb: &RBatis, id: &i64) -> rbatis::Result<Option<Post>> {
+    async fn select_by_id(rb: &RBatis, id: &u64) -> rbatis::Result<Option<Post>> {
         impled!()
     }
     #[py_sql(
@@ -102,6 +104,7 @@ impl Post {
         SELECT \
             tag.id, \
             tag.title, \
+            tag.slug, \
             post_tag.post_id \
         FROM post_tag \
         JOIN tag ON tag.id = post_tag.tag_id \
@@ -112,7 +115,7 @@ impl Post {
                 ) \
     "
     )]
-    async fn select_tags_by_posts(rb: &RBatis, post_ids: Vec<i64>) -> rbatis::Result<Vec<TagDto>> {
+    async fn select_tags_by_posts(rb: &RBatis, post_ids: Vec<u64>) -> rbatis::Result<Vec<TagDto>> {
         impled!()
     }
     #[py_sql(
@@ -148,6 +151,19 @@ struct RbatisPostService {
 }
 
 impl RbatisPostService {
+    #[py_sql(
+        "
+        INSERT INTO post 
+        (author_id,title,slug,summary,published,created_at,content) 
+        VALUES 
+        (#{post.author_id},#{post.title},#{post.slug},#{post.summary},#{post.published},to_timestamp(#{post.created_at}),#{post.content})
+        RETURNING id
+    "
+    )]
+    async fn insert_new_post(rb: &RBatis, post: &BasePost) -> rbatis::Result<u64> {
+        impled!()
+    }
+
     async fn saturate_with_tags(&self, post_option: Option<Post>) -> DResult<Option<Post>> {
         match post_option {
             None => Ok(None),
@@ -170,7 +186,7 @@ impl RbatisPostService {
 
         let post_ids = posts.iter().map(|post| post.id).collect();
 
-        let mut grouped_tags: HashMap<i64, Vec<Tag>> =
+        let mut grouped_tags: HashMap<u64, Vec<Tag>> =
             Post::select_tags_by_posts(&self.rb, post_ids)
                 .await?
                 .into_iter()
@@ -216,7 +232,7 @@ impl PostService for RbatisPostService {
         RbatisPostService::saturate_posts_with_tags(&self, posts).await
     }
 
-    async fn post_by_id(&self, id: &i64) -> DResult<Option<Post>> {
+    async fn post_by_id(&self, id: &u64) -> DResult<Option<Post>> {
         let post_option = Post::select_by_id(&self.rb, id).await?;
         RbatisPostService::saturate_with_tags(&self, post_option).await
     }
@@ -226,12 +242,8 @@ impl PostService for RbatisPostService {
         RbatisPostService::saturate_with_tags(&self, post_option).await
     }
 
-    async fn create_post(&self, post: &BasePost) -> DResult<i64> {
-        let insert_result = BasePost::insert(&mut self.rb.clone(), post).await?;
-        let last_insert_id = insert_result
-            .last_insert_id
-            .as_i64()
-            .ok_or::<DError>("wrond last_insert_id".into())?;
-        Ok(last_insert_id)
+    async fn create_post(&self, post: &BasePost) -> DResult<u64> {
+        let inserted_id = RbatisPostService::insert_new_post(&self.rb, post).await?;
+        Ok(inserted_id)
     }
 }

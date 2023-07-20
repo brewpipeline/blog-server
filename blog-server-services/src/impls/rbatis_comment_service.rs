@@ -16,7 +16,7 @@ impl Comment {
         WHERE post_comment.post_id = #{post_id}
     "
     )]
-    async fn count_by_post_id(rb: &RBatis, post_id: &i64) -> rbatis::Result<i64> {
+    async fn count_by_post_id(rb: &RBatis, post_id: &u64) -> rbatis::Result<i64> {
         impled!()
     }
     #[py_sql(
@@ -35,7 +35,7 @@ impl Comment {
     )]
     async fn select_all_by_post_id_with_limit_and_offset(
         rb: &RBatis,
-        post_id: &i64,
+        post_id: &u64,
         limit: &i64,
         offset: &i64,
     ) -> rbatis::Result<Vec<Comment>> {
@@ -49,12 +49,12 @@ struct RbatisCommentService {
 
 #[async_trait]
 impl CommentService for RbatisCommentService {
-    async fn comments_count_by_post_id(&self, post_id: &i64) -> DResult<i64> {
+    async fn comments_count_by_post_id(&self, post_id: &u64) -> DResult<i64> {
         Ok(Comment::count_by_post_id(&self.rb, post_id).await?)
     }
     async fn comments_by_post_id(
         &self,
-        post_id: &i64,
+        post_id: &u64,
         offset: &i64,
         limit: &i64,
     ) -> DResult<Vec<Comment>> {

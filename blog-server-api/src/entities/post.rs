@@ -1,14 +1,15 @@
 use super::*;
 use blog_server_services::traits::post_service::Post as ServicePost;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Post {
+    pub id: u64,
     pub title: String,
     pub slug: String,
     pub summary: String,
-    pub created_at: i64,
+    pub created_at: u64,
     pub content: Option<String>,
     pub short_author: ShortAuthor,
     pub tags: Vec<Tag>,
@@ -17,6 +18,7 @@ pub struct Post {
 impl Into<Post> for ServicePost {
     fn into(self) -> Post {
         Post {
+            id: self.id,
             title: self.base.title,
             slug: self.base.slug,
             summary: self.base.summary,
@@ -31,9 +33,9 @@ impl Into<Post> for ServicePost {
                 .tags
                 .into_iter()
                 .map(|v| Tag {
+                    id: v.id,
                     title: v.title,
-                    //TODO: Change to ID
-                    slug: v.id.to_string(),
+                    slug: v.slug,
                 })
                 .collect(),
         }
