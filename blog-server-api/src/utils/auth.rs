@@ -10,7 +10,7 @@ use std::sync::Arc;
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct Data {
-    author_id: i64,
+    author_id: u64,
     exp: u64,
 }
 

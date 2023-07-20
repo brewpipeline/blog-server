@@ -7,7 +7,7 @@ pub fn create_rbatis_author_service(rb: RBatis) -> Box<dyn AuthorService> {
 }
 
 impl_insert!(BaseAuthor {}, "author");
-impl_select!(Author {select_by_id(id: &i64) -> Option => 
+impl_select!(Author {select_by_id(id: &u64) -> Option => 
     "`WHERE id = #{id} LIMIT 1`"});
 impl_select!(Author {select_by_slug(slug: &String) -> Option => 
     "`WHERE slug = #{slug} LIMIT 1`"});
@@ -67,7 +67,7 @@ impl AuthorService for RbatisAuthorService {
     async fn authors(&self, offset: &i64, limit: &i64) -> DResult<Vec<Author>> {
         Ok(Author::select_all_with_offset_and_limit(&mut self.rb.clone(), offset, limit).await?)
     }
-    async fn author_by_id(&self, id: &i64) -> DResult<Option<Author>> {
+    async fn author_by_id(&self, id: &u64) -> DResult<Option<Author>> {
         Ok(Author::select_by_id(&mut self.rb.clone(), id).await?)
     }
     async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>> {

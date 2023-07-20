@@ -6,6 +6,7 @@ pub enum CreatePostContentFailure {
     ValidationError { reason: String },
     AlreadyExists,
     InsertFailed,
+    Unauthorized { reason: String },
 }
 
 impl ApiResponseContentBase for CreatePostContentFailure {
@@ -16,6 +17,7 @@ impl ApiResponseContentBase for CreatePostContentFailure {
             }
             CreatePostContentFailure::AlreadyExists => &StatusCode::BAD_REQUEST,
             CreatePostContentFailure::ValidationError { reason: _ } => &StatusCode::BAD_REQUEST,
+            CreatePostContentFailure::Unauthorized { reason: _ } => &StatusCode::UNAUTHORIZED,
             CreatePostContentFailure::InsertFailed => &StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -30,6 +32,7 @@ impl ApiResponseContentFailure for CreatePostContentFailure {
             }
             CreatePostContentFailure::AlreadyExists => "CREATE_POST_ALREASY_EXISTS",
             CreatePostContentFailure::InsertFailed => "CREATE_POST_COULD_NOT_FIND_CREATED_POST",
+            CreatePostContentFailure::Unauthorized { reason: _ } => "CREATE_POST_UNAUTHORIZED",
         }
     }
 
@@ -40,6 +43,13 @@ impl ApiResponseContentFailure for CreatePostContentFailure {
                     format!("database error: {}", reason)
                 } else {
                     "internal database error".to_string()
+                }
+            }
+            CreatePostContentFailure::Unauthorized { reason } => {
+                if cfg!(debug_assertions) {
+                    format!("unauthorized error: {}", reason)
+                } else {
+                    "unauthorized error".to_string()
                 }
             }
             CreatePostContentFailure::ValidationError { reason } => {

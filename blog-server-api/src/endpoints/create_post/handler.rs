@@ -7,13 +7,18 @@ pub async fn http_handler(
     (CreatePostRequestContent {
         new_post_data,
         post_service,
+        auth_author_future,
     },): (CreatePostRequestContent,),
 ) -> Result<CreatePostContentSuccess, CreatePostContentFailure> {
+    let author = auth_author_future.await.map_err(|e| Unauthorized {
+        reason: e.to_string(),
+    })?;
+
     let base_post = new_post_data
         .map_err(|e| ValidationError {
             reason: e.to_string(),
         })?
-        .into();
+        .into(author.id);
 
     let inserted_id = post_service
         .create_post(&base_post)
