@@ -15,3 +15,4 @@ async-trait = { version = "0.1.68" }
 serde = { version = "1.0.160", features = ["derive"] }
 serde_repr = { version = "0.1.12" }
 serde_json = { version = "1.0.96" }
+translit = { version = "0.5.0" }
