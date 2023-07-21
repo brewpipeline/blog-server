@@ -1,14 +1,25 @@
-use crate::traits::post_service::{BasePost, Post, PostService, Tag};
+use crate::{
+    traits::post_service::{BasePost, Post, PostService, Tag},
+    utility::transliteration,
+};
 use rbatis::rbatis::RBatis;
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub fn create_rbatis_post_service(rb: RBatis) -> Box<dyn PostService> {
     Box::new(RbatisPostService { rb })
 }
 
 impl_insert!(BasePost {}, "post");
+impl_insert!(NewTag {}, "tag");
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct NewTag {
+    slug: String,
+    title: String,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -164,6 +175,24 @@ impl RbatisPostService {
         impled!()
     }
 
+    #[py_sql(
+        "
+        SELECT \
+            tag.id, \
+            tag.title, \
+            tag.slug \
+        FROM tag \
+        WHERE \
+            tag.slug IN (
+                trim ',': for _,slug in slugs:
+                    #{slug},
+                ) \
+    "
+    )]
+    async fn get_tags_by_slugs(rb: &RBatis, slugs: &Vec<String>) -> rbatis::Result<Vec<Tag>> {
+        impled!()
+    }
+
     async fn saturate_with_tags(&self, post_option: Option<Post>) -> DResult<Option<Post>> {
         match post_option {
             None => Ok(None),
@@ -245,5 +274,50 @@ impl PostService for RbatisPostService {
     async fn create_post(&self, post: &BasePost) -> DResult<u64> {
         let inserted_id = RbatisPostService::insert_new_post(&self.rb, post).await?;
         Ok(inserted_id)
+    }
+
+    async fn create_tags(&self, tag_titles: Vec<String>) -> DResult<Vec<Tag>> {
+        if tag_titles.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let transliteration_results: Vec<transliteration::Transliteration> =
+            transliteration::ru_to_latin(
+                tag_titles.into_iter().map(|t| t.to_lowercase()).collect(),
+            );
+        let post_slugs: Vec<String> = transliteration_results
+            .iter()
+            .map(|r| r.transliterated.clone())
+            .collect();
+        let existing_by_slugs = RbatisPostService::get_tags_by_slugs(&self.rb, &post_slugs).await?;
+
+        let existing_map =
+            existing_by_slugs
+                .iter()
+                .fold(HashSet::new(), |mut set: HashSet<String>, tag| {
+                    set.insert(tag.slug.clone());
+                    set
+                });
+        let to_insert: Vec<NewTag> = transliteration_results
+            .into_iter()
+            .filter(|t| !existing_map.contains(&t.transliterated))
+            .map(|tag| NewTag {
+                slug: tag.transliterated,
+                title: tag.original,
+            })
+            .collect();
+
+        if to_insert.is_empty() {
+            return Ok(existing_by_slugs);
+        }
+
+        NewTag::insert_batch(&mut self.rb.clone(), &to_insert, to_insert.len() as u64).await?;
+
+        let all_tags = RbatisPostService::get_tags_by_slugs(&self.rb, &post_slugs).await?;
+        Ok(all_tags)
+    }
+
+    async fn merge_post_tags(&self, post_id: &u64, tags: Vec<Tag>) -> DResult<()> {
+        Ok(())
     }
 }
