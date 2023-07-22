@@ -1,6 +1,6 @@
 pub mod impls;
 pub mod traits;
-pub mod utility;
+pub mod utils;
 
 #[macro_use]
 extern crate rbatis;

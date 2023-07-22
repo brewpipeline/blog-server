@@ -1,7 +1,5 @@
-use crate::{
-    traits::post_service::{BasePost, Post, PostService, Tag},
-    utility::transliteration,
-};
+use crate::traits::post_service::{BasePost, Post, PostService, Tag};
+use crate::utils::transliteration;
 use rbatis::{rbatis::RBatis, rbdc::db::ExecResult};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
