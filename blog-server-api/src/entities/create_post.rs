@@ -11,13 +11,7 @@ pub struct CreatePost {
     pub summary: String,
     pub published: u8,
     pub content: Option<String>,
-    pub tags: Vec<ShortTag>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ShortTag {
-    pub title: String,
+    pub tags: Vec<String>,
 }
 
 impl CreatePost {

@@ -14,14 +14,28 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    let base_post = new_post_data
-        .map_err(|e| ValidationError {
-            reason: e.to_string(),
-        })?
-        .into(author.id);
+    let base_post = new_post_data.map_err(|e| ValidationError {
+        reason: e.to_string(),
+    })?;
+
+    let tag_titles: Vec<String> = base_post.tags.to_owned();
 
     let inserted_id = post_service
-        .create_post(&base_post)
+        .create_post(&base_post.into(author.id))
+        .await
+        .map_err(|e| DatabaseError {
+            reason: e.to_string(),
+        })?;
+
+    let post_tags = post_service
+        .create_tags(tag_titles)
+        .await
+        .map_err(|e| DatabaseError {
+            reason: e.to_string(),
+        })?;
+
+    post_service
+        .merge_post_tags(&inserted_id, post_tags)
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
