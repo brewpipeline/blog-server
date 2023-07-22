@@ -4,7 +4,7 @@ use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
 use std::sync::Arc;
 
 pub struct PostRequestContent {
-    pub(super) slug: String,
+    pub(super) id: String,
     pub(super) post_service: Arc<Box<dyn PostService>>,
 }
 
@@ -16,9 +16,9 @@ where
 
     fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
         Self {
-            slug: origin_content
+            id: origin_content
                 .path
-                .get("slug")
+                .get("id")
                 .map(|n| n.to_owned())
                 .unwrap_or_default(),
             post_service: origin_content.extensions.resolve(),

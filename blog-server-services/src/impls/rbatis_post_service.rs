@@ -295,11 +295,6 @@ impl PostService for RbatisPostService {
         RbatisPostService::saturate_with_tags(&self, post_option).await
     }
 
-    async fn post_by_slug(&self, slug: &String) -> DResult<Option<Post>> {
-        let post_option = Post::select_by_slug(&self.rb, slug).await?;
-        RbatisPostService::saturate_with_tags(&self, post_option).await
-    }
-
     async fn create_post(&self, post: &BasePost) -> DResult<u64> {
         let inserted_id = RbatisPostService::insert_new_post(&self.rb, post).await?;
         Ok(inserted_id)
