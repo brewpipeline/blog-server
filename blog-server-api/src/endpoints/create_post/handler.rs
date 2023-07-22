@@ -18,7 +18,7 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    let tag_tittles: Vec<String> = base_post.tags.iter().map(|t| t.title.clone()).collect();
+    let tag_titles: Vec<String> = base_post.tags.to_owned();
 
     let inserted_id = post_service
         .create_post(&base_post.into(author.id))
@@ -28,7 +28,7 @@ pub async fn http_handler(
         })?;
 
     let post_tags = post_service
-        .create_tags(tag_tittles)
+        .create_tags(tag_titles)
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
