@@ -3,7 +3,8 @@ use screw_api::response::{ApiResponseContentBase, ApiResponseContentFailure};
 
 pub enum CommentsResponseContentFailure {
     DatabaseError { reason: String },
-    PostSlugEmpty,
+    IncorrectIdFormat { reason: String },
+    PostIdZero,
     PostNotFound,
 }
 
@@ -13,8 +14,11 @@ impl ApiResponseContentBase for CommentsResponseContentFailure {
             CommentsResponseContentFailure::DatabaseError { reason: _ } => {
                 &StatusCode::INTERNAL_SERVER_ERROR
             }
-            CommentsResponseContentFailure::PostSlugEmpty => &StatusCode::BAD_REQUEST,
+            CommentsResponseContentFailure::PostIdZero => &StatusCode::BAD_REQUEST,
             CommentsResponseContentFailure::PostNotFound => &StatusCode::NOT_FOUND,
+            CommentsResponseContentFailure::IncorrectIdFormat { reason: _ } => {
+                &StatusCode::BAD_REQUEST
+            }
         }
     }
 }
@@ -25,7 +29,10 @@ impl ApiResponseContentFailure for CommentsResponseContentFailure {
             CommentsResponseContentFailure::DatabaseError { reason: _ } => {
                 "COMMENTS_DATABASE_ERROR"
             }
-            CommentsResponseContentFailure::PostSlugEmpty => "COMMENTS_POST_SLUG_EMPTY",
+            CommentsResponseContentFailure::IncorrectIdFormat { reason: _ } => {
+                "COMMENTS_INCORRECT_ID_FORMAT"
+            }
+            CommentsResponseContentFailure::PostIdZero => "COMMENTS_POST_ID_ZERO",
             CommentsResponseContentFailure::PostNotFound => "COMMENTS_POST_NOT_FOUND",
         }
     }
@@ -39,11 +46,14 @@ impl ApiResponseContentFailure for CommentsResponseContentFailure {
                     "internal database error".to_string()
                 }
             }
-            CommentsResponseContentFailure::PostSlugEmpty => {
-                "comments root post slug is empty in request URL".to_string()
+            CommentsResponseContentFailure::PostIdZero => {
+                "comments root post id is zero in request URL".to_string()
             }
             CommentsResponseContentFailure::PostNotFound => {
                 "comments root post record not found in database".to_string()
+            }
+            CommentsResponseContentFailure::IncorrectIdFormat { reason } => {
+                format!("incorrect value provided for post ID: {}", reason)
             }
         })
     }

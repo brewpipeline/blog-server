@@ -69,7 +69,7 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                 )
                 .route(
                     route::first::Route::with_method(&hyper::Method::GET)
-                        .and_path("/post/{slug:[^/]*}")
+                        .and_path("/post/{id:[^/]*}")
                         .and_handler(post::http_handler),
                 )
                 .route(
@@ -96,7 +96,7 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                 })
                 .route(
                     route::first::Route::with_method(&hyper::Method::GET)
-                        .and_path("/comments/{post_slug:[^/]*}")
+                        .and_path("/comments/{post_id:[^/]*}")
                         .and_handler(comments::http_handler),
                 )
                 .route(

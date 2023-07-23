@@ -5,19 +5,23 @@ use super::response_content_success::CommentsResponseContentSuccess;
 
 pub async fn http_handler(
     (CommentsRequestContent {
-        post_slug,
+        post_id,
         offset,
         limit,
         comment_service,
         post_service,
     },): (CommentsRequestContent,),
 ) -> Result<CommentsResponseContentSuccess, CommentsResponseContentFailure> {
-    if post_slug.is_empty() {
-        return Err(PostSlugEmpty);
+    let post_id = post_id.parse::<u64>().map_err(|e| IncorrectIdFormat {
+        reason: e.to_string(),
+    })?;
+
+    if post_id == 0 {
+        return Err(PostIdZero);
     }
 
     let post = post_service
-        .post_by_slug(&post_slug)
+        .post_by_id(&post_id)
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),

@@ -5,7 +5,7 @@ use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
 use std::sync::Arc;
 
 pub struct CommentsRequestContent {
-    pub(super) post_slug: String,
+    pub(super) post_id: String,
     pub(super) offset: Option<i64>,
     pub(super) limit: Option<i64>,
     pub(super) comment_service: Arc<Box<dyn CommentService>>,
@@ -20,9 +20,9 @@ where
 
     fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
         Self {
-            post_slug: origin_content
+            post_id: origin_content
                 .path
-                .get("post_slug")
+                .get("post_id")
                 .map(|n| n.to_owned())
                 .unwrap_or_default(),
             offset: origin_content

@@ -3,8 +3,9 @@ use screw_api::response::{ApiResponseContentBase, ApiResponseContentFailure};
 
 pub enum PostResponseContentFailure {
     DatabaseError { reason: String },
-    SlugEmpty,
+    ZeroId,
     NotFound,
+    IncorrectIdFormat { reason: String },
 }
 
 impl ApiResponseContentBase for PostResponseContentFailure {
@@ -13,8 +14,9 @@ impl ApiResponseContentBase for PostResponseContentFailure {
             PostResponseContentFailure::DatabaseError { reason: _ } => {
                 &StatusCode::INTERNAL_SERVER_ERROR
             }
-            PostResponseContentFailure::SlugEmpty => &StatusCode::BAD_REQUEST,
+            PostResponseContentFailure::ZeroId => &StatusCode::BAD_REQUEST,
             PostResponseContentFailure::NotFound => &StatusCode::NOT_FOUND,
+            PostResponseContentFailure::IncorrectIdFormat { reason: _ } => &StatusCode::BAD_REQUEST,
         }
     }
 }
@@ -23,8 +25,11 @@ impl ApiResponseContentFailure for PostResponseContentFailure {
     fn identifier(&self) -> &'static str {
         match self {
             PostResponseContentFailure::DatabaseError { reason: _ } => "POST_DATABASE_ERROR",
-            PostResponseContentFailure::SlugEmpty => "POST_SLUG_EMPTY",
+            PostResponseContentFailure::ZeroId => "POST_ZERO_ID",
             PostResponseContentFailure::NotFound => "POST_NOT_FOUND",
+            PostResponseContentFailure::IncorrectIdFormat { reason: _ } => {
+                "POST_INCORRECT_ID_FORMAT"
+            }
         }
     }
 
@@ -37,10 +42,11 @@ impl ApiResponseContentFailure for PostResponseContentFailure {
                     "internal database error".to_string()
                 }
             }
-            PostResponseContentFailure::SlugEmpty => {
-                "post slug is empty in request URL".to_string()
-            }
+            PostResponseContentFailure::ZeroId => "id is 0 in request URL".to_string(),
             PostResponseContentFailure::NotFound => "post record not found in database".to_string(),
+            PostResponseContentFailure::IncorrectIdFormat { reason } => {
+                format!("incorrect value provided for post ID: {}", reason)
+            }
         })
     }
 }

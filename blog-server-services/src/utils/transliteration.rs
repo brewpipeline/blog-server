@@ -1,8 +1,8 @@
 use translit::{Gost779B, Language, ToLatin};
 
 pub struct Transliteration {
-    pub original: String,
     pub transliterated: String,
+    pub original: String,
 }
 
 pub fn ru_to_latin(values: Vec<String>) -> Vec<Transliteration> {
@@ -14,4 +14,11 @@ pub fn ru_to_latin(values: Vec<String>) -> Vec<Transliteration> {
             original: t,
         })
         .collect()
+}
+
+pub fn ru_to_latin_single(value: String) -> Transliteration {
+    Transliteration {
+        transliterated: Gost779B::new(Language::Ru).to_latin(&value),
+        original: value,
+    }
 }

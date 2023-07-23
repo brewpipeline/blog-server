@@ -65,6 +65,6 @@ pub async fn init_db() -> rbatis::RBatis {
     .unwrap();
 
     let sql = std::fs::read_to_string("./table_pg.sql").unwrap();
-    let _ = rb.exec(&sql, vec![]).await;
+    rb.exec(&sql, vec![]).await.expect("DB migration failed");
     return rb;
 }
