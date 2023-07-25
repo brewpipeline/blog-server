@@ -82,6 +82,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                         .and_path("/post")
                         .and_handler(create_post::http_handler),
                 )
+                .route(
+                    route::first::Route::with_method(&hyper::Method::PATCH)
+                        .and_path("/post/{id:[^/]*}")
+                        .and_handler(update_post::http_handler),
+                )
                 .scoped("/search", |r| {
                     r.route(
                         route::first::Route::with_method(&hyper::Method::GET)

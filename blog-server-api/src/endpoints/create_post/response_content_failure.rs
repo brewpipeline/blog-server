@@ -30,7 +30,7 @@ impl ApiResponseContentFailure for CreatePostContentFailure {
             CreatePostContentFailure::ValidationError { reason: _ } => {
                 "CREATE_POST_VALIDATION_ERROR"
             }
-            CreatePostContentFailure::AlreadyExists => "CREATE_POST_ALREASY_EXISTS",
+            CreatePostContentFailure::AlreadyExists => "CREATE_POST_ALREADY_EXISTS",
             CreatePostContentFailure::InsertFailed => "CREATE_POST_COULD_NOT_FIND_CREATED_POST",
             CreatePostContentFailure::Unauthorized { reason: _ } => "CREATE_POST_UNAUTHORIZED",
         }

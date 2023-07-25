@@ -11,7 +11,9 @@ pub async fn http_handler(
     })?;
 
     if id == 0 {
-        return Err(ZeroId);
+        return Err(IncorrectIdFormat {
+            reason: String::from("should not be equal to zero"),
+        });
     }
 
     let post = post_service
