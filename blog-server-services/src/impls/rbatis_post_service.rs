@@ -206,6 +206,27 @@ impl RbatisPostService {
 
     #[py_sql(
         "
+        UPDATE post \
+        SET \
+            title = #{post_data.title}, \
+            slug = #{post_data.slug}, \
+            summary = #{post_data.summary}, \
+            published = #{post_data.published}, \
+            content = #{post_data.content} \
+        WHERE id = #{post_id} \
+        RETURNING id
+    "
+    )]
+    async fn update_post_by_id(
+        rb: &RBatis,
+        post_id: &u64,
+        post_data: &BasePost,
+    ) -> rbatis::Result<u64> {
+        impled!()
+    }
+
+    #[py_sql(
+        "
         SELECT \
             tag.id, \
             tag.title, \
@@ -298,6 +319,11 @@ impl PostService for RbatisPostService {
     async fn create_post(&self, post: &BasePost) -> DResult<u64> {
         let inserted_id = RbatisPostService::insert_new_post(&self.rb, post).await?;
         Ok(inserted_id)
+    }
+
+    async fn update_post(&self, post_id: &u64, post_data: &BasePost) -> DResult<()> {
+        RbatisPostService::update_post_by_id(&self.rb, post_id, post_data).await?;
+        Ok(())
     }
 
     async fn create_tags(&self, tag_titles: Vec<String>) -> DResult<Vec<Tag>> {

@@ -43,6 +43,7 @@ pub trait PostService: Send + Sync {
     async fn posts(&self, offset: &i64, limit: &i64) -> DResult<Vec<Post>>;
     async fn post_by_id(&self, id: &u64) -> DResult<Option<Post>>;
     async fn create_post(&self, post: &BasePost) -> DResult<u64>;
+    async fn update_post(&self, post_id: &u64, post: &BasePost) -> DResult<()>;
 
     async fn create_tags(&self, tag_titles: Vec<String>) -> DResult<Vec<Tag>>;
     async fn merge_post_tags(&self, post_id: &u64, tags: Vec<Tag>) -> DResult<()>;

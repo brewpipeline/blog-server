@@ -3,9 +3,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::utils::time_utils;
 
+//TODO move from entities to requestDTOs if more of these emerge
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CreatePost {
+pub struct PostRequestData {
     pub title: String,
     pub summary: String,
     pub published: u8,
@@ -13,7 +14,7 @@ pub struct CreatePost {
     pub tags: Vec<String>,
 }
 
-impl CreatePost {
+impl PostRequestData {
     pub fn into(self, author_id: u64) -> BasePost {
         BasePost {
             author_id,
