@@ -7,11 +7,11 @@ use blog_server_services::traits::{
 use screw_api::request::ApiRequestContent;
 use screw_components::{dyn_fn::DFuture, dyn_result::DResult};
 
-use crate::{entities::CreatePost, extensions::Resolve, utils::auth};
+use crate::{entities::PostRequestData, extensions::Resolve, utils::auth};
 
 pub struct UpdatePostRequestContent {
     pub(super) id: String,
-    pub(super) updated_post_data: DResult<CreatePost>,
+    pub(super) updated_post_data: DResult<PostRequestData>,
     pub(super) post_service: Arc<Box<dyn PostService>>,
     pub(super) auth_author_future: DFuture<Result<Author, auth::Error>>,
 }
@@ -20,7 +20,7 @@ impl<Extensions> ApiRequestContent<Extensions> for UpdatePostRequestContent
 where
     Extensions: Resolve<Arc<Box<dyn PostService>>> + Resolve<Arc<Box<dyn AuthorService>>>,
 {
-    type Data = CreatePost;
+    type Data = PostRequestData;
 
     fn create(
         origin_content: screw_api::request::ApiRequestOriginContent<Self::Data, Extensions>,
