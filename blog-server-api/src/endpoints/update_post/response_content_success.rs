@@ -29,7 +29,7 @@ impl ApiResponseContentSuccess for UpdatePostContentSuccess {
     type Data = Self;
 
     fn identifier(&self) -> &'static str {
-        "POST_UPDATED"
+        "UPDATE_POST_SUCCESS"
     }
 
     fn description(&self) -> Option<String> {
