@@ -1,4 +1,7 @@
-use blog_server_services::{traits::post_service::BasePost, utils::transliteration};
+use blog_server_services::{
+    traits::post_service::BasePost,
+    utils::{string_filter, transliteration},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::utils::time_utils;
@@ -19,8 +22,12 @@ impl PostRequestData {
         BasePost {
             author_id,
             created_at: time_utils::now_as_secs(),
-            slug: transliteration::ru_to_latin_single(self.title.clone().to_lowercase())
-                .transliterated,
+            slug: {
+                let transliterated =
+                    transliteration::ru_to_latin_single(self.title.clone().to_lowercase())
+                        .transliterated;
+                string_filter::remove_non_latin_or_number_chars(&transliterated)
+            },
             title: self.title,
             summary: self.summary,
             published: self.published,

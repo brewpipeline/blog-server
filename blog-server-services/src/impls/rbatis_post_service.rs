@@ -1,5 +1,5 @@
 use crate::traits::post_service::{BasePost, Post, PostService, Tag};
-use crate::utils::transliteration;
+use crate::utils::{string_filter, transliteration};
 use rbatis::{rbatis::RBatis, rbdc::db::ExecResult};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
@@ -331,15 +331,18 @@ impl PostService for RbatisPostService {
             return Ok(vec![]);
         }
 
-        let transliteration_results: Vec<transliteration::Transliteration> =
-            transliteration::ru_to_latin(
-                tag_titles.into_iter().map(|t| t.to_lowercase()).collect(),
-            );
-        let post_slugs: Vec<String> = transliteration_results
-            .iter()
-            .map(|r| r.transliterated.clone())
-            .collect();
-        let existing_by_slugs = RbatisPostService::get_tags_by_slugs(&self.rb, &post_slugs).await?;
+        let fresh_tags: Vec<NewTag> = transliteration::ru_to_latin(
+            tag_titles.into_iter().map(|t| t.to_lowercase()).collect(),
+        )
+        .into_iter()
+        .map(|r| NewTag {
+            slug: string_filter::remove_non_latin_or_number_chars(&r.transliterated),
+            title: r.original,
+        })
+        .collect();
+        let tag_slugs = fresh_tags.iter().map(|t| t.slug.clone()).collect();
+
+        let existing_by_slugs = RbatisPostService::get_tags_by_slugs(&self.rb, &tag_slugs).await?;
 
         let existing_map =
             existing_by_slugs
@@ -348,13 +351,9 @@ impl PostService for RbatisPostService {
                     set.insert(tag.slug.clone());
                     set
                 });
-        let to_insert: Vec<NewTag> = transliteration_results
+        let to_insert: Vec<NewTag> = fresh_tags
             .into_iter()
-            .filter(|t| !existing_map.contains(&t.transliterated))
-            .map(|tag| NewTag {
-                slug: tag.transliterated,
-                title: tag.original,
-            })
+            .filter(|t| !existing_map.contains(&t.slug))
             .collect();
 
         if to_insert.is_empty() {
@@ -363,7 +362,7 @@ impl PostService for RbatisPostService {
 
         NewTag::insert_batch(&mut self.rb.clone(), &to_insert, to_insert.len() as u64).await?;
 
-        let all_tags = RbatisPostService::get_tags_by_slugs(&self.rb, &post_slugs).await?;
+        let all_tags = RbatisPostService::get_tags_by_slugs(&self.rb, &tag_slugs).await?;
         Ok(all_tags)
     }
 
