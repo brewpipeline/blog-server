@@ -76,7 +76,7 @@ impl Post {
         FROM post \
     "
     )]
-    async fn count(rb: &RBatis) -> rbatis::Result<i64> {
+    async fn count(rb: &RBatis) -> rbatis::Result<u64> {
         impled!()
     }
     #[py_sql(
@@ -86,7 +86,7 @@ impl Post {
         WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
     "
     )]
-    async fn count_by_query(rb: &RBatis, query: &String) -> rbatis::Result<i64> {
+    async fn count_by_query(rb: &RBatis, query: &String) -> rbatis::Result<u64> {
         impled!()
     }
     #[py_sql(
@@ -120,7 +120,7 @@ impl Post {
         OFFSET #{offset} \
     "
     )]
-    async fn select_posts(rb: &RBatis, limit: &i64, offset: &i64) -> rbatis::Result<Vec<Post>> {
+    async fn select_posts(rb: &RBatis, limit: &u64, offset: &u64) -> rbatis::Result<Vec<Post>> {
         impled!()
     }
 
@@ -161,8 +161,8 @@ impl Post {
     async fn select_all_by_query_with_limit_and_offset(
         rb: &RBatis,
         query: &String,
-        limit: &i64,
-        offset: &i64,
+        limit: &u64,
+        offset: &u64,
     ) -> rbatis::Result<Vec<Post>> {
         impled!()
     }
@@ -275,24 +275,24 @@ impl RbatisPostService {
 
 #[async_trait]
 impl PostService for RbatisPostService {
-    async fn posts_count_by_query(&self, query: &String) -> DResult<i64> {
+    async fn posts_count_by_query(&self, query: &String) -> DResult<u64> {
         Ok(Post::count_by_query(&self.rb, query).await?)
     }
     async fn posts_by_query(
         &self,
         query: &String,
-        offset: &i64,
-        limit: &i64,
+        offset: &u64,
+        limit: &u64,
     ) -> DResult<Vec<Post>> {
         let posts =
             Post::select_all_by_query_with_limit_and_offset(&self.rb, query, limit, offset).await?;
         RbatisPostService::saturate_posts_with_tags(&self, posts).await
     }
 
-    async fn posts_count(&self) -> DResult<i64> {
+    async fn posts_count(&self) -> DResult<u64> {
         Ok(Post::count(&self.rb).await?)
     }
-    async fn posts(&self, offset: &i64, limit: &i64) -> DResult<Vec<Post>> {
+    async fn posts(&self, offset: &u64, limit: &u64) -> DResult<Vec<Post>> {
         let posts = Post::select_posts(&self.rb, limit, offset).await?;
         RbatisPostService::saturate_posts_with_tags(&self, posts).await
     }

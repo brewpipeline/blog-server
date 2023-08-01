@@ -1,3 +1,5 @@
+use blog_generic::entities::{CommentsContainer, TotalOffsetLimitContainer};
+
 use super::request_content::CommentsRequestContent;
 use super::response_content_failure::CommentsResponseContentFailure;
 use super::response_content_failure::CommentsResponseContentFailure::*;
@@ -50,10 +52,13 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    Ok(CommentsResponseContentSuccess {
+    Ok(CommentsContainer {
         comments,
-        total,
-        offset,
-        limit,
-    })
+        base: TotalOffsetLimitContainer {
+            total,
+            offset,
+            limit,
+        },
+    }
+    .into())
 }

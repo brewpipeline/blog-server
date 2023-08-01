@@ -6,8 +6,8 @@ use std::sync::Arc;
 
 pub struct CommentsRequestContent {
     pub(super) post_id: String,
-    pub(super) offset: Option<i64>,
-    pub(super) limit: Option<i64>,
+    pub(super) offset: Option<u64>,
+    pub(super) limit: Option<u64>,
     pub(super) comment_service: Arc<Box<dyn CommentService>>,
     pub(super) post_service: Arc<Box<dyn PostService>>,
 }

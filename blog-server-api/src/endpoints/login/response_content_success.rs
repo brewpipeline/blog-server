@@ -1,16 +1,17 @@
+use blog_generic::entities::LoginAnswer;
 use hyper::StatusCode;
 use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
-use serde::Serialize;
 
-#[derive(Serialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct LoginResponseContentSuccess {
-    token: String,
+    login_answer: LoginAnswer,
 }
 
 impl Into<LoginResponseContentSuccess> for String {
     fn into(self) -> LoginResponseContentSuccess {
-        LoginResponseContentSuccess { token: self }
+        LoginResponseContentSuccess {
+            login_answer: LoginAnswer { token: self },
+        }
     }
 }
 
@@ -21,7 +22,7 @@ impl ApiResponseContentBase for LoginResponseContentSuccess {
 }
 
 impl ApiResponseContentSuccess for LoginResponseContentSuccess {
-    type Data = Self;
+    type Data = LoginAnswer;
 
     fn identifier(&self) -> &'static str {
         "LOGIN_SUCCESS"
@@ -32,6 +33,6 @@ impl ApiResponseContentSuccess for LoginResponseContentSuccess {
     }
 
     fn data(&self) -> &Self::Data {
-        self
+        &self.login_answer
     }
 }

@@ -1,19 +1,19 @@
-use crate::entities::Author;
+use blog_generic::entities::AuthorContainer;
 use blog_server_services::traits::author_service::Author as ServiceAuthor;
 use hyper::StatusCode;
 use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
-use serde::Serialize;
 
-#[derive(Serialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct AuthorResponseContentSuccess {
-    author: Author,
+    container: AuthorContainer,
 }
 
 impl Into<AuthorResponseContentSuccess> for ServiceAuthor {
     fn into(self) -> AuthorResponseContentSuccess {
         AuthorResponseContentSuccess {
-            author: self.into(),
+            container: AuthorContainer {
+                author: self.into(),
+            },
         }
     }
 }
@@ -25,7 +25,7 @@ impl ApiResponseContentBase for AuthorResponseContentSuccess {
 }
 
 impl ApiResponseContentSuccess for AuthorResponseContentSuccess {
-    type Data = Self;
+    type Data = AuthorContainer;
 
     fn identifier(&self) -> &'static str {
         "AUTHOR_FOUND"
@@ -36,6 +36,6 @@ impl ApiResponseContentSuccess for AuthorResponseContentSuccess {
     }
 
     fn data(&self) -> &Self::Data {
-        self
+        &self.container
     }
 }

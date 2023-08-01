@@ -25,6 +25,7 @@ git = "https://github.com/Tikitko/screw.git"
 package = "screw-ws"
 
 [dependencies]
+blog-generic = { path = "../blog-generic" }
 blog-server-services = { path = "../blog-server-services" }
 tokio = { version = "1.27.0", features = ["full"] }
 hyper = { version = "0.14.26", features = ["full"] }

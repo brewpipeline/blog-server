@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "blog-generic",
     "blog-server-api",
     "blog-server-services"
 ]

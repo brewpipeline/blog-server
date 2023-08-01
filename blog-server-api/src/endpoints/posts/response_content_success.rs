@@ -1,15 +1,16 @@
-use crate::entities::Post;
+use blog_generic::entities::PostsContainer;
 use hyper::StatusCode;
 use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
-use serde::Serialize;
 
-#[derive(Serialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct PostsResponseContentSuccess {
-    pub(super) posts: Vec<Post>,
-    pub(super) total: i64,
-    pub(super) offset: i64,
-    pub(super) limit: i64,
+    pub(super) container: PostsContainer,
+}
+
+impl Into<PostsResponseContentSuccess> for PostsContainer {
+    fn into(self) -> PostsResponseContentSuccess {
+        PostsResponseContentSuccess { container: self }
+    }
 }
 
 impl ApiResponseContentBase for PostsResponseContentSuccess {
@@ -19,7 +20,7 @@ impl ApiResponseContentBase for PostsResponseContentSuccess {
 }
 
 impl ApiResponseContentSuccess for PostsResponseContentSuccess {
-    type Data = Self;
+    type Data = PostsContainer;
 
     fn identifier(&self) -> &'static str {
         "POSTS_OK"
@@ -30,6 +31,6 @@ impl ApiResponseContentSuccess for PostsResponseContentSuccess {
     }
 
     fn data(&self) -> &Self::Data {
-        self
+        &self.container
     }
 }

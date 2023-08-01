@@ -9,6 +9,7 @@ git = "https://github.com/Tikitko/screw.git"
 package = "screw-components"
 
 [dependencies]
+blog-generic = { path = "../blog-generic" }
 rbs = { version = "4.3" }
 rbatis = { version = "4.3" }
 async-trait = { version = "0.1.68" }
