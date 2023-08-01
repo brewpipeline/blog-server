@@ -105,3 +105,37 @@ DO $$ BEGIN
     ALTER TABLE post DROP CONSTRAINT uq_post_slug;
   END IF;
 END $$
+
+;
+
+DO $$ BEGIN
+  IF EXISTS(select * from pg_constraint where conname = 'uq_tag_slug') THEN
+    ALTER TABLE tag DROP CONSTRAINT uq_tag_slug;
+  END IF;
+
+  IF NOT EXISTS(select * from pg_constraint where conname = 'uq_tag_title') THEN
+    --delete duplicated by title tags and all post_tag references before adding unique constraint
+    DELETE FROM post_tag
+    WHERE tag_id IN
+    (
+      SELECT orig.id FROM tag as orig
+      JOIN 
+        (
+          SELECT title FROM tag
+          GROUP BY title
+          HAVING COUNT(1) > 1
+        ) AS sQ 
+      ON orig.title = sQ.title
+    );
+
+    DELETE FROM tag
+    WHERE title IN 
+    (
+      SELECT title FROM tag
+      GROUP BY title
+      HAVING COUNT(1) > 1
+    );    
+
+    ALTER TABLE tag ADD CONSTRAINT uq_tag_title UNIQUE (title);
+  END IF;
+END $$
