@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 pub struct PostsRequestContent {
     pub(super) query: Option<String>,
-    pub(super) offset: Option<i64>,
-    pub(super) limit: Option<i64>,
+    pub(super) offset: Option<u64>,
+    pub(super) limit: Option<u64>,
     pub(super) post_service: Arc<Box<dyn PostService>>,
 }
 

@@ -1,3 +1,4 @@
+use blog_generic::entities::{Comment as EComment, ShortAuthor as EShortAuthor};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 
@@ -22,14 +23,29 @@ pub struct Comment {
     pub base: BaseComment,
 }
 
+impl Into<EComment> for Comment {
+    fn into(self) -> EComment {
+        EComment {
+            post_id: self.base.post_id,
+            created_at: self.base.created_at,
+            content: self.base.content,
+            short_author: EShortAuthor {
+                slug: self.author_slug,
+                first_name: self.author_first_name,
+                last_name: self.author_last_name,
+            },
+        }
+    }
+}
+
 #[async_trait]
 pub trait CommentService: Send + Sync {
-    async fn comments_count_by_post_id(&self, post_id: &u64) -> DResult<i64>;
+    async fn comments_count_by_post_id(&self, post_id: &u64) -> DResult<u64>;
     async fn comments_by_post_id(
         &self,
         post_id: &u64,
-        offset: &i64,
-        limit: &i64,
+        offset: &u64,
+        limit: &u64,
     ) -> DResult<Vec<Comment>>;
-    async fn create_comment(&self, post: &BaseComment) -> DResult<i64>;
+    async fn create_comment(&self, post: &BaseComment) -> DResult<u64>;
 }

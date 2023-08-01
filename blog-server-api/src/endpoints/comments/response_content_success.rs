@@ -1,15 +1,16 @@
-use crate::entities::Comment;
+use blog_generic::entities::CommentsContainer;
 use hyper::StatusCode;
 use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
-use serde::Serialize;
 
-#[derive(Serialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct CommentsResponseContentSuccess {
-    pub(super) comments: Vec<Comment>,
-    pub(super) total: i64,
-    pub(super) offset: i64,
-    pub(super) limit: i64,
+    pub(super) container: CommentsContainer,
+}
+
+impl Into<CommentsResponseContentSuccess> for CommentsContainer {
+    fn into(self) -> CommentsResponseContentSuccess {
+        CommentsResponseContentSuccess { container: self }
+    }
 }
 
 impl ApiResponseContentBase for CommentsResponseContentSuccess {
@@ -19,7 +20,7 @@ impl ApiResponseContentBase for CommentsResponseContentSuccess {
 }
 
 impl ApiResponseContentSuccess for CommentsResponseContentSuccess {
-    type Data = Self;
+    type Data = CommentsContainer;
 
     fn identifier(&self) -> &'static str {
         "COMMENTS_OK"
@@ -30,6 +31,6 @@ impl ApiResponseContentSuccess for CommentsResponseContentSuccess {
     }
 
     fn data(&self) -> &Self::Data {
-        self
+        &self.container
     }
 }

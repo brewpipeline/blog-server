@@ -21,7 +21,7 @@ pub async fn http_handler(
     let tag_titles: Vec<String> = base_post.tags.to_owned();
 
     let inserted_id = post_service
-        .create_post(&base_post.into(author.id))
+        .create_post(&From::from((author.id, base_post)))
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),

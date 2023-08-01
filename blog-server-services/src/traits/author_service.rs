@@ -1,3 +1,4 @@
+use blog_generic::entities::{Author as EAuthor, ShortAuthor as EShortAuthor};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 
@@ -23,18 +24,45 @@ pub struct Author {
     pub base: BaseAuthor,
 }
 
+impl Into<EShortAuthor> for Author {
+    fn into(self) -> EShortAuthor {
+        EShortAuthor {
+            slug: self.base.slug,
+            first_name: self.base.first_name,
+            last_name: self.base.last_name,
+        }
+    }
+}
+
+impl Into<EAuthor> for Author {
+    fn into(self) -> EAuthor {
+        EAuthor {
+            base: EShortAuthor {
+                slug: self.base.slug,
+                first_name: self.base.first_name,
+                last_name: self.base.last_name,
+            },
+            middle_name: self.base.middle_name,
+            mobile: self.base.mobile,
+            email: self.base.email,
+            registered_at: self.base.registered_at,
+            status: self.base.status,
+        }
+    }
+}
+
 #[async_trait]
 pub trait AuthorService: Send + Sync {
-    async fn authors_count_by_query(&self, query: &String) -> DResult<i64>;
+    async fn authors_count_by_query(&self, query: &String) -> DResult<u64>;
     async fn authors_by_query(
         &self,
         query: &String,
-        offset: &i64,
-        limit: &i64,
+        offset: &u64,
+        limit: &u64,
     ) -> DResult<Vec<Author>>;
-    async fn authors_count(&self) -> DResult<i64>;
-    async fn authors(&self, offset: &i64, limit: &i64) -> DResult<Vec<Author>>;
+    async fn authors_count(&self) -> DResult<u64>;
+    async fn authors(&self, offset: &u64, limit: &u64) -> DResult<Vec<Author>>;
     async fn author_by_id(&self, id: &u64) -> DResult<Option<Author>>;
     async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>>;
-    async fn create_author(&self, author: &BaseAuthor) -> DResult<i64>;
+    async fn create_author(&self, author: &BaseAuthor) -> DResult<u64>;
 }

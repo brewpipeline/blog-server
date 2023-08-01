@@ -1,19 +1,17 @@
-use crate::entities::Post;
+use blog_generic::entities::PostContainer;
 use blog_server_services::traits::post_service::Post as ServicePost;
 use hyper::StatusCode;
 use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
-use serde::Serialize;
 
-#[derive(Serialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct CreatePostContentSuccess {
-    created_post: Post,
+    container: PostContainer,
 }
 
 impl Into<CreatePostContentSuccess> for ServicePost {
     fn into(self) -> CreatePostContentSuccess {
         CreatePostContentSuccess {
-            created_post: (self.into()),
+            container: PostContainer { post: self.into() },
         }
     }
 }
@@ -25,7 +23,7 @@ impl ApiResponseContentBase for CreatePostContentSuccess {
 }
 
 impl ApiResponseContentSuccess for CreatePostContentSuccess {
-    type Data = Self;
+    type Data = PostContainer;
 
     fn identifier(&self) -> &'static str {
         "POST_CREATED"
@@ -36,6 +34,6 @@ impl ApiResponseContentSuccess for CreatePostContentSuccess {
     }
 
     fn data(&self) -> &Self::Data {
-        self
+        &self.container
     }
 }

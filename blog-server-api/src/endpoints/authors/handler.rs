@@ -1,3 +1,5 @@
+use blog_generic::entities::{AuthorsContainer, BaseItemsContainer};
+
 use super::request_content::AuthorsRequestContent;
 use super::response_content_failure::AuthorsResponseContentFailure;
 use super::response_content_failure::AuthorsResponseContentFailure::*;
@@ -38,10 +40,13 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    Ok(AuthorsResponseContentSuccess {
+    Ok(AuthorsContainer {
         authors,
-        total,
-        offset,
-        limit,
-    })
+        base: BaseItemsContainer {
+            total,
+            offset,
+            limit,
+        },
+    }
+    .into())
 }

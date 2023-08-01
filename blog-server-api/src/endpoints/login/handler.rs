@@ -1,17 +1,18 @@
-use super::request_content::{LoginRequestContent, LoginRequestContentData};
+use super::request_content::LoginRequestContent;
 use super::response_content_failure::LoginResponseContentFailure;
 use super::response_content_failure::LoginResponseContentFailure::*;
 use super::response_content_success::LoginResponseContentSuccess;
 use crate::utils::{auth, password};
+use blog_generic::entities::LoginQuestion;
 use password_hash::Error;
 
 pub async fn http_handler(
     (LoginRequestContent {
-        login_data,
+        login_question,
         author_service,
     },): (LoginRequestContent,),
 ) -> Result<LoginResponseContentSuccess, LoginResponseContentFailure> {
-    let LoginRequestContentData { slug, password } = login_data.map_err(|e| ParamsDecodeError {
+    let LoginQuestion { slug, password } = login_question.map_err(|e| ParamsDecodeError {
         reason: e.to_string(),
     })?;
 

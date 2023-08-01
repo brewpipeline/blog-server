@@ -1,3 +1,5 @@
+use blog_generic::entities::{BaseItemsContainer, PostsContainer};
+
 use super::request_content::PostsRequestContent;
 use super::response_content_failure::PostsResponseContentFailure;
 use super::response_content_failure::PostsResponseContentFailure::*;
@@ -38,10 +40,13 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    Ok(PostsResponseContentSuccess {
+    Ok(PostsContainer {
         posts,
-        total,
-        offset,
-        limit,
-    })
+        base: BaseItemsContainer {
+            total,
+            offset,
+            limit,
+        },
+    }
+    .into())
 }
