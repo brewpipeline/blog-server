@@ -6,5 +6,5 @@ use serde::{Deserialize, Serialize};
 pub struct AuthorsContainer {
     pub authors: Vec<Author>,
     #[serde(flatten)]
-    pub base: BaseItemsContainer,
+    pub base: TotalOffsetLimitContainer,
 }

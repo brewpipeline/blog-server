@@ -1,4 +1,4 @@
-use blog_generic::entities::{AuthorsContainer, BaseItemsContainer};
+use blog_generic::entities::{AuthorsContainer, TotalOffsetLimitContainer};
 
 use super::request_content::AuthorsRequestContent;
 use super::response_content_failure::AuthorsResponseContentFailure;
@@ -42,7 +42,7 @@ pub async fn http_handler(
 
     Ok(AuthorsContainer {
         authors,
-        base: BaseItemsContainer {
+        base: TotalOffsetLimitContainer {
             total,
             offset,
             limit,

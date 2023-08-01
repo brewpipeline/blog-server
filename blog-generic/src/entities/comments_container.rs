@@ -6,5 +6,5 @@ use serde::{Deserialize, Serialize};
 pub struct CommentsContainer {
     pub comments: Vec<Comment>,
     #[serde(flatten)]
-    pub base: BaseItemsContainer,
+    pub base: TotalOffsetLimitContainer,
 }

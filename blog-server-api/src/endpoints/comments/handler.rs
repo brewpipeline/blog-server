@@ -1,4 +1,4 @@
-use blog_generic::entities::{BaseItemsContainer, CommentsContainer};
+use blog_generic::entities::{CommentsContainer, TotalOffsetLimitContainer};
 
 use super::request_content::CommentsRequestContent;
 use super::response_content_failure::CommentsResponseContentFailure;
@@ -54,7 +54,7 @@ pub async fn http_handler(
 
     Ok(CommentsContainer {
         comments,
-        base: BaseItemsContainer {
+        base: TotalOffsetLimitContainer {
             total,
             offset,
             limit,
