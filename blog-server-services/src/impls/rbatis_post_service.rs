@@ -152,8 +152,8 @@ impl Post {
             author.last_name AS author_last_name \
         FROM post \
         JOIN author ON post.author_id = author.id \
-        ORDER BY post.id DESC \
         WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
+        ORDER BY post.id DESC \
         LIMIT #{limit} \
         OFFSET #{offset} \
     "
@@ -219,13 +219,13 @@ impl RbatisPostService {
             tag.slug \
         FROM tag \
         WHERE \
-            tag.slug IN (
-                trim ',': for _,slug in slugs:
-                    #{slug},
+            tag.title IN (
+                trim ',': for _,title in titles:
+                    #{title},
                 ) \
     "
     )]
-    async fn get_tags_by_slugs(rb: &RBatis, slugs: &Vec<String>) -> rbatis::Result<Vec<Tag>> {
+    async fn get_tags_by_titles(rb: &RBatis, titles: &Vec<String>) -> rbatis::Result<Vec<Tag>> {
         impled!()
     }
 
@@ -316,6 +316,23 @@ impl PostService for RbatisPostService {
         if tag_titles.is_empty() {
             return Ok(vec![]);
         }
+        let tag_titles: Vec<String> = tag_titles
+            .into_iter()
+            .collect::<HashSet<String>>()
+            .into_iter()
+            .collect();
+        let search_titles = tag_titles.clone();
+
+        let existing_by_titles =
+            RbatisPostService::get_tags_by_titles(&self.rb, &search_titles).await?;
+
+        let existing_map =
+            existing_by_titles
+                .iter()
+                .fold(HashSet::new(), |mut set: HashSet<String>, tag| {
+                    set.insert(tag.title.clone());
+                    set
+                });
 
         let fresh_tags: Vec<NewTag> =
             transliteration::ru_to_latin(tag_titles, transliteration::TranslitOption::ToLowerCase)
@@ -325,29 +342,19 @@ impl PostService for RbatisPostService {
                     title: r.original,
                 })
                 .collect();
-        let tag_slugs = fresh_tags.iter().map(|t| t.slug.clone()).collect();
 
-        let existing_by_slugs = RbatisPostService::get_tags_by_slugs(&self.rb, &tag_slugs).await?;
-
-        let existing_map =
-            existing_by_slugs
-                .iter()
-                .fold(HashSet::new(), |mut set: HashSet<String>, tag| {
-                    set.insert(tag.slug.clone());
-                    set
-                });
         let to_insert: Vec<NewTag> = fresh_tags
             .into_iter()
-            .filter(|t| !existing_map.contains(&t.slug))
+            .filter(|t| !existing_map.contains(&t.title))
             .collect();
 
         if to_insert.is_empty() {
-            return Ok(existing_by_slugs);
+            return Ok(existing_by_titles);
         }
 
         NewTag::insert_batch(&mut self.rb.clone(), &to_insert, to_insert.len() as u64).await?;
 
-        let all_tags = RbatisPostService::get_tags_by_slugs(&self.rb, &tag_slugs).await?;
+        let all_tags = RbatisPostService::get_tags_by_titles(&self.rb, &search_titles).await?;
         Ok(all_tags)
     }
 
