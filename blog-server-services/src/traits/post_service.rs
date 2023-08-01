@@ -1,4 +1,4 @@
-use crate::utils::{time_utils, transliteration};
+use crate::utils::{time_utils, transliteration, string_filter};
 use blog_generic::entities::{
     CommonPost as ECommonPost, Post as EPost, ShortAuthor as EShortAuthor, Tag as ETag,
 };
@@ -30,8 +30,14 @@ impl From<(u64, ECommonPost)> for BasePost {
         BasePost {
             author_id: value.0,
             created_at: time_utils::now_as_secs(),
-            slug: transliteration::ru_to_latin_single(value.1.title.clone().to_lowercase())
-                .transliterated,
+            slug: {
+                let transliterated = transliteration::ru_to_latin_single(
+                    value.1.title.clone(),
+                    transliteration::TranslitOption::ToLowerCase,
+                )
+                .transliterated;
+                string_filter::remove_non_latin_or_number_chars(&transliterated)
+            },
             title: value.1.title,
             summary: value.1.summary,
             published: value.1.published,
