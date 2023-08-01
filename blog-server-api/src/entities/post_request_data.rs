@@ -23,9 +23,11 @@ impl PostRequestData {
             author_id,
             created_at: time_utils::now_as_secs(),
             slug: {
-                let transliterated =
-                    transliteration::ru_to_latin_single(self.title.clone().to_lowercase())
-                        .transliterated;
+                let transliterated = transliteration::ru_to_latin_single(
+                    self.title.clone(),
+                    transliteration::TranslitOption::ToLowerCase,
+                )
+                .transliterated;
                 string_filter::remove_non_latin_or_number_chars(&transliterated)
             },
             title: self.title,

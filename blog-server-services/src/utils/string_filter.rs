@@ -1,3 +1,5 @@
+const WHITE_SPACE_REPLACE_CHAR: char = '-';
+
 pub fn remove_non_latin_or_number_chars(input_string: &str) -> String {
     let mut previous_symbol_is_whitespace = false;
     let filtered = input_string
@@ -11,7 +13,7 @@ pub fn remove_non_latin_or_number_chars(input_string: &str) -> String {
                 }
                 c if c.is_whitespace() => {
                     if !previous_symbol_is_whitespace {
-                        result.push(c);
+                        result.push(WHITE_SPACE_REPLACE_CHAR);
                         previous_symbol_is_whitespace = true;
                     }
                 }
@@ -31,14 +33,14 @@ mod tests {
         let original = String::from("Test1 Привет !something'");
         assert_eq!(
             remove_non_latin_or_number_chars(&original),
-            "Test1 something"
+            "Test1-something"
         )
     }
 
     #[test]
     fn should_remove_subsequent_whitespaces() {
         let original = String::from("first        second");
-        assert_eq!(remove_non_latin_or_number_chars(&original), "first second")
+        assert_eq!(remove_non_latin_or_number_chars(&original), "first-second")
     }
 
     #[test]
@@ -50,6 +52,6 @@ mod tests {
     #[test]
     fn should_return_empty_string_if_all_symbols_are_forbidden() {
         let original = String::from("Ну да,Ну да....");
-        assert_eq!(remove_non_latin_or_number_chars(&original), "")
+        assert_eq!(remove_non_latin_or_number_chars(&original), "-")
     }
 }

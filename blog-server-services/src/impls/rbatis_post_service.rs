@@ -317,15 +317,14 @@ impl PostService for RbatisPostService {
             return Ok(vec![]);
         }
 
-        let fresh_tags: Vec<NewTag> = transliteration::ru_to_latin(
-            tag_titles.into_iter().map(|t| t.to_lowercase()).collect(),
-        )
-        .into_iter()
-        .map(|r| NewTag {
-            slug: string_filter::remove_non_latin_or_number_chars(&r.transliterated),
-            title: r.original,
-        })
-        .collect();
+        let fresh_tags: Vec<NewTag> =
+            transliteration::ru_to_latin(tag_titles, transliteration::TranslitOption::ToLowerCase)
+                .into_iter()
+                .map(|r| NewTag {
+                    slug: string_filter::remove_non_latin_or_number_chars(&r.transliterated),
+                    title: r.original,
+                })
+                .collect();
         let tag_slugs = fresh_tags.iter().map(|t| t.slug.clone()).collect();
 
         let existing_by_slugs = RbatisPostService::get_tags_by_slugs(&self.rb, &tag_slugs).await?;
