@@ -105,22 +105,6 @@ impl Post {
     async fn select_by_id(rb: &RBatis, id: &u64) -> rbatis::Result<Option<Post>> {
         impled!()
     }
-    #[py_sql(
-        "
-        SELECT \
-            post.*, \
-            author.slug AS author_slug, \
-            author.first_name AS author_first_name, \
-            author.last_name AS author_last_name \
-        FROM post \
-        JOIN author ON post.author_id = author.id \
-        WHERE post.slug = #{slug} \
-        LIMIT 1 \
-    "
-    )]
-    async fn select_by_slug(rb: &RBatis, slug: &String) -> rbatis::Result<Option<Post>> {
-        impled!()
-    }
 
     #[py_sql(
         "
@@ -131,6 +115,7 @@ impl Post {
             author.last_name AS author_last_name \
         FROM post \
         JOIN author ON post.author_id = author.id \
+        ORDER BY post.id DESC \
         LIMIT #{limit} \
         OFFSET #{offset} \
     "
@@ -167,6 +152,7 @@ impl Post {
             author.last_name AS author_last_name \
         FROM post \
         JOIN author ON post.author_id = author.id \
+        ORDER BY post.id DESC \
         WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
         LIMIT #{limit} \
         OFFSET #{offset} \
