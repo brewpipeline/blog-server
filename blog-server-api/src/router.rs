@@ -43,7 +43,11 @@ async fn api_not_found_fallback_handler<Extensions>(
 
 pub fn make_router<Extensions: ExtensionsProviderType>(
 ) -> router::second::Router<Request<Extensions>, Response> {
-    router::first::Router::with_fallback_handler(not_found_fallback_handler).and_routes(|r| {
+    #[cfg(not(feature = "ssr"))]
+    let fallback = not_found_fallback_handler;
+    #[cfg(feature = "ssr")]
+    let fallback = client_handler;
+    router::first::Router::with_fallback_handler(fallback).and_routes(|r| {
         r.scoped_middleware(
             "/api",
             JsonApiMiddlewareConverter {
