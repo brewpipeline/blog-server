@@ -1,3 +1,4 @@
+use serde::Serialize;
 use std::sync::Arc;
 
 use crate::extensions::Resolve;
@@ -5,6 +6,7 @@ use blog_generic::entities;
 use blog_server_services::traits::author_service::*;
 use blog_server_services::traits::post_service::*;
 
+use screw_components::dyn_result::*;
 use screw_core::request::*;
 use screw_core::response::*;
 use screw_core::routing::*;
@@ -65,6 +67,7 @@ pub async fn client_handler<
     Response {
         http: hyper::Response::builder()
             .status(hyper::StatusCode::OK)
+            .header("Content-Type", "text/html")
             .body(hyper::Body::from(page))
             .unwrap(),
     }
@@ -132,24 +135,27 @@ async fn app_content<
         return None
     };
 
-    let Some(value) = (match route {
+    fn json_encode<D: Into<E>, E: Serialize>(data: DResult<Option<D>>) -> Option<String> {
+        let entity: Option<E> = data.ok().flatten().map(|d| d.into());
+        entity.map(|e| serde_json::to_string(&e).ok()).flatten()
+    }
+
+    let json = match route {
         Route::Post { slug: _, id } | Route::EditPost { id } => {
             let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
-            let post: Option<entities::Post> = post_service.post_by_id(&id).await.ok().flatten().map(|p| p.into());
-            post.map(|p| serde_json::to_string(&p).ok()).flatten()
-        },
+            let post = post_service.post_by_id(&id).await;
+            json_encode::<_, entities::Post>(post)
+        }
         Route::Author { slug } => {
             let auth_service: Arc<Box<dyn AuthorService>> = request.origin.extensions.resolve();
-            let author: Option<entities::Author> = auth_service.author_by_slug(&slug).await.ok().flatten().map(|p| p.into());
-            author.map(|a| serde_json::to_string(&a).ok()).flatten()
-        },
-        _ => None
-    }) else {
-        return None
+            let author = auth_service.author_by_slug(&slug).await;
+            json_encode::<_, entities::Author>(author)
+        }
+        _ => None,
     };
 
-    Some(AppContent {
+    json.map(|json| AppContent {
         r#type: "application/json".to_string(),
-        value,
+        value: json,
     })
 }
