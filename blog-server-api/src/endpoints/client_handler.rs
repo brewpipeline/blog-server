@@ -121,9 +121,9 @@ fn update_tag(
 
 fn content(html: &String, prefix: &str, suffix: &str) -> Option<String> {
     let parts = html.split(prefix);
-    let mut title = parts.last()?.to_owned();
-    title = title.split_once(suffix)?.0.to_owned();
-    Some(title)
+    let mut content = parts.last()?.to_owned();
+    content = content.split_once(suffix)?.0.to_owned();
+    Some(content)
 }
 
 async fn app_content<
