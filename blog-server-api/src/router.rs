@@ -7,6 +7,7 @@ use screw_core::request::*;
 use screw_core::response::*;
 use screw_core::routing::*;
 
+#[cfg(not(feature = "ssr"))]
 async fn not_found_fallback_handler<Extensions>(
     _: router::RoutedRequest<Request<Extensions>>,
 ) -> Response {
