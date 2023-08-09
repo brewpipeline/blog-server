@@ -13,7 +13,7 @@ use screw_core::routing::*;
 
 use blog_ui::*;
 
-const INDEX_HTML: &str = include_str!("../../../../blog-ui/dist/index.html");
+const INDEX_HTML: &str = include_str!("../../../index.html");
 
 const APP_TAG_PREFIX: &str = "<div id=\"app\">";
 
@@ -74,22 +74,22 @@ pub async fn client_handler<
 }
 
 fn update_meta(mut html: String) -> String {
-    html = update_tag(
-        html,
+    update_tag(
+        &mut html,
         TITLE_TAG_PREFIX,
         TITLE_TAG_SUFFIX,
         TITLE_TAG_BODY_PREFIX,
         TITLE_TAG_BODY_SUFFIX,
     );
-    html = update_tag(
-        html,
+    update_tag(
+        &mut html,
         DESCRIPTION_TAG_PREFIX,
         DESCRIPTION_TAG_SUFFIX,
         DESCRIPTION_TAG_BODY_PREFIX,
         DESCRIPTION_TAG_BODY_SUFFIX,
     );
-    html = update_tag(
-        html,
+    update_tag(
+        &mut html,
         KEYWORDS_TAG_PREFIX,
         KEYWORDS_TAG_SUFFIX,
         KEYWORDS_TAG_BODY_PREFIX,
@@ -99,14 +99,14 @@ fn update_meta(mut html: String) -> String {
 }
 
 fn update_tag(
-    html: String,
+    html: &mut String,
     main_tag_prefix: &str,
     main_tag_suffix: &str,
     body_tag_prefix: &str,
     body_tag_suffix: &str,
-) -> String {
-    let Some(content) = content(&html, body_tag_prefix, body_tag_suffix) else {
-        return html
+) {
+    let Some(content) = last_content(&html, body_tag_prefix, body_tag_suffix) else {
+        return
     };
     let empty_tag = main_tag_prefix.to_string() + main_tag_suffix;
     let tag = {
@@ -116,46 +116,45 @@ fn update_tag(
         tag.push_str(main_tag_suffix);
         tag
     };
-    html.replace(empty_tag.as_str(), tag.as_str())
+    *html = html.replace(empty_tag.as_str(), tag.as_str());
 }
 
-fn content(html: &String, prefix: &str, suffix: &str) -> Option<String> {
+fn last_content(html: &String, prefix: &str, suffix: &str) -> Option<String> {
     let parts = html.split(prefix);
     let mut content = parts.last()?.to_owned();
     content = content.split_once(suffix)?.0.to_owned();
     Some(content)
 }
 
-async fn app_content<
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>> + Resolve<Arc<Box<dyn PostService>>>,
->(
+fn app_content_encode<D: Into<E>, E: Serialize>(data: DResult<Option<D>>) -> Option<AppContent> {
+    data.ok()
+        .flatten()
+        .map(|d| -> E { d.into() })
+        .map(|e| serde_json::to_string(&e).ok())
+        .flatten()
+        .map(|json| AppContent {
+            r#type: "application/json".to_string(),
+            value: json,
+        })
+}
+
+async fn app_content<Extensions>(
     request: &router::RoutedRequest<Request<Extensions>>,
-) -> Option<AppContent> {
-    let Some(route) = Route::recognize_path(request.path.as_str()) else {
-        return None
-    };
-
-    fn json_encode<D: Into<E>, E: Serialize>(data: DResult<Option<D>>) -> Option<String> {
-        let entity: Option<E> = data.ok().flatten().map(|d| d.into());
-        entity.map(|e| serde_json::to_string(&e).ok()).flatten()
-    }
-
-    let json = match route {
+) -> Option<AppContent>
+where
+    Extensions: Resolve<Arc<Box<dyn AuthorService>>> + Resolve<Arc<Box<dyn PostService>>>,
+{
+    match Route::recognize_path(request.path.as_str())? {
         Route::Post { slug: _, id } | Route::EditPost { id } => {
             let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
             let post = post_service.post_by_id(&id).await;
-            json_encode::<_, entities::Post>(post)
+            app_content_encode::<_, entities::Post>(post)
         }
         Route::Author { slug } => {
-            let auth_service: Arc<Box<dyn AuthorService>> = request.origin.extensions.resolve();
-            let author = auth_service.author_by_slug(&slug).await;
-            json_encode::<_, entities::Author>(author)
+            let author_service: Arc<Box<dyn AuthorService>> = request.origin.extensions.resolve();
+            let author = author_service.author_by_slug(&slug).await;
+            app_content_encode::<_, entities::Author>(author)
         }
         _ => None,
-    };
-
-    json.map(|json| AppContent {
-        r#type: "application/json".to_string(),
-        value: json,
-    })
+    }
 }
