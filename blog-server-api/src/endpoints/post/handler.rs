@@ -4,7 +4,11 @@ use super::response_content_failure::PostResponseContentFailure::*;
 use super::response_content_success::PostResponseContentSuccess;
 
 pub async fn http_handler(
-    (PostRequestContent { id, post_service },): (PostRequestContent,),
+    (PostRequestContent {
+        id,
+        post_service,
+        entity_post_service,
+    },): (PostRequestContent,),
 ) -> Result<PostResponseContentSuccess, PostResponseContentFailure> {
     let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
         reason: e.to_string(),
@@ -24,5 +28,13 @@ pub async fn http_handler(
         })?
         .ok_or(NotFound)?;
 
-    Ok(post.into())
+    let post_entity = entity_post_service
+        .posts_entities(vec![post])
+        .await
+        .map_err(|e| DatabaseError {
+            reason: e.to_string(),
+        })?
+        .remove(0);
+
+    Ok(post_entity.into())
 }

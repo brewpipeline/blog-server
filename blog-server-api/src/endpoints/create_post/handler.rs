@@ -7,6 +7,7 @@ pub async fn http_handler(
     (CreatePostRequestContent {
         new_post_data,
         post_service,
+        entity_post_service,
         auth_author_future,
     },): (CreatePostRequestContent,),
 ) -> Result<CreatePostContentSuccess, CreatePostContentFailure> {
@@ -49,5 +50,13 @@ pub async fn http_handler(
         })?
         .ok_or(InsertFailed)?;
 
-    Ok(created_post.into())
+    let created_post_entity = entity_post_service
+        .posts_entities(vec![created_post])
+        .await
+        .map_err(|e| DatabaseError {
+            reason: e.to_string(),
+        })?
+        .remove(0);
+
+    Ok(created_post_entity.into())
 }

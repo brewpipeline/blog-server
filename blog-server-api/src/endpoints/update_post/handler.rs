@@ -8,6 +8,7 @@ pub async fn http_handler(
         id,
         updated_post_data,
         post_service,
+        entity_post_service,
         auth_author_future,
     },): (UpdatePostRequestContent,),
 ) -> Result<UpdatePostContentSuccess, UpdatePostContentFailure> {
@@ -39,7 +40,7 @@ pub async fn http_handler(
         })?
         .ok_or(PostNotFound)?;
 
-    if author.base.slug != existing_post.author_slug {
+    if author.id != existing_post.base.author_id {
         return Err(EditingForbidden);
     }
 
@@ -72,5 +73,13 @@ pub async fn http_handler(
         })?
         .ok_or(PostNotFound)?;
 
-    Ok(updated_post.into())
+    let updated_post_entity = entity_post_service
+        .posts_entities(vec![updated_post])
+        .await
+        .map_err(|e| DatabaseError {
+            reason: e.to_string(),
+        })?
+        .remove(0);
+
+    Ok(updated_post_entity.into())
 }

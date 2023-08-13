@@ -12,6 +12,7 @@ pub async fn http_handler(
         limit,
         comment_service,
         post_service,
+        entity_comment_service,
     },): (CommentsRequestContent,),
 ) -> Result<CommentsResponseContentSuccess, CommentsResponseContentFailure> {
     let post_id = post_id.parse::<u64>().map_err(|e| IncorrectIdFormat {
@@ -40,20 +41,23 @@ pub async fn http_handler(
         comment_service.comments_count_by_post_id(&post.id),
     );
 
-    let comments = comments_result
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
-        .into_iter()
-        .map(|a| a.into())
-        .collect();
+    let comments = comments_result.map_err(|e| DatabaseError {
+        reason: e.to_string(),
+    })?;
 
     let total = total_result.map_err(|e| DatabaseError {
         reason: e.to_string(),
     })?;
 
+    let comments_entities = entity_comment_service
+        .comments_entities(comments)
+        .await
+        .map_err(|e| DatabaseError {
+            reason: e.to_string(),
+        })?;
+
     Ok(CommentsContainer {
-        comments,
+        comments: comments_entities,
         base: TotalOffsetLimitContainer {
             total,
             offset,

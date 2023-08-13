@@ -1,5 +1,6 @@
 use crate::extensions::Resolve;
 use blog_server_services::traits::comment_service::*;
+use blog_server_services::traits::entity_comment_service::*;
 use blog_server_services::traits::post_service::*;
 use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
 use std::sync::Arc;
@@ -10,11 +11,14 @@ pub struct CommentsRequestContent {
     pub(super) limit: Option<u64>,
     pub(super) comment_service: Arc<Box<dyn CommentService>>,
     pub(super) post_service: Arc<Box<dyn PostService>>,
+    pub(super) entity_comment_service: Arc<Box<dyn EntityCommentService>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for CommentsRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn CommentService>>> + Resolve<Arc<Box<dyn PostService>>>,
+    Extensions: Resolve<Arc<Box<dyn CommentService>>>
+        + Resolve<Arc<Box<dyn PostService>>>
+        + Resolve<Arc<Box<dyn EntityCommentService>>>,
 {
     type Data = ();
 
@@ -37,6 +41,7 @@ where
                 .flatten(),
             comment_service: origin_content.extensions.resolve(),
             post_service: origin_content.extensions.resolve(),
+            entity_comment_service: origin_content.extensions.resolve(),
         }
     }
 }
