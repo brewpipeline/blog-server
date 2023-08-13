@@ -4,9 +4,9 @@ use std::sync::Arc;
 use crate::extensions::Resolve;
 use blog_generic::entities;
 use blog_server_services::traits::author_service::*;
+use blog_server_services::traits::entity_post_service::*;
 use blog_server_services::traits::post_service::*;
 
-use screw_components::dyn_result::*;
 use screw_core::request::*;
 use screw_core::response::*;
 use screw_core::routing::*;
@@ -34,7 +34,9 @@ const KEYWORDS_TAG_BODY_PREFIX: &str =
 const KEYWORDS_TAG_BODY_SUFFIX: &str = "</script>";
 
 pub async fn client_handler<
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>> + Resolve<Arc<Box<dyn PostService>>>,
+    Extensions: Resolve<Arc<Box<dyn AuthorService>>>
+        + Resolve<Arc<Box<dyn PostService>>>
+        + Resolve<Arc<Box<dyn EntityPostService>>>,
 >(
     request: router::RoutedRequest<Request<Extensions>>,
 ) -> Response {
@@ -126,34 +128,43 @@ fn last_content(html: &String, prefix: &str, suffix: &str) -> Option<String> {
     Some(content)
 }
 
-fn app_content_encode<D: Into<E>, E: Serialize>(data: DResult<Option<D>>) -> Option<AppContent> {
-    data.ok()
-        .flatten()
-        .map(|d| -> E { d.into() })
-        .map(|e| serde_json::to_string(&e).ok())
-        .flatten()
-        .map(|json| AppContent {
-            r#type: "application/json".to_string(),
-            value: json,
-        })
+fn app_content_encode<E: Serialize>(entity: &E) -> Option<AppContent> {
+    Some(AppContent {
+        r#type: "application/json".to_string(),
+        value: serde_json::to_string(entity).ok()?,
+    })
 }
 
 async fn app_content<Extensions>(
     request: &router::RoutedRequest<Request<Extensions>>,
 ) -> Option<AppContent>
 where
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>> + Resolve<Arc<Box<dyn PostService>>>,
+    Extensions: Resolve<Arc<Box<dyn AuthorService>>>
+        + Resolve<Arc<Box<dyn PostService>>>
+        + Resolve<Arc<Box<dyn EntityPostService>>>,
 {
     match Route::recognize_path(request.path.as_str())? {
         Route::Post { slug: _, id } | Route::EditPost { id } => {
             let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
-            let post = post_service.post_by_id(&id).await;
-            app_content_encode::<_, entities::Post>(post)
+            let entity_post_service: Arc<Box<dyn EntityPostService>> =
+                request.origin.extensions.resolve();
+            let post = post_service.post_by_id(&id).await.ok().flatten()?;
+            let post_entity = entity_post_service
+                .posts_entities(vec![post])
+                .await
+                .ok()?
+                .remove(0);
+            app_content_encode(&post_entity)
         }
         Route::Author { slug } => {
             let author_service: Arc<Box<dyn AuthorService>> = request.origin.extensions.resolve();
-            let author = author_service.author_by_slug(&slug).await;
-            app_content_encode::<_, entities::Author>(author)
+            let author_entity: entities::Author = author_service
+                .author_by_slug(&slug)
+                .await
+                .ok()
+                .flatten()?
+                .into();
+            app_content_encode(&author_entity)
         }
         _ => None,
     }
