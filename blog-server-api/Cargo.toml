@@ -3,6 +3,9 @@ name = "blog-server-api"
 version = "0.0.1"
 edition = "2021"
 
+[features]
+ssr = ["blog-ui", "serde_json"]
+
 [dependencies.screw-components]
 git = "https://github.com/Tikitko/screw.git"
 #path = "../../screw/screw-components"
@@ -24,12 +27,20 @@ git = "https://github.com/Tikitko/screw.git"
 #path = "../../screw/screw-ws"
 package = "screw-ws"
 
+[dependencies.blog-ui]
+git = "https://github.com/Tikitko/blog-ui.git"
+#path = "../../blog-ui"
+default-features = false
+features = ["server"]
+optional = true
+
 [dependencies]
 blog-generic = { path = "../blog-generic" }
 blog-server-services = { path = "../blog-server-services" }
 tokio = { version = "1.27.0", features = ["full"] }
 hyper = { version = "0.14.26", features = ["full"] }
 serde = { version = "1.0.160", features = ["derive"] }
+serde_json = { version = "1.0.104", optional = true }
 rbs = { version = "4.3" }
 rbatis = { version = "4.3" }
 rbdc-pg = { version = "4.3" }

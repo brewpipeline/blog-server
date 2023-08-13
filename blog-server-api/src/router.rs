@@ -7,6 +7,7 @@ use screw_core::request::*;
 use screw_core::response::*;
 use screw_core::routing::*;
 
+#[cfg(not(feature = "ssr"))]
 async fn not_found_fallback_handler<Extensions>(
     _: router::RoutedRequest<Request<Extensions>>,
 ) -> Response {
@@ -43,7 +44,11 @@ async fn api_not_found_fallback_handler<Extensions>(
 
 pub fn make_router<Extensions: ExtensionsProviderType>(
 ) -> router::second::Router<Request<Extensions>, Response> {
-    router::first::Router::with_fallback_handler(not_found_fallback_handler).and_routes(|r| {
+    #[cfg(not(feature = "ssr"))]
+    let fallback = not_found_fallback_handler;
+    #[cfg(feature = "ssr")]
+    let fallback = client_handler;
+    router::first::Router::with_fallback_handler(fallback).and_routes(|r| {
         r.scoped_middleware(
             "/api",
             JsonApiMiddlewareConverter {
