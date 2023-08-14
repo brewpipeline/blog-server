@@ -1,7 +1,5 @@
 use crate::utils::{string_filter, time_utils, transliteration};
-use blog_generic::entities::{
-    CommonPost as ECommonPost, Post as EPost, ShortAuthor as EShortAuthor, Tag as ETag,
-};
+use blog_generic::entities::CommonPost as ECommonPost;
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 
@@ -50,40 +48,10 @@ impl From<(u64, ECommonPost)> for BasePost {
 #[serde(rename_all = "snake_case")]
 pub struct Post {
     pub id: u64,
-    pub author_slug: String,
-    pub author_first_name: Option<String>,
-    pub author_last_name: Option<String>,
     #[serde(default)]
     pub tags: Vec<Tag>,
     #[serde(flatten)]
     pub base: BasePost,
-}
-
-impl Into<EPost> for Post {
-    fn into(self) -> EPost {
-        EPost {
-            id: self.id,
-            title: self.base.title,
-            slug: self.base.slug,
-            summary: self.base.summary,
-            created_at: self.base.created_at,
-            content: self.base.content,
-            short_author: EShortAuthor {
-                slug: self.author_slug,
-                first_name: self.author_first_name,
-                last_name: self.author_last_name,
-            },
-            tags: self
-                .tags
-                .into_iter()
-                .map(|v| ETag {
-                    id: v.id,
-                    title: v.title,
-                    slug: v.slug,
-                })
-                .collect(),
-        }
-    }
 }
 
 #[async_trait]

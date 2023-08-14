@@ -1,5 +1,4 @@
-use blog_generic::entities::PostContainer;
-use blog_server_services::traits::post_service::Post as ServicePost;
+use blog_generic::entities::{Post, PostContainer};
 use hyper::StatusCode;
 use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
 
@@ -8,10 +7,10 @@ pub struct UpdatePostContentSuccess {
     container: PostContainer,
 }
 
-impl Into<UpdatePostContentSuccess> for ServicePost {
+impl Into<UpdatePostContentSuccess> for Post {
     fn into(self) -> UpdatePostContentSuccess {
         UpdatePostContentSuccess {
-            container: PostContainer { post: self.into() },
+            container: PostContainer { post: self },
         }
     }
 }

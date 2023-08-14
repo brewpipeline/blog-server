@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::traits::author_service::{Author, AuthorService, BaseAuthor};
 use rbatis::rbatis::RBatis;
 use screw_components::dyn_result::{DError, DResult};
@@ -36,6 +38,21 @@ impl Author {
     async fn count_by_query(rb: &RBatis, query: &String) -> rbatis::Result<u64> {
         impled!()
     }
+    #[py_sql(
+        "
+        SELECT \
+            author.* \
+        FROM author \
+        WHERE \
+            author.id IN (
+                trim ',': for _,id in ids:
+                    #{id},
+                ) \
+    "
+    )]
+    async fn select_by_ids(rb: &RBatis, ids: &HashSet<u64>) -> rbatis::Result<Vec<Author>> {
+        impled!()
+    }
 }
 
 struct RbatisAuthorService {
@@ -66,6 +83,12 @@ impl AuthorService for RbatisAuthorService {
     }
     async fn authors(&self, offset: &u64, limit: &u64) -> DResult<Vec<Author>> {
         Ok(Author::select_all_with_offset_and_limit(&mut self.rb.clone(), offset, limit).await?)
+    }
+    async fn authors_by_ids(&self, ids: &HashSet<u64>) -> DResult<Vec<Author>> {
+        if ids.is_empty() {
+            return Ok(vec![]);
+        }
+        Ok(Author::select_by_ids(&self.rb, ids).await?)
     }
     async fn author_by_id(&self, id: &u64) -> DResult<Option<Author>> {
         Ok(Author::select_by_id(&mut self.rb.clone(), id).await?)

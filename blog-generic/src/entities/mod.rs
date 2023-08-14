@@ -8,7 +8,6 @@ mod login;
 mod post;
 mod post_container;
 mod posts_container;
-mod short_author;
 mod tag;
 mod total_offset_limit_container;
 
@@ -22,6 +21,5 @@ pub use login::*;
 pub use post::*;
 pub use post_container::*;
 pub use posts_container::*;
-pub use short_author::*;
 pub use tag::*;
 pub use total_offset_limit_container::*;

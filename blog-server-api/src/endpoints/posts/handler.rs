@@ -11,6 +11,7 @@ pub async fn http_handler(
         offset,
         limit,
         post_service,
+        entity_post_service,
     },): (PostsRequestContent,),
 ) -> Result<PostsResponseContentSuccess, PostsResponseContentFailure> {
     let offset = offset.unwrap_or(0).max(0);
@@ -28,20 +29,23 @@ pub async fn http_handler(
         )
     };
 
-    let posts = posts_result
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
-        .into_iter()
-        .map(|a| a.into())
-        .collect();
+    let posts = posts_result.map_err(|e| DatabaseError {
+        reason: e.to_string(),
+    })?;
 
     let total = total_result.map_err(|e| DatabaseError {
         reason: e.to_string(),
     })?;
 
+    let posts_entities = entity_post_service
+        .posts_entities(posts)
+        .await
+        .map_err(|e| DatabaseError {
+            reason: e.to_string(),
+        })?;
+
     Ok(PostsContainer {
-        posts,
+        posts: posts_entities,
         base: TotalOffsetLimitContainer {
             total,
             offset,

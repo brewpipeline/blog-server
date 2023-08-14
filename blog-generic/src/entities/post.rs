@@ -10,7 +10,7 @@ pub struct Post {
     pub summary: String,
     pub created_at: u64,
     pub content: Option<String>,
-    pub short_author: ShortAuthor,
+    pub author: Author,
     pub tags: Vec<Tag>,
 }
 
