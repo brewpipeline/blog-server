@@ -20,17 +20,21 @@ impl Post {
             "https://source.unsplash.com/random/{}x{}?{}&sig={}",
             400,
             100,
-            self.tags_string(),
+            self.joined_tags_string("+"),
             self.slug,
         )
     }
 
-    pub fn tags_string(&self) -> String {
+    fn joined_tags_string(&self, sep: &str) -> String {
         self.tags
             .clone()
             .into_iter()
             .map(|v| v.title)
             .collect::<Vec<String>>()
-            .join(", ")
+            .join(sep)
+    }
+
+    pub fn tags_string(&self) -> String {
+        self.joined_tags_string(", ")
     }
 }
