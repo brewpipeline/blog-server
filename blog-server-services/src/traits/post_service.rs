@@ -1,5 +1,6 @@
 use crate::utils::{string_filter, time_utils, transliteration};
 use blog_generic::entities::CommonPost as ECommonPost;
+use blog_generic::entities::Tag as ETag;
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 
@@ -9,6 +10,16 @@ pub struct Tag {
     pub id: u64,
     pub slug: String,
     pub title: String,
+}
+
+impl Into<ETag> for Tag {
+    fn into(self) -> ETag {
+        ETag {
+            id: self.id,
+            title: self.title,
+            slug: self.slug,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -74,6 +85,7 @@ pub trait PostService: Send + Sync {
     async fn create_post(&self, post: &BasePost) -> DResult<u64>;
     async fn update_post(&self, post_id: &u64, post: &BasePost) -> DResult<()>;
 
+    async fn tag_by_id(&self, id: &u64) -> DResult<Option<Tag>>;
     async fn create_tags(&self, tag_titles: Vec<String>) -> DResult<Vec<Tag>>;
     async fn merge_post_tags(&self, post_id: &u64, tags: Vec<Tag>) -> DResult<()>;
 }

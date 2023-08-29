@@ -8,6 +8,7 @@ pub mod create_post;
 pub mod login;
 pub mod post;
 pub mod posts;
+pub mod tag;
 pub mod update_post;
 
 #[cfg(feature = "ssr")]

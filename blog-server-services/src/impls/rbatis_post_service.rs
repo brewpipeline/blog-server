@@ -11,6 +11,8 @@ pub fn create_rbatis_post_service(rb: RBatis) -> Box<dyn PostService> {
 
 impl_insert!(BasePost {}, "post");
 impl_insert!(NewTag {}, "tag");
+impl_select!(Tag {select_by_id(id: &u64) -> Option => 
+    "`WHERE id = #{id} LIMIT 1`"});
 impl_select!(PostTag {select_by_post_id(post_id: &u64) =>
     "`WHERE post_id = #{post_id}`"});
 impl_insert!(PostTag {}, "post_tag");
@@ -386,6 +388,10 @@ impl PostService for RbatisPostService {
         Ok(())
     }
 
+    async fn tag_by_id(&self, id: &u64) -> DResult<Option<Tag>> {
+        let tag = Tag::select_by_id(&mut self.rb.clone(), id).await?;
+        Ok(tag)
+    }
     async fn create_tags(&self, tag_titles: Vec<String>) -> DResult<Vec<Tag>> {
         if tag_titles.is_empty() {
             return Ok(vec![]);

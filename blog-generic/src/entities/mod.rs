@@ -9,6 +9,7 @@ mod post;
 mod post_container;
 mod posts_container;
 mod tag;
+mod tag_container;
 mod total_offset_limit_container;
 
 pub use author::*;
@@ -22,4 +23,5 @@ pub use post::*;
 pub use post_container::*;
 pub use posts_container::*;
 pub use tag::*;
+pub use tag_container::*;
 pub use total_offset_limit_container::*;

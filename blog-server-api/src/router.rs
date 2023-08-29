@@ -103,6 +103,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                 })
                 .route(
                     route::first::Route::with_method(&hyper::Method::GET)
+                        .and_path("/tag/{id:[^/]*}")
+                        .and_handler(tag::http_handler),
+                )
+                .route(
+                    route::first::Route::with_method(&hyper::Method::GET)
                         .and_path("/comments/{post_id:[^/]*}")
                         .and_handler(comments::http_handler),
                 )
