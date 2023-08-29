@@ -79,6 +79,23 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                             .and_handler(authors::http_handler),
                     )
                 })
+                .scoped("/post", |r| {
+                    r.route(
+                        route::first::Route::with_method(&hyper::Method::GET)
+                            .and_path("/{id:[^/]*}")
+                            .and_handler(post::http_handler),
+                    )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::PATCH)
+                            .and_path("/{id:[^/]*}")
+                            .and_handler(update_post::http_handler),
+                    )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::POST)
+                            .and_path("")
+                            .and_handler(create_post::http_handler),
+                    )
+                })
                 .scoped("/posts", |r| {
                     r.route(
                         route::first::Route::with_method(&hyper::Method::GET)
