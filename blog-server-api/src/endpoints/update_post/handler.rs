@@ -45,7 +45,7 @@ pub async fn http_handler(
     }
 
     post_service
-        .update_post(&id, &From::from((author.id, base_post)))
+        .update_post_by_id(&id, &From::from((author.id, base_post)))
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
