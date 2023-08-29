@@ -244,9 +244,9 @@ impl RbatisPostService {
     #[py_sql(
         "
         INSERT INTO post 
-        (author_id,title,slug,summary,published,created_at,content) 
+        (author_id,title,slug,summary,published,created_at,content,image_url) 
         VALUES 
-        (#{post.author_id},#{post.title},#{post.slug},#{post.summary},#{post.published},to_timestamp(#{post.created_at}),#{post.content})
+        (#{post.author_id},#{post.title},#{post.slug},#{post.summary},#{post.published},to_timestamp(#{post.created_at}),#{post.content},#{post.image_url})
         RETURNING id
     "
     )]
@@ -262,7 +262,8 @@ impl RbatisPostService {
             slug = #{post_data.slug}, \
             summary = #{post_data.summary}, \
             published = #{post_data.published}, \
-            content = #{post_data.content} \
+            content = #{post_data.content}, \
+            image_url = #{post_data.image_url} \
         WHERE id = #{post_id} \
         RETURNING id
     "
