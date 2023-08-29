@@ -5,6 +5,7 @@ pub mod authors;
 mod client_handler;
 pub mod comments;
 pub mod create_post;
+pub mod delete_post;
 pub mod login;
 pub mod post;
 pub mod posts;

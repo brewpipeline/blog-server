@@ -91,6 +91,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                             .and_handler(update_post::http_handler),
                     )
                     .route(
+                        route::first::Route::with_method(&hyper::Method::DELETE)
+                            .and_path("/{id:[^/]*}")
+                            .and_handler(delete_post::http_handler),
+                    )
+                    .route(
                         route::first::Route::with_method(&hyper::Method::POST)
                             .and_path("")
                             .and_handler(create_post::http_handler),

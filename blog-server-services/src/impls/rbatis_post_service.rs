@@ -1,5 +1,6 @@
 use crate::traits::post_service::{BasePost, Post, PostService, Tag};
 use crate::utils::{string_filter, transliteration};
+use rbatis::executor::RBatisTxExecutor;
 use rbatis::{rbatis::RBatis, rbdc::db::ExecResult};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
@@ -66,6 +67,18 @@ impl PostTag {
         rb: &RBatis,
         post_id: u64,
         tag_ids: Vec<u64>,
+    ) -> rbatis::Result<ExecResult> {
+        impled!()
+    }
+    #[py_sql(
+        "
+        DELETE FROM post_tag \
+        WHERE post_id = #{post_id} \
+    "
+    )]
+    async fn delete_by_post_id(
+        rb: &mut RBatisTxExecutor,
+        post_id: &u64,
     ) -> rbatis::Result<ExecResult> {
         impled!()
     }
@@ -279,6 +292,15 @@ impl RbatisPostService {
     async fn get_tags_by_titles(rb: &RBatis, titles: &Vec<String>) -> rbatis::Result<Vec<Tag>> {
         impled!()
     }
+    #[py_sql(
+        "
+        DELETE FROM post \
+        WHERE post.id = #{id} \
+    "
+    )]
+    async fn delete_post_by_id(rb: &mut RBatisTxExecutor, id: &u64) -> rbatis::Result<ExecResult> {
+        impled!()
+    }
 
     async fn saturate_with_tags(&self, post_option: Option<Post>) -> DResult<Option<Post>> {
         match post_option {
@@ -383,8 +405,21 @@ impl PostService for RbatisPostService {
         Ok(inserted_id)
     }
 
-    async fn update_post(&self, post_id: &u64, post_data: &BasePost) -> DResult<()> {
-        RbatisPostService::update_post_by_id(&self.rb, post_id, post_data).await?;
+    async fn update_post_by_id(&self, id: &u64, post_data: &BasePost) -> DResult<()> {
+        RbatisPostService::update_post_by_id(&self.rb, id, post_data).await?;
+        Ok(())
+    }
+
+    async fn delete_post_by_id(&self, id: &u64) -> DResult<()> {
+        let tx = self.rb.acquire_begin().await?;
+        let mut tx = tx.defer_async(|mut tx| async move {
+            if !tx.done {
+                let _ = tx.rollback().await;
+            }
+        });
+        PostTag::delete_by_post_id(&mut tx, id).await?;
+        RbatisPostService::delete_post_by_id(&mut tx, id).await?;
+        tx.commit().await?;
         Ok(())
     }
 
