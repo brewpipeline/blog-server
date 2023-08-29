@@ -108,7 +108,7 @@ fn update_tag(
     body_tag_suffix: &str,
 ) {
     let Some(content) = last_content(&html, body_tag_prefix, body_tag_suffix) else {
-        return
+        return;
     };
     let empty_tag = main_tag_prefix.to_string() + main_tag_suffix;
     let tag = {

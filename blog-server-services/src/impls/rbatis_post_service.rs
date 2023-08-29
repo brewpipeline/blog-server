@@ -11,6 +11,8 @@ pub fn create_rbatis_post_service(rb: RBatis) -> Box<dyn PostService> {
 
 impl_insert!(BasePost {}, "post");
 impl_insert!(NewTag {}, "tag");
+impl_select!(Tag {select_by_id(id: &u64) -> Option => 
+    "`WHERE id = #{id} LIMIT 1`"});
 impl_select!(PostTag {select_by_post_id(post_id: &u64) =>
     "`WHERE post_id = #{post_id}`"});
 impl_insert!(PostTag {}, "post_tag");
@@ -91,6 +93,27 @@ impl Post {
     }
     #[py_sql(
         "
+        SELECT COUNT(1) \
+        FROM post \
+        WHERE post.author_id = #{author_id} \
+    "
+    )]
+    async fn count_by_author_id(rb: &RBatis, author_id: &u64) -> rbatis::Result<u64> {
+        impled!()
+    }
+    #[py_sql(
+        "
+        SELECT COUNT(1) \
+        FROM post \
+        JOIN post_tag ON post.id = post_tag.post_id \
+        WHERE post_tag.tag_id = #{tag_id} \
+    "
+    )]
+    async fn count_by_tag_id(rb: &RBatis, tag_id: &u64) -> rbatis::Result<u64> {
+        impled!()
+    }
+    #[py_sql(
+        "
         SELECT \
             post.* \
         FROM post \
@@ -149,6 +172,46 @@ impl Post {
     async fn select_all_by_query_with_limit_and_offset(
         rb: &RBatis,
         query: &String,
+        limit: &u64,
+        offset: &u64,
+    ) -> rbatis::Result<Vec<Post>> {
+        impled!()
+    }
+    #[py_sql(
+        "
+        SELECT \
+            post.* \
+        FROM post \
+        WHERE post.author_id = #{author_id} \
+        ORDER BY post.id DESC \
+        LIMIT #{limit} \
+        OFFSET #{offset} \
+    "
+    )]
+    async fn select_all_by_author_id_with_limit_and_offset(
+        rb: &RBatis,
+        author_id: &u64,
+        limit: &u64,
+        offset: &u64,
+    ) -> rbatis::Result<Vec<Post>> {
+        impled!()
+    }
+
+    #[py_sql(
+        "
+        SELECT \
+            post.* \
+        FROM post \
+        JOIN post_tag ON post.id = post_tag.post_id \
+        WHERE post_tag.tag_id = #{tag_id} \
+        ORDER BY post.id DESC \
+        LIMIT #{limit} \
+        OFFSET #{offset} \
+    "
+    )]
+    async fn select_all_by_tag_id_with_limit_and_offset(
+        rb: &RBatis,
+        tag_id: &u64,
         limit: &u64,
         offset: &u64,
     ) -> rbatis::Result<Vec<Post>> {
@@ -277,6 +340,31 @@ impl PostService for RbatisPostService {
         RbatisPostService::saturate_posts_with_tags(&self, posts).await
     }
 
+    async fn posts_count_by_author_id(&self, author_id: &u64) -> DResult<u64> {
+        Ok(Post::count_by_author_id(&self.rb, author_id).await?)
+    }
+    async fn posts_by_author_id(
+        &self,
+        author_id: &u64,
+        offset: &u64,
+        limit: &u64,
+    ) -> DResult<Vec<Post>> {
+        let posts =
+            Post::select_all_by_author_id_with_limit_and_offset(&self.rb, author_id, limit, offset)
+                .await?;
+        RbatisPostService::saturate_posts_with_tags(&self, posts).await
+    }
+
+    async fn posts_count_by_tag_id(&self, tag_id: &u64) -> DResult<u64> {
+        Ok(Post::count_by_tag_id(&self.rb, tag_id).await?)
+    }
+    async fn posts_by_tag_id(&self, tag_id: &u64, offset: &u64, limit: &u64) -> DResult<Vec<Post>> {
+        let posts =
+            Post::select_all_by_tag_id_with_limit_and_offset(&self.rb, tag_id, limit, offset)
+                .await?;
+        RbatisPostService::saturate_posts_with_tags(&self, posts).await
+    }
+
     async fn posts_count(&self) -> DResult<u64> {
         Ok(Post::count(&self.rb).await?)
     }
@@ -300,6 +388,10 @@ impl PostService for RbatisPostService {
         Ok(())
     }
 
+    async fn tag_by_id(&self, id: &u64) -> DResult<Option<Tag>> {
+        let tag = Tag::select_by_id(&mut self.rb.clone(), id).await?;
+        Ok(tag)
+    }
     async fn create_tags(&self, tag_titles: Vec<String>) -> DResult<Vec<Tag>> {
         if tag_titles.is_empty() {
             return Ok(vec![]);

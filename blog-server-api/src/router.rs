@@ -63,47 +63,66 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                     )
                     .route(
                         route::first::Route::with_method(&hyper::Method::GET)
-                            .and_path("/{slug:[^/]*}")
+                            .and_path("/slug/{slug:[^/]*}")
                             .and_handler(author::http_handler),
                     )
                 })
-                .route(
-                    route::first::Route::with_method(&hyper::Method::GET)
-                        .and_path("/authors")
-                        .and_handler(authors::http_handler),
-                )
-                .route(
-                    route::first::Route::with_method(&hyper::Method::GET)
-                        .and_path("/post/{id:[^/]*}")
-                        .and_handler(post::http_handler),
-                )
-                .route(
-                    route::first::Route::with_method(&hyper::Method::GET)
-                        .and_path("/posts")
-                        .and_handler(posts::http_handler),
-                )
-                .route(
-                    route::first::Route::with_method(&hyper::Method::POST)
-                        .and_path("/post")
-                        .and_handler(create_post::http_handler),
-                )
-                .route(
-                    route::first::Route::with_method(&hyper::Method::PATCH)
-                        .and_path("/post/{id:[^/]*}")
-                        .and_handler(update_post::http_handler),
-                )
-                .scoped("/search", |r| {
+                .scoped("/authors", |r| {
                     r.route(
                         route::first::Route::with_method(&hyper::Method::GET)
-                            .and_path("/posts/{query:[^/]*}")
+                            .and_path("/search/{query:[^/]*}")
+                            .and_handler(authors::http_handler),
+                    )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::GET)
+                            .and_path("")
+                            .and_handler(authors::http_handler),
+                    )
+                })
+                .scoped("/post", |r| {
+                    r.route(
+                        route::first::Route::with_method(&hyper::Method::GET)
+                            .and_path("/{id:[^/]*}")
+                            .and_handler(post::http_handler),
+                    )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::PATCH)
+                            .and_path("/{id:[^/]*}")
+                            .and_handler(update_post::http_handler),
+                    )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::POST)
+                            .and_path("")
+                            .and_handler(create_post::http_handler),
+                    )
+                })
+                .scoped("/posts", |r| {
+                    r.route(
+                        route::first::Route::with_method(&hyper::Method::GET)
+                            .and_path("/search/{search_query:[^/]*}")
                             .and_handler(posts::http_handler),
                     )
                     .route(
                         route::first::Route::with_method(&hyper::Method::GET)
-                            .and_path("/authors/{query:[^/]*}")
-                            .and_handler(authors::http_handler),
+                            .and_path("/author/id/{author_id:[^/]*}")
+                            .and_handler(posts::http_handler),
+                    )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::GET)
+                            .and_path("/tag/{tag_id:[^/]*}")
+                            .and_handler(posts::http_handler),
+                    )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::GET)
+                            .and_path("")
+                            .and_handler(posts::http_handler),
                     )
                 })
+                .route(
+                    route::first::Route::with_method(&hyper::Method::GET)
+                        .and_path("/tag/{id:[^/]*}")
+                        .and_handler(tag::http_handler),
+                )
                 .route(
                     route::first::Route::with_method(&hyper::Method::GET)
                         .and_path("/comments/{post_id:[^/]*}")
