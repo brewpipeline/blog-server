@@ -29,6 +29,7 @@ pub struct Author {
 impl Into<EAuthor> for Author {
     fn into(self) -> EAuthor {
         EAuthor {
+            id: self.id,
             slug: self.base.slug,
             first_name: self.base.first_name,
             last_name: self.base.last_name,

@@ -59,6 +59,15 @@ pub trait PostService: Send + Sync {
     async fn posts_count_by_query(&self, query: &String) -> DResult<u64>;
     async fn posts_by_query(&self, query: &String, offset: &u64, limit: &u64)
         -> DResult<Vec<Post>>;
+    async fn posts_count_by_author_id(&self, author_id: &u64) -> DResult<u64>;
+    async fn posts_by_author_id(
+        &self,
+        author_id: &u64,
+        offset: &u64,
+        limit: &u64,
+    ) -> DResult<Vec<Post>>;
+    async fn posts_count_by_tag_id(&self, tag_id: &u64) -> DResult<u64>;
+    async fn posts_by_tag_id(&self, tag_id: &u64, offset: &u64, limit: &u64) -> DResult<Vec<Post>>;
     async fn posts_count(&self) -> DResult<u64>;
     async fn posts(&self, offset: &u64, limit: &u64) -> DResult<Vec<Post>>;
     async fn post_by_id(&self, id: &u64) -> DResult<Option<Post>>;
