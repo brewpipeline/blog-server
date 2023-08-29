@@ -5,6 +5,8 @@ pub enum DeletePostResponseContentFailure {
     DatabaseError { reason: String },
     NotFound,
     IncorrectIdFormat { reason: String },
+    Unauthorized { reason: String },
+    EditingForbidden,
 }
 
 impl ApiResponseContentBase for DeletePostResponseContentFailure {
@@ -17,6 +19,10 @@ impl ApiResponseContentBase for DeletePostResponseContentFailure {
             DeletePostResponseContentFailure::IncorrectIdFormat { reason: _ } => {
                 &StatusCode::BAD_REQUEST
             }
+            DeletePostResponseContentFailure::Unauthorized { reason: _ } => {
+                &StatusCode::UNAUTHORIZED
+            }
+            DeletePostResponseContentFailure::EditingForbidden => &StatusCode::FORBIDDEN,
         }
     }
 }
@@ -31,6 +37,10 @@ impl ApiResponseContentFailure for DeletePostResponseContentFailure {
             DeletePostResponseContentFailure::IncorrectIdFormat { reason: _ } => {
                 "DELETE_POST_INCORRECT_ID_FORMAT"
             }
+            DeletePostResponseContentFailure::Unauthorized { reason: _ } => {
+                "DELETE_POST_UNAUTHORIZED"
+            }
+            DeletePostResponseContentFailure::EditingForbidden => "DELETE_POST_DELETING_FORBIDDEN",
         }
     }
 
@@ -48,6 +58,16 @@ impl ApiResponseContentFailure for DeletePostResponseContentFailure {
             }
             DeletePostResponseContentFailure::IncorrectIdFormat { reason } => {
                 format!("incorrect value provided for post ID: {}", reason)
+            }
+            DeletePostResponseContentFailure::Unauthorized { reason } => {
+                if cfg!(debug_assertions) {
+                    format!("unauthorized error: {}", reason)
+                } else {
+                    "unauthorized error".to_string()
+                }
+            }
+            DeletePostResponseContentFailure::EditingForbidden => {
+                String::from("insufficient rights to delete post")
             }
         })
     }
