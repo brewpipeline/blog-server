@@ -32,6 +32,7 @@ pub struct BasePost {
     pub published: u8,
     pub created_at: u64,
     pub content: Option<String>,
+    pub image_url: Option<String>,
 }
 
 impl From<(u64, ECommonPost)> for BasePost {
@@ -51,6 +52,7 @@ impl From<(u64, ECommonPost)> for BasePost {
             summary: value.1.summary,
             published: value.1.published,
             content: value.1.content,
+            image_url: value.1.image_url,
         }
     }
 }

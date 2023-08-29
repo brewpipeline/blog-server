@@ -35,6 +35,7 @@ impl Into<EPost> for EPostBuilder {
                     slug: v.slug,
                 })
                 .collect(),
+            image_url: self.0.base.image_url,
         }
     }
 }

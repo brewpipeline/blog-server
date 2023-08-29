@@ -8,4 +8,5 @@ pub struct CommonPost {
     pub summary: String,
     pub content: Option<String>,
     pub tags: Vec<String>,
+    pub image_url: Option<String>,
 }

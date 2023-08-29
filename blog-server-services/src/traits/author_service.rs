@@ -16,6 +16,7 @@ pub struct BaseAuthor {
     pub password_hash: String,
     pub registered_at: u64,
     pub status: Option<String>,
+    pub image_url: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -38,6 +39,7 @@ impl Into<EAuthor> for Author {
             email: self.base.email,
             registered_at: self.base.registered_at,
             status: self.base.status,
+            image_url: self.base.image_url,
         }
     }
 }

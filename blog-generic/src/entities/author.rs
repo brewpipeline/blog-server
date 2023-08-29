@@ -12,13 +12,14 @@ pub struct Author {
     pub email: Option<String>,
     pub registered_at: u64,
     pub status: Option<String>,
+    pub image_url: Option<String>,
 }
 
 impl Author {
-    pub fn image_url(&self) -> String {
+    pub fn default_image_url(&self) -> String {
         format!(
-            "https://api.dicebear.com/6.x/bottts-neutral/svg?seed={}",
-            self.slug,
+            "https://api.dicebear.com/7.x/shapes/svg?seed={seed}",
+            seed = self.slug,
         )
     }
 }

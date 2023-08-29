@@ -139,3 +139,19 @@ DO $$ BEGIN
     ALTER TABLE tag ADD CONSTRAINT uq_tag_title UNIQUE (title);
   END IF;
 END $$
+
+;
+
+DO $$ BEGIN
+  IF NOT EXISTS(select * from information_schema.columns where table_name = 'post' and column_name = 'image_url') THEN
+    ALTER TABLE post ADD COLUMN image_url VARCHAR(150);
+  END IF;
+END $$
+
+;
+
+DO $$ BEGIN
+  IF NOT EXISTS(select * from information_schema.columns where table_name = 'author' and column_name = 'image_url') THEN
+    ALTER TABLE author ADD COLUMN image_url VARCHAR(150);
+  END IF;
+END $$
