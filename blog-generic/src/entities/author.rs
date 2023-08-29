@@ -22,4 +22,10 @@ impl Author {
             seed = self.slug,
         )
     }
+
+    pub fn image_url(&self) -> String {
+        self.image_url
+            .clone()
+            .unwrap_or_else(|| self.default_image_url())
+    }
 }

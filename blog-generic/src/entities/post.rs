@@ -14,3 +14,14 @@ pub struct Post {
     pub tags: Vec<Tag>,
     pub image_url: Option<String>,
 }
+
+impl Post {
+    pub fn joined_tags_string(&self, sep: &str) -> String {
+        self.tags
+            .clone()
+            .into_iter()
+            .map(|v| v.title)
+            .collect::<Vec<String>>()
+            .join(sep)
+    }
+}
