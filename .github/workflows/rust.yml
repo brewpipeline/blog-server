@@ -19,6 +19,11 @@ jobs:
       SERVER_ADDRESS: ""
       PG_URL: ""
 
+      TITLE: ""
+      DESCRIPTION: ""
+      KEYWORDS: ""
+      ACCORDION_JSON: ""
+
     steps:
     - uses: actions/checkout@v3
     - name: Build
