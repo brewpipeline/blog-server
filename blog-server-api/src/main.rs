@@ -5,6 +5,10 @@ mod extensions;
 mod router;
 mod utils;
 
+const JWT_SECRET: &'static str = std::env!("JWT_SECRET");
+const SERVER_ADDRESS: &'static str = std::env!("SERVER_ADDRESS");
+const PG_URL: &'static str = std::env!("PG_URL");
+
 #[tokio::main]
 async fn main() -> screw_components::dyn_result::DResult<()> {
     let rbatis = init_db().await;
@@ -14,7 +18,7 @@ async fn main() -> screw_components::dyn_result::DResult<()> {
             .and_extensions(extensions::make_extensions(rbatis)),
     );
 
-    let addr = std::env!("SERVER_ADDRESS").parse()?;
+    let addr = SERVER_ADDRESS.parse()?;
     println!("Listening on http://{}", addr);
     hyper::Server::bind(&addr).serve(server_service).await?;
 
@@ -51,7 +55,7 @@ pub async fn init_db() -> rbatis::RBatis {
         },
     };
     let rb = rbatis::RBatis::new_with_opt(opt);
-    rb.init(rbdc_pg::driver::PgDriver {}, std::env!("PG_URL"))
+    rb.init(rbdc_pg::driver::PgDriver {}, PG_URL)
         .unwrap();
 
     let sql = std::fs::read_to_string("./table_pg.sql").unwrap();

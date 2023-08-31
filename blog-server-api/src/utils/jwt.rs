@@ -5,7 +5,7 @@ use jsonwebtoken::{
 use serde::{Deserialize, Serialize};
 
 fn jwt_secret(additional_secret: &String) -> String {
-    std::env!("JWT_SECRET").to_string() + additional_secret
+    crate::JWT_SECRET.to_string() + additional_secret
 }
 
 pub fn encode(claims: &impl Serialize, additional_secret: &String) -> Result<String> {
