@@ -3,10 +3,9 @@ use jsonwebtoken::{
     Validation,
 };
 use serde::{Deserialize, Serialize};
-use std::env;
 
 fn jwt_secret(additional_secret: &String) -> String {
-    env::var("JWT_SECRET").expect("JWT_SECRET expected in env vars") + additional_secret.as_str()
+    std::env!("JWT_SECRET").to_string() + additional_secret
 }
 
 pub fn encode(claims: &impl Serialize, additional_secret: &String) -> Result<String> {

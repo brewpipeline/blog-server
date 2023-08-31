@@ -7,8 +7,6 @@ mod utils;
 
 #[tokio::main]
 async fn main() -> screw_components::dyn_result::DResult<()> {
-    dotenv::dotenv().ok();
-
     let rbatis = init_db().await;
 
     let server_service = screw_core::server::ServerService::with_responder_factory(
@@ -16,9 +14,7 @@ async fn main() -> screw_components::dyn_result::DResult<()> {
             .and_extensions(extensions::make_extensions(rbatis)),
     );
 
-    let addr = std::env::var("SERVER_ADDRESS")
-        .expect("SERVER_ADDRESS expected in env vars")
-        .parse()?;
+    let addr = std::env!("SERVER_ADDRESS").parse()?;
     println!("Listening on http://{}", addr);
     hyper::Server::bind(&addr).serve(server_service).await?;
 
@@ -55,13 +51,8 @@ pub async fn init_db() -> rbatis::RBatis {
         },
     };
     let rb = rbatis::RBatis::new_with_opt(opt);
-    rb.init(
-        rbdc_pg::driver::PgDriver {},
-        std::env::var("PG_URL")
-            .expect("PG_URL expected in env vars")
-            .as_str(),
-    )
-    .unwrap();
+    rb.init(rbdc_pg::driver::PgDriver {}, std::env!("PG_URL"))
+        .unwrap();
 
     let sql = std::fs::read_to_string("./table_pg.sql").unwrap();
     rb.exec(&sql, vec![]).await.expect("DB migration failed");
