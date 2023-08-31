@@ -55,8 +55,7 @@ pub async fn init_db() -> rbatis::RBatis {
         },
     };
     let rb = rbatis::RBatis::new_with_opt(opt);
-    rb.init(rbdc_pg::driver::PgDriver {}, PG_URL)
-        .unwrap();
+    rb.init(rbdc_pg::driver::PgDriver {}, PG_URL).unwrap();
 
     let sql = std::fs::read_to_string("./table_pg.sql").unwrap();
     rb.exec(&sql, vec![]).await.expect("DB migration failed");
