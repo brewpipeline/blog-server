@@ -5,9 +5,9 @@ mod extensions;
 mod router;
 mod utils;
 
-const JWT_SECRET: &'static str = std::env!("JWT_SECRET");
-const SERVER_ADDRESS: &'static str = std::env!("SERVER_ADDRESS");
-const PG_URL: &'static str = std::env!("PG_URL");
+const JWT_SECRET: &'static str = std::env!("JWT_SECRET"); // 123
+const SERVER_ADDRESS: &'static str = std::env!("SERVER_ADDRESS"); // 127.0.0.1:3000
+const PG_URL: &'static str = std::env!("PG_URL"); // postgres://postgres:postgres@localhost:5432/blog
 
 #[tokio::main]
 async fn main() -> screw_components::dyn_result::DResult<()> {
