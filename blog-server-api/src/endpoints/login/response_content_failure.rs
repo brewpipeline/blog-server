@@ -9,6 +9,7 @@ pub enum LoginResponseContentFailure {
     PasswordVerificationError { reason: String },
     WrongPassword,
     TokenGeneratingError { reason: String },
+    Blocked,
 }
 
 impl ApiResponseContentBase for LoginResponseContentFailure {
@@ -29,6 +30,7 @@ impl ApiResponseContentBase for LoginResponseContentFailure {
             LoginResponseContentFailure::TokenGeneratingError { reason: _ } => {
                 &StatusCode::INTERNAL_SERVER_ERROR
             }
+            LoginResponseContentFailure::Blocked => &StatusCode::FORBIDDEN,
         }
     }
 }
@@ -47,6 +49,7 @@ impl ApiResponseContentFailure for LoginResponseContentFailure {
             LoginResponseContentFailure::TokenGeneratingError { reason: _ } => {
                 "LOGIN_TOKEN_GENERATING_ERROR"
             }
+            LoginResponseContentFailure::Blocked => "LOGIN_BLOCKED",
         }
     }
 
@@ -83,6 +86,7 @@ impl ApiResponseContentFailure for LoginResponseContentFailure {
                     "internal token generating error".to_string()
                 }
             }
+            LoginResponseContentFailure::Blocked => "lots of login attempts".to_string(),
         })
     }
 }
