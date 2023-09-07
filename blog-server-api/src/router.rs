@@ -45,10 +45,14 @@ async fn api_not_found_fallback_handler<Extensions>(
 pub fn make_router<Extensions: ExtensionsProviderType>(
 ) -> router::second::Router<Request<Extensions>, Response> {
     #[cfg(not(feature = "ssr"))]
-    let fallback = not_found_fallback_handler;
+    let fallback_handler = not_found_fallback_handler;
     #[cfg(feature = "ssr")]
-    let fallback = client_handler;
-    router::first::Router::with_fallback_handler(fallback).and_routes(|r| {
+    let fallback_handler = client_handler;
+    #[cfg(not(feature = "ssr"))]
+    let sitemap_handler = not_found_fallback_handler;
+    #[cfg(feature = "ssr")]
+    let sitemap_handler = sitemap_handler;
+    router::first::Router::with_fallback_handler(fallback_handler).and_routes(|r| {
         r.scoped_middleware(
             "/api",
             JsonApiMiddlewareConverter {
@@ -144,6 +148,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                         .and_handler(api_not_found_fallback_handler),
                 )
             },
+        )
+        .route(
+            route::first::Route::with_method(&hyper::Method::GET)
+                .and_path("/sitemap.xml")
+                .and_handler(sitemap_handler),
         )
     })
 }

@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      SITE_URL: ""
       JWT_SECRET: ""
       SERVER_ADDRESS: ""
       PG_URL: ""

@@ -5,6 +5,9 @@ mod extensions;
 mod router;
 mod utils;
 
+#[cfg(feature = "ssr")]
+const SITE_URL: &'static str = std::env!("SITE_URL"); // http://127.0.0.1:3000
+
 const JWT_SECRET: &'static str = std::env!("JWT_SECRET"); // 123
 const SERVER_ADDRESS: &'static str = std::env!("SERVER_ADDRESS"); // 127.0.0.1:3000
 const PG_URL: &'static str = std::env!("PG_URL"); // postgres://postgres:postgres@localhost:5432/blog

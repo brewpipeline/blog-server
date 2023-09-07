@@ -9,8 +9,12 @@ pub mod delete_post;
 pub mod login;
 pub mod post;
 pub mod posts;
+#[cfg(feature = "ssr")]
+mod sitemap_handler;
 pub mod tag;
 pub mod update_post;
 
 #[cfg(feature = "ssr")]
 pub use client_handler::*;
+#[cfg(feature = "ssr")]
+pub use sitemap_handler::*;
