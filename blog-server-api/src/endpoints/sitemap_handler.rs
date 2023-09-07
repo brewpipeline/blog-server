@@ -10,15 +10,7 @@ use screw_core::request::*;
 use screw_core::response::*;
 use screw_core::routing::*;
 
-fn error_response(error_text: &'static str) -> Response {
-    Response {
-        http: hyper::Response::builder()
-            .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
-            .header("Content-Type", "text/plain")
-            .body(hyper::Body::from(error_text))
-            .unwrap(),
-    }
-}
+const RECORDS_LIMIT: usize = 50000;
 
 // TODO: split sitemaps / refactor
 pub async fn sitemap_handler<Extensions: Resolve<Arc<Box<dyn PostService>>>>(
@@ -26,21 +18,22 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<Box<dyn PostService>>>>(
 ) -> Response {
     let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
 
-    let Ok(posts) = post_service.posts(&0, &50000).await else {
-        return error_response("database error");
-    };
+    let posts = post_service
+        .posts(&0, &(RECORDS_LIMIT as u64))
+        .await
+        .unwrap_or_else(|_| vec![]);
 
-    let urls = posts
+    let mut urls = posts
         .into_iter()
-        .map(|p| {
+        .map(|post| {
             Url::builder(format!(
                 "{site_url}/post/{slug}/{id}",
                 site_url = crate::SITE_URL,
-                slug = p.base.slug,
-                id = p.id,
+                slug = post.base.slug,
+                id = post.id,
             ))
             .last_modified(DateTime::from_naive_utc_and_offset(
-                NaiveDateTime::from_timestamp_opt(p.base.created_at as i64 / 1000, 0).unwrap(),
+                NaiveDateTime::from_timestamp_opt(post.base.created_at as i64 / 1000, 0).unwrap(),
                 FixedOffset::east_opt(0).unwrap(),
             ))
             .change_frequency(ChangeFrequency::Daily)
@@ -49,6 +42,7 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<Box<dyn PostService>>>>(
             .unwrap()
         })
         .collect::<Vec<Url>>();
+    urls.truncate(RECORDS_LIMIT);
 
     let url_set: UrlSet = UrlSet::new(urls).unwrap();
     let mut buf = Vec::<u8>::new();
