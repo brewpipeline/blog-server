@@ -1,3 +1,5 @@
+use validator::Validate;
+
 use super::request_content::CreatePostRequestContent;
 use super::response_content_failure::CreatePostContentFailure;
 use super::response_content_failure::CreatePostContentFailure::*;
@@ -18,6 +20,12 @@ pub async fn http_handler(
     let base_post = new_post_data.map_err(|e| ValidationError {
         reason: e.to_string(),
     })?;
+
+    if let Some(err) = base_post.validate().err() {
+        return Err(ValidationError {
+            reason: err.to_string(),
+        });
+    }
 
     let tag_titles: Vec<String> = base_post.tags.to_owned();
 
