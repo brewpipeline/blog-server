@@ -367,7 +367,10 @@ impl RbatisPostService {
         WHERE post.id = #{id} \
     "
     )]
-    async fn delete_post_by_id(rb: &mut RBatisTxExecutorGuard, id: &u64) -> rbatis::Result<ExecResult> {
+    async fn delete_post_by_id(
+        rb: &mut RBatisTxExecutorGuard,
+        id: &u64,
+    ) -> rbatis::Result<ExecResult> {
         impled!()
     }
 
