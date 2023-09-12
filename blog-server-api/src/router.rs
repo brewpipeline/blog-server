@@ -106,7 +106,19 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                     )
                 })
                 .scoped("/posts", |r| {
-                    r.route(
+                    r.scoped("/unpublished", |r| {
+                        r.route(
+                            route::first::Route::with_method(&hyper::Method::GET)
+                                .and_path("/author/id/{author_id:[^/]*}")
+                                .and_handler(posts::http_handler_unpublished),
+                        )
+                        .route(
+                            route::first::Route::with_method(&hyper::Method::GET)
+                                .and_path("")
+                                .and_handler(posts::http_handler_unpublished),
+                        )
+                    })
+                    .route(
                         route::first::Route::with_method(&hyper::Method::GET)
                             .and_path("/search/{search_query:[^/]*}")
                             .and_handler(posts::http_handler),

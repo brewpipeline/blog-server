@@ -1,10 +1,12 @@
 use blog_server_services::traits::author_service::{Author, AuthorService};
+use hyper::header::HeaderValue;
 use hyper::header::ToStrError;
 use hyper::http::request::Parts;
 use jsonwebtoken::errors::{Error as JwtError, Result as JwtResult};
 use serde::{Deserialize, Serialize};
 use std::error::Error as StdError;
 use std::fmt::Display;
+use std::future::Future;
 use std::sync::Arc;
 
 #[derive(Deserialize, Serialize)]
@@ -28,7 +30,7 @@ pub enum Error {
     TokenMissing,
     TokenHeaderCorrupted(ToStrError),
     Token(JwtError),
-    DatabaseError(Box<dyn StdError>),
+    DatabaseError(Box<dyn StdError + Send>),
     AuthorNotFound,
 }
 
@@ -44,14 +46,13 @@ impl Display for Error {
     }
 }
 
-pub async fn author(
-    http_parts: Parts,
+async fn author_by_token_header_value(
+    token_header_value: Option<HeaderValue>,
     author_service: Arc<Box<dyn AuthorService>>,
 ) -> Result<Author, Error> {
-    let token = http_parts
-        .headers
-        .get("Token")
-        .ok_or(Error::TokenMissing)?
+    let token_header_value = token_header_value.ok_or(Error::TokenMissing)?;
+
+    let token = token_header_value
         .to_str()
         .map_err(|e| Error::TokenHeaderCorrupted(e))?;
 
@@ -67,4 +68,12 @@ pub async fn author(
     super::jwt::decode::<Data>(token, &author.base.password_hash).map_err(|e| Error::Token(e))?;
 
     Ok(author)
+}
+
+pub fn author(
+    http_parts: &Parts,
+    author_service: Arc<Box<dyn AuthorService>>,
+) -> impl Future<Output = Result<Author, Error>> + Send + 'static {
+    let token_header_value = http_parts.headers.get("Token").cloned();
+    author_by_token_header_value(token_header_value, author_service)
 }

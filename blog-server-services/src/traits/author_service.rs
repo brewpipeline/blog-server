@@ -17,6 +17,7 @@ pub struct BaseAuthor {
     pub registered_at: u64,
     pub status: Option<String>,
     pub image_url: Option<String>,
+    pub editor: u8,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -40,6 +41,7 @@ impl Into<EAuthor> for Author {
             registered_at: self.base.registered_at,
             status: self.base.status,
             image_url: self.base.image_url,
+            editor: self.base.editor,
         }
     }
 }

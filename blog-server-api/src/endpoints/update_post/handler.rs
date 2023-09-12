@@ -24,18 +24,6 @@ pub async fn http_handler(
         });
     }
 
-    let base_post = updated_post_data.map_err(|e| ValidationError {
-        reason: e.to_string(),
-    })?;
-
-    if let Some(err) = base_post.validate().err() {
-        return Err(ValidationError {
-            reason: err.to_string(),
-        });
-    }
-
-    let tag_titles: Vec<String> = base_post.tags.to_owned();
-
     let author = auth_author_future.await.map_err(|e| Unauthorized {
         reason: e.to_string(),
     })?;
@@ -48,9 +36,21 @@ pub async fn http_handler(
         })?
         .ok_or(PostNotFound)?;
 
-    if author.id != existing_post.base.author_id {
+    if !(existing_post.base.author_id == author.id || author.base.editor == 1) {
         return Err(EditingForbidden);
     }
+
+    let base_post = updated_post_data.map_err(|e| ValidationError {
+        reason: e.to_string(),
+    })?;
+
+    if let Some(err) = base_post.validate().err() {
+        return Err(ValidationError {
+            reason: err.to_string(),
+        });
+    }
+
+    let tag_titles: Vec<String> = base_post.tags.to_owned();
 
     post_service
         .update_post_by_id(&id, &From::from((author.id, base_post)))
