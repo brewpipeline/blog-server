@@ -1,6 +1,6 @@
 use crate::traits::post_service::{BasePost, Post, PostService, Tag};
 use crate::utils::{string_filter, transliteration};
-use rbatis::executor::RBatisTxExecutor;
+use rbatis::executor::RBatisTxExecutorGuard;
 use rbatis::{rbatis::RBatis, rbdc::db::ExecResult};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
@@ -77,7 +77,7 @@ impl PostTag {
     "
     )]
     async fn delete_by_post_id(
-        rb: &mut RBatisTxExecutor,
+        rb: &mut RBatisTxExecutorGuard,
         post_id: &u64,
     ) -> rbatis::Result<ExecResult> {
         impled!()
@@ -367,7 +367,7 @@ impl RbatisPostService {
         WHERE post.id = #{id} \
     "
     )]
-    async fn delete_post_by_id(rb: &mut RBatisTxExecutor, id: &u64) -> rbatis::Result<ExecResult> {
+    async fn delete_post_by_id(rb: &mut RBatisTxExecutorGuard, id: &u64) -> rbatis::Result<ExecResult> {
         impled!()
     }
 
