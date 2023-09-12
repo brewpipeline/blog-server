@@ -133,7 +133,7 @@ impl Post {
         "
         SELECT COUNT(1) \
         FROM post \
-        AND post.published = 0 \
+        WHERE post.published = 0 \
     "
     )]
     async fn count_unpublished(rb: &RBatis) -> rbatis::Result<u64> {
@@ -265,7 +265,7 @@ impl Post {
         SELECT \
             post.* \
         FROM post \
-        AND post.published = 0 \
+        WHERE post.published = 0 \
         ORDER BY post.id DESC \
         LIMIT #{limit} \
         OFFSET #{offset} \
