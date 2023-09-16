@@ -37,7 +37,11 @@ pub async fn http_handler(
         .ok_or(PostNotFound)?;
 
     if !(existing_post.base.author_id == author.id || author.base.editor == 1) {
-        return Err(EditingForbidden);
+        return Err(if existing_post.base.published == 1 {
+            EditingForbidden
+        } else {
+            PostNotFound
+        });
     }
 
     let base_post = updated_post_data.map_err(|e| ValidationError {
