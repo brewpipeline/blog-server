@@ -8,6 +8,7 @@ pub struct Post {
     pub title: String,
     pub slug: String,
     pub summary: String,
+    pub published: u8,
     pub created_at: u64,
     pub content: Option<String>,
     pub author: Author,

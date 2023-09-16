@@ -24,18 +24,6 @@ pub async fn http_handler(
         });
     }
 
-    let base_post = updated_post_data.map_err(|e| ValidationError {
-        reason: e.to_string(),
-    })?;
-
-    if let Some(err) = base_post.validate().err() {
-        return Err(ValidationError {
-            reason: err.to_string(),
-        });
-    }
-
-    let tag_titles: Vec<String> = base_post.tags.to_owned();
-
     let author = auth_author_future.await.map_err(|e| Unauthorized {
         reason: e.to_string(),
     })?;
@@ -48,9 +36,31 @@ pub async fn http_handler(
         })?
         .ok_or(PostNotFound)?;
 
-    if author.id != existing_post.base.author_id {
-        return Err(EditingForbidden);
+    if !(existing_post.base.author_id == author.id || author.base.editor == 1) {
+        return Err(if existing_post.base.published == 1 {
+            EditingForbidden
+        } else {
+            PostNotFound
+        });
     }
+
+    let base_post = updated_post_data.map_err(|e| ValidationError {
+        reason: e.to_string(),
+    })?;
+
+    if let Some(err) = base_post.validate().err() {
+        return Err(ValidationError {
+            reason: err.to_string(),
+        });
+    }
+
+    if author.base.editor == 0 && base_post.published != 0 {
+        return Err(ValidationError {
+            reason: "publishing not allowed for you".to_owned(),
+        });
+    }
+
+    let tag_titles: Vec<String> = base_post.tags.to_owned();
 
     post_service
         .update_post_by_id(&id, &From::from((author.id, base_post)))

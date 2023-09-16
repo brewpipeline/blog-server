@@ -8,6 +8,7 @@ pub async fn http_handler(
         id,
         post_service,
         entity_post_service,
+        auth_author_future,
     },): (PostRequestContent,),
 ) -> Result<PostResponseContentSuccess, PostResponseContentFailure> {
     let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
@@ -27,6 +28,17 @@ pub async fn http_handler(
             reason: e.to_string(),
         })?
         .ok_or(NotFound)?;
+
+    if post.base.published == 0 {
+        let have_access = if let Some(author) = auth_author_future.await.ok() {
+            post.base.author_id == author.id || author.base.editor == 1
+        } else {
+            false
+        };
+        if !have_access {
+            return Err(NotFound);
+        }
+    }
 
     let post_entity = entity_post_service
         .posts_entities(vec![post])

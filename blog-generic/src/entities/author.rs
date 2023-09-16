@@ -13,6 +13,7 @@ pub struct Author {
     pub registered_at: u64,
     pub status: Option<String>,
     pub image_url: Option<String>,
+    pub editor: u8,
 }
 
 impl Author {

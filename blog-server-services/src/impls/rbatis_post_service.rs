@@ -1,6 +1,6 @@
 use crate::traits::post_service::{BasePost, Post, PostService, Tag};
 use crate::utils::{string_filter, transliteration};
-use rbatis::executor::RBatisTxExecutor;
+use rbatis::executor::RBatisTxExecutorGuard;
 use rbatis::{rbatis::RBatis, rbdc::db::ExecResult};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
@@ -77,7 +77,7 @@ impl PostTag {
     "
     )]
     async fn delete_by_post_id(
-        rb: &mut RBatisTxExecutor,
+        rb: &mut RBatisTxExecutorGuard,
         post_id: &u64,
     ) -> rbatis::Result<ExecResult> {
         impled!()
@@ -89,6 +89,7 @@ impl Post {
         "
         SELECT COUNT(1) \
         FROM post \
+        WHERE post.published = 1 \
     "
     )]
     async fn count(rb: &RBatis) -> rbatis::Result<u64> {
@@ -99,6 +100,7 @@ impl Post {
         SELECT COUNT(1) \
         FROM post \
         WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
+        AND post.published = 1 \
     "
     )]
     async fn count_by_query(rb: &RBatis, query: &String) -> rbatis::Result<u64> {
@@ -109,6 +111,7 @@ impl Post {
         SELECT COUNT(1) \
         FROM post \
         WHERE post.author_id = #{author_id} \
+        AND post.published = 1 \
     "
     )]
     async fn count_by_author_id(rb: &RBatis, author_id: &u64) -> rbatis::Result<u64> {
@@ -120,11 +123,34 @@ impl Post {
         FROM post \
         JOIN post_tag ON post.id = post_tag.post_id \
         WHERE post_tag.tag_id = #{tag_id} \
+        AND post.published = 1 \
     "
     )]
     async fn count_by_tag_id(rb: &RBatis, tag_id: &u64) -> rbatis::Result<u64> {
         impled!()
     }
+    #[py_sql(
+        "
+        SELECT COUNT(1) \
+        FROM post \
+        WHERE post.published = 0 \
+    "
+    )]
+    async fn count_unpublished(rb: &RBatis) -> rbatis::Result<u64> {
+        impled!()
+    }
+    #[py_sql(
+        "
+        SELECT COUNT(1) \
+        FROM post \
+        WHERE post.author_id = #{author_id} \
+        AND post.published = 0 \
+    "
+    )]
+    async fn count_unpublished_by_author_id(rb: &RBatis, author_id: &u64) -> rbatis::Result<u64> {
+        impled!()
+    }
+
     #[py_sql(
         "
         SELECT \
@@ -134,7 +160,7 @@ impl Post {
         LIMIT 1 \
     "
     )]
-    async fn select_by_id(rb: &RBatis, id: &u64) -> rbatis::Result<Option<Post>> {
+    async fn single_by_id(rb: &RBatis, id: &u64) -> rbatis::Result<Option<Post>> {
         impled!()
     }
 
@@ -143,6 +169,7 @@ impl Post {
         SELECT \
             post.* \
         FROM post \
+        WHERE post.published = 1 \
         ORDER BY post.id DESC \
         LIMIT #{limit} \
         OFFSET #{offset} \
@@ -177,12 +204,13 @@ impl Post {
             post.* \
         FROM post \
         WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
+        AND post.published = 1 \
         ORDER BY post.id DESC \
         LIMIT #{limit} \
         OFFSET #{offset} \
     "
     )]
-    async fn select_all_by_query_with_limit_and_offset(
+    async fn select_by_query_with_limit_and_offset(
         rb: &RBatis,
         query: &String,
         limit: &u64,
@@ -196,12 +224,13 @@ impl Post {
             post.* \
         FROM post \
         WHERE post.author_id = #{author_id} \
+        AND post.published = 1 \
         ORDER BY post.id DESC \
         LIMIT #{limit} \
         OFFSET #{offset} \
     "
     )]
-    async fn select_all_by_author_id_with_limit_and_offset(
+    async fn select_by_author_id_with_limit_and_offset(
         rb: &RBatis,
         author_id: &u64,
         limit: &u64,
@@ -217,14 +246,53 @@ impl Post {
         FROM post \
         JOIN post_tag ON post.id = post_tag.post_id \
         WHERE post_tag.tag_id = #{tag_id} \
+        AND post.published = 1 \
         ORDER BY post.id DESC \
         LIMIT #{limit} \
         OFFSET #{offset} \
     "
     )]
-    async fn select_all_by_tag_id_with_limit_and_offset(
+    async fn select_by_tag_id_with_limit_and_offset(
         rb: &RBatis,
         tag_id: &u64,
+        limit: &u64,
+        offset: &u64,
+    ) -> rbatis::Result<Vec<Post>> {
+        impled!()
+    }
+    #[py_sql(
+        "
+        SELECT \
+            post.* \
+        FROM post \
+        WHERE post.published = 0 \
+        ORDER BY post.id DESC \
+        LIMIT #{limit} \
+        OFFSET #{offset} \
+    "
+    )]
+    async fn select_unpublished_with_limit_and_offset(
+        rb: &RBatis,
+        limit: &u64,
+        offset: &u64,
+    ) -> rbatis::Result<Vec<Post>> {
+        impled!()
+    }
+    #[py_sql(
+        "
+        SELECT \
+            post.* \
+        FROM post \
+        WHERE post.author_id = #{author_id} \
+        AND post.published = 0 \
+        ORDER BY post.id DESC \
+        LIMIT #{limit} \
+        OFFSET #{offset} \
+    "
+    )]
+    async fn select_unpublished_by_author_id_with_limit_and_offset(
+        rb: &RBatis,
+        author_id: &u64,
         limit: &u64,
         offset: &u64,
     ) -> rbatis::Result<Vec<Post>> {
@@ -299,7 +367,10 @@ impl RbatisPostService {
         WHERE post.id = #{id} \
     "
     )]
-    async fn delete_post_by_id(rb: &mut RBatisTxExecutor, id: &u64) -> rbatis::Result<ExecResult> {
+    async fn delete_post_by_id(
+        rb: &mut RBatisTxExecutorGuard,
+        id: &u64,
+    ) -> rbatis::Result<ExecResult> {
         impled!()
     }
 
@@ -359,7 +430,7 @@ impl PostService for RbatisPostService {
         limit: &u64,
     ) -> DResult<Vec<Post>> {
         let posts =
-            Post::select_all_by_query_with_limit_and_offset(&self.rb, query, limit, offset).await?;
+            Post::select_by_query_with_limit_and_offset(&self.rb, query, limit, offset).await?;
         RbatisPostService::saturate_posts_with_tags(&self, posts).await
     }
 
@@ -373,7 +444,7 @@ impl PostService for RbatisPostService {
         limit: &u64,
     ) -> DResult<Vec<Post>> {
         let posts =
-            Post::select_all_by_author_id_with_limit_and_offset(&self.rb, author_id, limit, offset)
+            Post::select_by_author_id_with_limit_and_offset(&self.rb, author_id, limit, offset)
                 .await?;
         RbatisPostService::saturate_posts_with_tags(&self, posts).await
     }
@@ -383,8 +454,7 @@ impl PostService for RbatisPostService {
     }
     async fn posts_by_tag_id(&self, tag_id: &u64, offset: &u64, limit: &u64) -> DResult<Vec<Post>> {
         let posts =
-            Post::select_all_by_tag_id_with_limit_and_offset(&self.rb, tag_id, limit, offset)
-                .await?;
+            Post::select_by_tag_id_with_limit_and_offset(&self.rb, tag_id, limit, offset).await?;
         RbatisPostService::saturate_posts_with_tags(&self, posts).await
     }
 
@@ -396,8 +466,31 @@ impl PostService for RbatisPostService {
         RbatisPostService::saturate_posts_with_tags(&self, posts).await
     }
 
+    async fn unpublished_posts_count(&self) -> DResult<u64> {
+        Ok(Post::count_unpublished(&self.rb).await?)
+    }
+    async fn unpublished_posts(&self, offset: &u64, limit: &u64) -> DResult<Vec<Post>> {
+        let posts = Post::select_unpublished_with_limit_and_offset(&self.rb, limit, offset).await?;
+        RbatisPostService::saturate_posts_with_tags(&self, posts).await
+    }
+    async fn unpublished_posts_count_by_author_id(&self, author_id: &u64) -> DResult<u64> {
+        Ok(Post::count_unpublished_by_author_id(&self.rb, author_id).await?)
+    }
+    async fn unpublished_posts_by_author_id(
+        &self,
+        author_id: &u64,
+        offset: &u64,
+        limit: &u64,
+    ) -> DResult<Vec<Post>> {
+        let posts = Post::select_unpublished_by_author_id_with_limit_and_offset(
+            &self.rb, author_id, limit, offset,
+        )
+        .await?;
+        RbatisPostService::saturate_posts_with_tags(&self, posts).await
+    }
+
     async fn post_by_id(&self, id: &u64) -> DResult<Option<Post>> {
-        let post_option = Post::select_by_id(&self.rb, id).await?;
+        let post_option = Post::single_by_id(&self.rb, id).await?;
         RbatisPostService::saturate_with_tags(&self, post_option).await
     }
 

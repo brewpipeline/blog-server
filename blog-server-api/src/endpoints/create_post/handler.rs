@@ -27,6 +27,12 @@ pub async fn http_handler(
         });
     }
 
+    if author.base.editor == 0 && base_post.published != 0 {
+        return Err(ValidationError {
+            reason: "publishing not allowed for you".to_owned(),
+        });
+    }
+
     let tag_titles: Vec<String> = base_post.tags.to_owned();
 
     let inserted_id = post_service

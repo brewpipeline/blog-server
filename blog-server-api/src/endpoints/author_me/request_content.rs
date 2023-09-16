@@ -18,7 +18,7 @@ where
     fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
         Self {
             auth_author_future: Box::pin(auth::author(
-                origin_content.http_parts,
+                &origin_content.http_parts,
                 origin_content.extensions.resolve(),
             )),
         }

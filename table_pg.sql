@@ -155,3 +155,11 @@ DO $$ BEGIN
     ALTER TABLE author ADD COLUMN image_url VARCHAR(150);
   END IF;
 END $$
+
+;
+
+DO $$ BEGIN
+  IF NOT EXISTS(select * from information_schema.columns where table_name = 'author' and column_name = 'editor') THEN
+    ALTER TABLE author ADD COLUMN editor SMALLINT NOT NULL DEFAULT 0;
+  END IF;
+END $$

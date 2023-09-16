@@ -39,7 +39,7 @@ where
             post_service: origin_content.extensions.resolve(),
             entity_post_service: origin_content.extensions.resolve(),
             auth_author_future: Box::pin(auth::author(
-                origin_content.http_parts,
+                &origin_content.http_parts,
                 origin_content.extensions.resolve(),
             )),
         }
