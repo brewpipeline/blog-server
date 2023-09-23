@@ -24,6 +24,10 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
+    if author.base.blocked == 1 {
+        return Err(EditingForbidden);
+    }
+
     let post = post_service
         .post_by_id(&id)
         .await
@@ -38,6 +42,10 @@ pub async fn http_handler(
         } else {
             NotFound
         });
+    }
+
+    if post.base.published == 1 && author.base.editor == 0 {
+        return Err(EditingForbidden);
     }
 
     post_service

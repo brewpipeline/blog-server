@@ -14,6 +14,7 @@ pub struct Author {
     pub status: Option<String>,
     pub image_url: Option<String>,
     pub editor: u8,
+    pub blocked: u8,
 }
 
 impl Author {

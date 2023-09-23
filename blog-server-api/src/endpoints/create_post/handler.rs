@@ -17,6 +17,10 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
+    if author.base.blocked == 1 {
+        return Err(CreatingForbidden);
+    }
+
     let base_post = new_post_data.map_err(|e| ValidationError {
         reason: e.to_string(),
     })?;

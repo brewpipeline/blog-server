@@ -18,6 +18,7 @@ pub struct BaseAuthor {
     pub status: Option<String>,
     pub image_url: Option<String>,
     pub editor: u8,
+    pub blocked: u8,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -42,6 +43,7 @@ impl Into<EAuthor> for Author {
             status: self.base.status,
             image_url: self.base.image_url,
             editor: self.base.editor,
+            blocked: self.base.blocked,
         }
     }
 }

@@ -163,3 +163,11 @@ DO $$ BEGIN
     ALTER TABLE author ADD COLUMN editor SMALLINT NOT NULL DEFAULT 0;
   END IF;
 END $$
+
+;
+
+DO $$ BEGIN
+  IF NOT EXISTS(select * from information_schema.columns where table_name = 'author' and column_name = 'blocked') THEN
+    ALTER TABLE author ADD COLUMN blocked SMALLINT NOT NULL DEFAULT 0;
+  END IF;
+END $$

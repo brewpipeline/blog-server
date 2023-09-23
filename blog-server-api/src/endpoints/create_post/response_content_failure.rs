@@ -6,6 +6,7 @@ pub enum CreatePostContentFailure {
     ValidationError { reason: String },
     InsertFailed,
     Unauthorized { reason: String },
+    CreatingForbidden,
 }
 
 impl ApiResponseContentBase for CreatePostContentFailure {
@@ -17,6 +18,7 @@ impl ApiResponseContentBase for CreatePostContentFailure {
             CreatePostContentFailure::ValidationError { reason: _ } => &StatusCode::BAD_REQUEST,
             CreatePostContentFailure::Unauthorized { reason: _ } => &StatusCode::UNAUTHORIZED,
             CreatePostContentFailure::InsertFailed => &StatusCode::INTERNAL_SERVER_ERROR,
+            CreatePostContentFailure::CreatingForbidden => &StatusCode::FORBIDDEN,
         }
     }
 }
@@ -30,6 +32,7 @@ impl ApiResponseContentFailure for CreatePostContentFailure {
             }
             CreatePostContentFailure::InsertFailed => "CREATE_POST_COULD_NOT_FIND_CREATED_POST",
             CreatePostContentFailure::Unauthorized { reason: _ } => "CREATE_POST_UNAUTHORIZED",
+            CreatePostContentFailure::CreatingForbidden => "CREATE_POST_CREATING_FORBIDDEN",
         }
     }
 
@@ -53,6 +56,9 @@ impl ApiResponseContentFailure for CreatePostContentFailure {
                 format!("validation error: {}", reason)
             }
             CreatePostContentFailure::InsertFailed => String::from("error while creating new post"),
+            CreatePostContentFailure::CreatingForbidden => {
+                String::from("insufficient rights to create post")
+            }
         })
     }
 }
