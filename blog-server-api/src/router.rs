@@ -149,6 +149,18 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                         .and_path("/comments/{post_id:[^/]*}")
                         .and_handler(comments::http_handler),
                 )
+                .scoped("/comment", |r| {
+                    r.route(
+                        route::first::Route::with_method(&hyper::Method::DELETE)
+                            .and_path("/{id:[^/]*}")
+                            .and_handler(delete_comment::http_handler),
+                    )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::POST)
+                            .and_path("")
+                            .and_handler(create_comment::http_handler),
+                    )
+                })
                 .route(
                     route::first::Route::with_method(&hyper::Method::POST)
                         .and_path("/login")

@@ -4,7 +4,6 @@ use screw_api::response::{ApiResponseContentBase, ApiResponseContentFailure};
 pub enum CommentsResponseContentFailure {
     DatabaseError { reason: String },
     IncorrectIdFormat { reason: String },
-    PostNotFound,
 }
 
 impl ApiResponseContentBase for CommentsResponseContentFailure {
@@ -13,7 +12,6 @@ impl ApiResponseContentBase for CommentsResponseContentFailure {
             CommentsResponseContentFailure::DatabaseError { reason: _ } => {
                 &StatusCode::INTERNAL_SERVER_ERROR
             }
-            CommentsResponseContentFailure::PostNotFound => &StatusCode::NOT_FOUND,
             CommentsResponseContentFailure::IncorrectIdFormat { reason: _ } => {
                 &StatusCode::BAD_REQUEST
             }
@@ -30,7 +28,6 @@ impl ApiResponseContentFailure for CommentsResponseContentFailure {
             CommentsResponseContentFailure::IncorrectIdFormat { reason: _ } => {
                 "COMMENTS_INCORRECT_ID_FORMAT"
             }
-            CommentsResponseContentFailure::PostNotFound => "COMMENTS_POST_NOT_FOUND",
         }
     }
 
@@ -42,9 +39,6 @@ impl ApiResponseContentFailure for CommentsResponseContentFailure {
                 } else {
                     "internal database error".to_string()
                 }
-            }
-            CommentsResponseContentFailure::PostNotFound => {
-                "comments root post record not found in database".to_string()
             }
             CommentsResponseContentFailure::IncorrectIdFormat { reason } => {
                 format!("incorrect value provided for post ID: {}", reason)
