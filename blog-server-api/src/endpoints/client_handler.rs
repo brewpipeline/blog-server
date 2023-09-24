@@ -145,9 +145,6 @@ where
 {
     match Route::recognize_path(request.path.as_str())? {
         Route::Post { slug: _, id } | Route::EditPost { id } => {
-            if id == 0 {
-                return None;
-            }
             let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
             let entity_post_service: Arc<Box<dyn EntityPostService>> =
                 request.origin.extensions.resolve();
@@ -176,9 +173,6 @@ where
             app_content_encode(&author_entity)
         }
         Route::Tag { slug: _, id } => {
-            if id == 0 {
-                return None;
-            }
             let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
             let tag_entity: entities::Tag =
                 post_service.tag_by_id(&id).await.ok().flatten()?.into();

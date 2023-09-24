@@ -18,12 +18,6 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    if id == 0 {
-        return Err(IncorrectIdFormat {
-            reason: String::from("should not be equal to zero"),
-        });
-    }
-
     let author = auth_author_future.await.map_err(|e| Unauthorized {
         reason: e.to_string(),
     })?;

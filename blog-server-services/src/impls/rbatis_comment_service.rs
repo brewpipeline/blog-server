@@ -9,7 +9,9 @@ pub fn create_rbatis_comment_service(rb: RBatis) -> Box<dyn CommentService> {
 impl_select!(Comment {select_all_by_post_id_with_limit_and_offset(post_id: &u64, limit: &u64, offset: &u64) => 
     "`WHERE post_id = #{post_id} LIMIT #{limit} OFFSET #{offset}`"}, "post_comment");
 impl_select!(Comment {select_by_id(id: &u64) -> Option => 
-        "`WHERE id = #{id} LIMIT 1`"}, "post_comment");
+    "`WHERE id = #{id} LIMIT 1`"}, "post_comment");
+impl_delete!(Comment {delete_all_by_post_id(post_id: &u64) =>
+    "`WHERE post_id = #{post_id}`"} , "post_comment");
 
 impl BaseComment {
     #[py_sql(
@@ -83,6 +85,10 @@ impl CommentService for RbatisCommentService {
     }
     async fn mark_deleted_by_id(&self, id: &u64) -> DResult<()> {
         Comment::mark_deleted_by_id(&mut self.rb.clone(), &id).await?;
+        Ok(())
+    }
+    async fn delete_by_post_id(&self, post_id: &u64) -> DResult<()> {
+        let _ = Comment::delete_all_by_post_id(&mut self.rb.clone(), &post_id).await?;
         Ok(())
     }
 }

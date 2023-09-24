@@ -46,4 +46,5 @@ pub trait CommentService: Send + Sync {
     async fn create_comment(&self, post: &BaseComment) -> DResult<u64>;
     async fn comment_by_id(&self, id: &u64) -> DResult<Option<Comment>>;
     async fn mark_deleted_by_id(&self, id: &u64) -> DResult<()>;
+    async fn delete_by_post_id(&self, post_id: &u64) -> DResult<()>;
 }
