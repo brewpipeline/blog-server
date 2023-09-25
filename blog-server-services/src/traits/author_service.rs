@@ -63,4 +63,5 @@ pub trait AuthorService: Send + Sync {
     async fn author_by_id(&self, id: &u64) -> DResult<Option<Author>>;
     async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>>;
     async fn create_author(&self, author: &BaseAuthor) -> DResult<u64>;
+    async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()>;
 }
