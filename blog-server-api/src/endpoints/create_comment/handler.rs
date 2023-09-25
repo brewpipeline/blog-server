@@ -28,6 +28,12 @@ pub async fn http_handler(
         });
     }
 
+    if base_comment.content.len() > 500 {
+        return Err(ValidationError {
+            reason: "comment should not less then 500 symbols".to_owned(),
+        });
+    }
+
     let _ = comment_service
         .create_comment(&From::from((author.id, base_comment)))
         .await
