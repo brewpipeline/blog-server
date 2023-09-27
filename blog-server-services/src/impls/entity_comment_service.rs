@@ -18,9 +18,14 @@ struct ECommentBuilder(Comment, Author);
 impl Into<EComment> for ECommentBuilder {
     fn into(self) -> EComment {
         EComment {
+            id: self.0.id,
             post_id: self.0.base.post_id,
             created_at: self.0.base.created_at,
-            content: self.0.base.content,
+            content: if self.1.base.blocked == 0 && self.0.base.published == 1 {
+                Some(self.0.base.content)
+            } else {
+                None
+            },
             author: self.1.into(),
         }
     }

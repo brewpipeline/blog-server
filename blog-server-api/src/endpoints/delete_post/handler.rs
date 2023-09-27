@@ -7,6 +7,7 @@ pub async fn http_handler(
     (DeletePostRequestContent {
         id,
         post_service,
+        comment_service,
         auth_author_future,
     },): (DeletePostRequestContent,),
 ) -> Result<DeletePostResponseContentSuccess, DeletePostResponseContentFailure> {
@@ -14,15 +15,13 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    if id == 0 {
-        return Err(IncorrectIdFormat {
-            reason: String::from("should not be equal to zero"),
-        });
-    }
-
     let author = auth_author_future.await.map_err(|e| Unauthorized {
         reason: e.to_string(),
     })?;
+
+    if author.base.blocked == 1 {
+        return Err(EditingForbidden);
+    }
 
     let post = post_service
         .post_by_id(&id)
@@ -39,6 +38,17 @@ pub async fn http_handler(
             NotFound
         });
     }
+
+    if post.base.published == 1 && author.base.editor == 0 {
+        return Err(EditingForbidden);
+    }
+
+    comment_service
+        .delete_by_post_id(&id)
+        .await
+        .map_err(|e| DatabaseError {
+            reason: e.to_string(),
+        })?;
 
     post_service
         .delete_post_by_id(&id)

@@ -18,15 +18,13 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    if id == 0 {
-        return Err(IncorrectIdFormat {
-            reason: String::from("should not be equal to zero"),
-        });
-    }
-
     let author = auth_author_future.await.map_err(|e| Unauthorized {
         reason: e.to_string(),
     })?;
+
+    if author.base.blocked == 1 {
+        return Err(EditingForbidden);
+    }
 
     let existing_post = post_service
         .post_by_id(&id)
@@ -42,6 +40,10 @@ pub async fn http_handler(
         } else {
             PostNotFound
         });
+    }
+
+    if existing_post.base.published == 1 && author.base.editor == 0 {
+        return Err(EditingForbidden);
     }
 
     let base_post = updated_post_data.map_err(|e| ValidationError {

@@ -53,6 +53,17 @@ impl Author {
     async fn select_by_ids(rb: &RBatis, ids: &HashSet<u64>) -> rbatis::Result<Vec<Author>> {
         impled!()
     }
+    #[py_sql(
+        "
+        UPDATE author \
+        SET \
+            blocked = #{is_blocked} \
+        WHERE id = #{id}
+    "
+    )]
+    async fn set_blocked_by_id(rb: &RBatis, id: &u64, is_blocked: &u8) -> rbatis::Result<()> {
+        impled!()
+    }
 }
 
 struct RbatisAuthorService {
@@ -103,5 +114,9 @@ impl AuthorService for RbatisAuthorService {
             .as_u64()
             .ok_or::<DError>("wrond last_insert_id".into())?;
         Ok(last_insert_id)
+    }
+    async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()> {
+        let _ = Author::set_blocked_by_id(&mut self.rb.clone(), &id, &is_blocked);
+        Ok(())
     }
 }

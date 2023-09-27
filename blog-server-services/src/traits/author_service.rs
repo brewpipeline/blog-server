@@ -18,6 +18,7 @@ pub struct BaseAuthor {
     pub status: Option<String>,
     pub image_url: Option<String>,
     pub editor: u8,
+    pub blocked: u8,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -42,6 +43,7 @@ impl Into<EAuthor> for Author {
             status: self.base.status,
             image_url: self.base.image_url,
             editor: self.base.editor,
+            blocked: self.base.blocked,
         }
     }
 }
@@ -61,4 +63,5 @@ pub trait AuthorService: Send + Sync {
     async fn author_by_id(&self, id: &u64) -> DResult<Option<Author>>;
     async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>>;
     async fn create_author(&self, author: &BaseAuthor) -> DResult<u64>;
+    async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()>;
 }

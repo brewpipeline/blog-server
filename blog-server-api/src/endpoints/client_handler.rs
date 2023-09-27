@@ -149,6 +149,9 @@ where
             let entity_post_service: Arc<Box<dyn EntityPostService>> =
                 request.origin.extensions.resolve();
             let post = post_service.post_by_id(&id).await.ok().flatten()?;
+            if post.base.published == 0 {
+                return None;
+            }
             let post_entity = entity_post_service
                 .posts_entities(vec![post])
                 .await
@@ -157,6 +160,9 @@ where
             app_content_encode(&post_entity)
         }
         Route::Author { slug } => {
+            if slug.is_empty() {
+                return None;
+            }
             let author_service: Arc<Box<dyn AuthorService>> = request.origin.extensions.resolve();
             let author_entity: entities::Author = author_service
                 .author_by_slug(&slug)
@@ -165,6 +171,12 @@ where
                 .flatten()?
                 .into();
             app_content_encode(&author_entity)
+        }
+        Route::Tag { slug: _, id } => {
+            let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
+            let tag_entity: entities::Tag =
+                post_service.tag_by_id(&id).await.ok().flatten()?.into();
+            app_content_encode(&tag_entity)
         }
         _ => None,
     }
