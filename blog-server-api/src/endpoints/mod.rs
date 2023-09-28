@@ -16,6 +16,7 @@ pub mod posts;
 mod sitemap_handler;
 pub mod tag;
 pub mod update_post;
+pub mod yandex_login;
 
 #[cfg(feature = "ssr")]
 pub use client_handler::*;
