@@ -177,6 +177,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                         .and_handler(login::http_handler),
                 )
                 .route(
+                    route::first::Route::with_method(&hyper::Method::POST)
+                        .and_path("/ylogin")
+                        .and_handler(yandex_login::http_handler),
+                )
+                .route(
                     route::first::Route::with_any_method()
                         .and_path("/{_:.*}")
                         .and_handler(api_not_found_fallback_handler),

@@ -52,7 +52,11 @@ pub async fn http_handler(
         }
     }
 
-    password::verify(&password, &author.base.password_hash).map_err(|e| {
+    let Some(password_hash) = &author.base.password_hash else {
+        return Err(WrongPassword);
+    };
+
+    password::verify(&password, password_hash).map_err(|e| {
         if let Some(login_try) = login_try_storage.get_mut(&author.id) {
             login_try.insert(now);
         } else {

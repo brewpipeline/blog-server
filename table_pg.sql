@@ -171,3 +171,20 @@ DO $$ BEGIN
     ALTER TABLE author ADD COLUMN blocked SMALLINT NOT NULL DEFAULT 0;
   END IF;
 END $$
+
+;
+
+DO $$ BEGIN
+  IF NOT EXISTS(select * from information_schema.columns where table_name = 'author' and column_name = 'yandex_id') THEN
+    ALTER TABLE author ADD COLUMN yandex_id BIGINT;
+    ALTER TABLE author ADD CONSTRAINT uq_yandex_id UNIQUE (yandex_id);
+  END IF;
+END $$
+
+;
+
+DO $$ BEGIN
+  IF NOT EXISTS(select * from information_schema.columns where table_name = 'author' and column_name = 'password_hash' and is_nullable = 'YES') THEN
+    ALTER TABLE author ALTER COLUMN password_hash DROP NOT NULL;
+  END IF;
+END $$

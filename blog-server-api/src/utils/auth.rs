@@ -16,13 +16,22 @@ struct Data {
     exp: u64,
 }
 
+fn additional_secret_for_author(author: &Author) -> String {
+    author
+        .base
+        .password_hash
+        .clone()
+        .or(author.base.yandex_id.map(|i| i.to_string()))
+        .unwrap_or(author.id.to_string())
+}
+
 pub fn token(author: Author) -> JwtResult<String> {
     super::jwt::encode(
         &Data {
             author_id: author.id,
             exp: jsonwebtoken::get_current_timestamp() + (60 * 60 * 24 * 31),
         },
-        &author.base.password_hash,
+        &additional_secret_for_author(&author),
     )
 }
 
@@ -65,7 +74,8 @@ async fn author_by_token_header_value(
         .map_err(|e| Error::DatabaseError(e))?
         .ok_or(Error::AuthorNotFound)?;
 
-    super::jwt::decode::<Data>(token, &author.base.password_hash).map_err(|e| Error::Token(e))?;
+    super::jwt::decode::<Data>(token, &additional_secret_for_author(&author))
+        .map_err(|e| Error::Token(e))?;
 
     Ok(author)
 }

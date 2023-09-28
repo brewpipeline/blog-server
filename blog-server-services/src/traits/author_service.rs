@@ -13,12 +13,13 @@ pub struct BaseAuthor {
     pub last_name: Option<String>,
     pub mobile: Option<String>,
     pub email: Option<String>,
-    pub password_hash: String,
+    pub password_hash: Option<String>,
     pub registered_at: u64,
     pub status: Option<String>,
     pub image_url: Option<String>,
     pub editor: u8,
     pub blocked: u8,
+    pub yandex_id: Option<u64>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -62,6 +63,7 @@ pub trait AuthorService: Send + Sync {
     async fn authors_by_ids(&self, ids: &HashSet<u64>) -> DResult<Vec<Author>>;
     async fn author_by_id(&self, id: &u64) -> DResult<Option<Author>>;
     async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>>;
-    async fn create_author(&self, author: &BaseAuthor) -> DResult<u64>;
+    async fn create_or_update_yandex_author(&self, yandex_base_author: &BaseAuthor)
+        -> DResult<u64>;
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()>;
 }
