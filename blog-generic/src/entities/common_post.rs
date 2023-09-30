@@ -20,7 +20,8 @@ pub struct CommonPost {
 
 fn validate_tags(tags: &Vec<String>) -> Result<(), ValidationError> {
     for tag in tags {
-        if !(3 <= tag.len() && tag.len() <= 15) {
+        let chars_count = tag.chars().count();
+        if !(3 <= chars_count && chars_count <= 15) {
             return Err(ValidationError::new("wrong_size"));
         }
         if !tag.chars().all(char::is_alphanumeric) {
