@@ -23,6 +23,8 @@ const DESCRIPTION_TAG_PREFIX: &str = "<meta name=\"description\" content=\"";
 const DESCRIPTION_TAG_SUFFIX: &str = "\">";
 const KEYWORDS_TAG_PREFIX: &str = "<meta name=\"keywords\" content=\"";
 const KEYWORDS_TAG_SUFFIX: &str = "\">";
+const ROBOTS_TAG_PREFIX: &str = "<meta name=\"robots\" content=\"";
+const ROBOTS_TAG_SUFFIX: &str = "\">";
 
 const TITLE_TAG_BODY_PREFIX: &str = "<script data-page-content=\"title\" type=\"text/plain\">";
 const TITLE_TAG_BODY_SUFFIX: &str = "</script>";
@@ -32,6 +34,8 @@ const DESCRIPTION_TAG_BODY_SUFFIX: &str = "</script>";
 const KEYWORDS_TAG_BODY_PREFIX: &str =
     "<script data-page-content=\"keywords\" type=\"text/plain\">";
 const KEYWORDS_TAG_BODY_SUFFIX: &str = "</script>";
+const ROBOTS_TAG_BODY_PREFIX: &str = "<script data-page-content=\"robots\" type=\"text/plain\">";
+const ROBOTS_TAG_BODY_SUFFIX: &str = "</script>";
 
 pub async fn client_handler<
     Extensions: Resolve<Arc<Box<dyn AuthorService>>>
@@ -48,6 +52,7 @@ pub async fn client_handler<
         (index_html_before, index_html_after)
     };
 
+    let status = status(&request).await;
     let app_content = app_content(&request).await;
 
     let rendered = server_renderer(
@@ -68,7 +73,7 @@ pub async fn client_handler<
 
     Response {
         http: hyper::Response::builder()
-            .status(hyper::StatusCode::OK)
+            .status(status)
             .header("Content-Type", "text/html")
             .body(hyper::Body::from(page))
             .unwrap(),
@@ -96,6 +101,13 @@ fn update_meta(mut html: String) -> String {
         KEYWORDS_TAG_SUFFIX,
         KEYWORDS_TAG_BODY_PREFIX,
         KEYWORDS_TAG_BODY_SUFFIX,
+    );
+    update_tag(
+        &mut html,
+        ROBOTS_TAG_PREFIX,
+        ROBOTS_TAG_SUFFIX,
+        ROBOTS_TAG_BODY_PREFIX,
+        ROBOTS_TAG_BODY_SUFFIX,
     );
     html
 }
@@ -133,6 +145,16 @@ fn app_content_encode<E: Serialize>(entity: &E) -> Option<AppContent> {
         r#type: "application/json".to_string(),
         value: serde_json::to_string(entity).ok()?,
     })
+}
+
+async fn status<Extensions>(
+    request: &router::RoutedRequest<Request<Extensions>>,
+) -> hyper::StatusCode {
+    if Route::recognize_path(request.path.as_str()).unwrap_or(Route::NotFound) != Route::NotFound {
+        hyper::StatusCode::OK
+    } else {
+        hyper::StatusCode::NOT_FOUND
+    }
 }
 
 async fn app_content<Extensions>(
