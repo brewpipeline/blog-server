@@ -16,18 +16,3 @@ pub struct Author {
     pub editor: u8,
     pub blocked: u8,
 }
-
-impl Author {
-    pub fn default_image_url(&self) -> String {
-        format!(
-            "https://api.dicebear.com/7.x/shapes/svg?seed={seed}",
-            seed = self.slug,
-        )
-    }
-
-    pub fn image_url(&self) -> String {
-        self.image_url
-            .clone()
-            .unwrap_or_else(|| self.default_image_url())
-    }
-}
