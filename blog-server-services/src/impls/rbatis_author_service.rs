@@ -176,7 +176,7 @@ impl AuthorService for RbatisAuthorService {
         }
     }
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()> {
-        let _ = Author::set_blocked_by_id(&mut self.rb.clone(), &id, &is_blocked);
+        let _ = Author::set_blocked_by_id(&mut self.rb.clone(), &id, &is_blocked).await;
         Ok(())
     }
 }
