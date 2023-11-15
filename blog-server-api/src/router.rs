@@ -48,10 +48,22 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
     let fallback_handler = not_found_fallback_handler;
     #[cfg(feature = "ssr")]
     let fallback_handler = client_handler;
+
     #[cfg(not(feature = "ssr"))]
     let sitemap_handler = not_found_fallback_handler;
     #[cfg(feature = "ssr")]
     let sitemap_handler = sitemap_handler;
+
+    #[cfg(not(feature = "yandex"))]
+    let yandex_handler = api_not_found_fallback_handler;
+    #[cfg(feature = "yandex")]
+    let yandex_handler = yandex_login::http_handler;
+
+    #[cfg(not(feature = "telegram"))]
+    let telegram_handler = api_not_found_fallback_handler;
+    #[cfg(feature = "telegram")]
+    let telegram_handler = telegram_login::http_handler;
+
     router::first::Router::with_fallback_handler(fallback_handler).and_routes(|r| {
         r.scoped_middleware(
             "/api",
@@ -179,7 +191,12 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                 .route(
                     route::first::Route::with_method(&hyper::Method::POST)
                         .and_path("/ylogin")
-                        .and_handler(yandex_login::http_handler),
+                        .and_handler(yandex_handler),
+                )
+                .route(
+                    route::first::Route::with_method(&hyper::Method::POST)
+                        .and_path("/tlogin")
+                        .and_handler(telegram_handler),
                 )
                 .route(
                     route::first::Route::with_any_method()

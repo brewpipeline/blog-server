@@ -19,6 +19,24 @@ pub struct LoginYandexQuestion {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct LoginTelegramQuestion {
+    #[serde(alias = "id")]
+    pub id: u64,
+    #[serde(alias = "first_name")]
+    pub first_name: String,
+    #[serde(alias = "last_name")]
+    pub last_name: String,
+    #[serde(alias = "username")]
+    pub username: Option<String>,
+    #[serde(alias = "photo_url")]
+    pub photo_url: Option<String>,
+    #[serde(alias = "auth_date")]
+    pub auth_date: u64,
+    #[serde(alias = "hash")]
+    pub hash: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LoginAnswer {
     pub token: String,

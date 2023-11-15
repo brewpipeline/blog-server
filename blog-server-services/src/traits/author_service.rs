@@ -20,6 +20,7 @@ pub struct BaseAuthor {
     pub editor: u8,
     pub blocked: u8,
     pub yandex_id: Option<u64>,
+    pub telegram_id: Option<u64>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -65,5 +66,9 @@ pub trait AuthorService: Send + Sync {
     async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>>;
     async fn create_or_update_yandex_author(&self, yandex_base_author: &BaseAuthor)
         -> DResult<u64>;
+    async fn create_or_update_telegram_author(
+        &self,
+        telegram_base_author: &BaseAuthor,
+    ) -> DResult<u64>;
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()>;
 }
