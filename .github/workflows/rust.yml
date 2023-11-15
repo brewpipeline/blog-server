@@ -21,7 +21,9 @@ jobs:
       JWT_SECRET: ""
       SERVER_ADDRESS: ""
       PG_URL: ""
+      TELEGRAM_BOT_TOKEN: ""
 
+      TELEGRAM_BOT_LOGIN: ""
       TITLE: ""
       DESCRIPTION: ""
       KEYWORDS: ""

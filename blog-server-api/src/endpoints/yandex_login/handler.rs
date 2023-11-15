@@ -85,6 +85,7 @@ pub async fn http_handler(
         editor: 0,
         blocked: 0,
         yandex_id: Some(yandex_id),
+        telegram_id: None,
     };
 
     let yandex_author_id = author_service

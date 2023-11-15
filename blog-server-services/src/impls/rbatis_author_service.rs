@@ -12,6 +12,8 @@ impl_select!(Author {select_by_id(id: &u64) -> Option =>
     "`WHERE id = #{id} LIMIT 1`"});
 impl_select!(Author {select_by_yandex_id(yandex_id: &u64) -> Option =>
     "`WHERE yandex_id = #{yandex_id} LIMIT 1`"});
+impl_select!(Author {select_by_telegram_id(telegram_id: &u64) -> Option =>
+    "`WHERE telegram_id = #{telegram_id} LIMIT 1`"});
 impl_select!(Author {select_by_slug(slug: &String) -> Option => 
     "`WHERE slug = #{slug} LIMIT 1`"});
 impl_select!(Author {select_all_with_offset_and_limit(offset: &u64, limit: &u64) => 
@@ -75,9 +77,9 @@ impl RbatisAuthorService {
     #[py_sql(
     "
         INSERT INTO author
-        (slug,first_name,middle_name,last_name,mobile,email,password_hash,registered_at,status,image_url,editor,blocked,yandex_id)
+        (slug,first_name,middle_name,last_name,mobile,email,password_hash,registered_at,status,image_url,editor,blocked,yandex_id,telegram_id)
         VALUES
-        (#{base_author.slug},#{base_author.first_name},#{base_author.middle_name},#{base_author.last_name},#{base_author.mobile},#{base_author.email},#{base_author.password_hash},to_timestamp(#{base_author.registered_at}),#{base_author.status},#{base_author.image_url},#{base_author.editor},#{base_author.blocked},#{base_author.yandex_id})
+        (#{base_author.slug},#{base_author.first_name},#{base_author.middle_name},#{base_author.last_name},#{base_author.mobile},#{base_author.email},#{base_author.password_hash},to_timestamp(#{base_author.registered_at}),#{base_author.status},#{base_author.image_url},#{base_author.editor},#{base_author.blocked},#{base_author.yandex_id},#{base_author.telegram_id})
         RETURNING id
     "
     )]
@@ -100,7 +102,8 @@ impl RbatisAuthorService {
             image_url = #{base_author.image_url}, \
             editor = #{base_author.editor}, \
             blocked = #{base_author.blocked}, \
-            yandex_id = #{base_author.yandex_id} \
+            yandex_id = #{base_author.yandex_id}, \
+            telegram_id = #{base_author.telegram_id} \
         WHERE id = #{author_id} \
         RETURNING id
     "
@@ -171,6 +174,30 @@ impl AuthorService for RbatisAuthorService {
         } else {
             let insert_id =
                 RbatisAuthorService::insert_author(&mut self.rb.clone(), yandex_base_author)
+                    .await?;
+            Ok(insert_id)
+        }
+    }
+    async fn create_or_update_telegram_author(
+        &self,
+        telegram_base_author: &BaseAuthor,
+    ) -> DResult<u64> {
+        let Some(telegram_id) = telegram_base_author.telegram_id else {
+            return Err(DError::from("no telegram_id"));
+        };
+        if let Some(telegram_author) =
+            Author::select_by_telegram_id(&mut self.rb.clone(), &telegram_id).await?
+        {
+            let updated_id = RbatisAuthorService::update_author_by_id(
+                &mut self.rb.clone(),
+                &telegram_author.id,
+                telegram_base_author,
+            )
+            .await?;
+            Ok(updated_id)
+        } else {
+            let insert_id =
+                RbatisAuthorService::insert_author(&mut self.rb.clone(), telegram_base_author)
                     .await?;
             Ok(insert_id)
         }
