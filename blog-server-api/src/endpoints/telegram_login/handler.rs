@@ -18,8 +18,8 @@ fn sha256(input: &str) -> Vec<u8> {
 }
 
 fn hmac_sha256(key: &[u8], data: &str) -> String {
-    let mut mac = hmac::Hmac::<sha2::Sha256>::new_from_slice(key)
-        .expect("HMAC can take key of any size");
+    let mut mac =
+        hmac::Hmac::<sha2::Sha256>::new_from_slice(key).expect("HMAC can take key of any size");
     mac.update(data.as_bytes());
     hex::encode(mac.finalize().into_bytes())
 }
@@ -30,14 +30,14 @@ pub async fn http_handler(
         author_service,
     },): (LoginTelegramRequestContent,),
 ) -> Result<LoginTelegramResponseContentSuccess, LoginTelegramResponseContentFailure> {
-    let LoginTelegramQuestion { 
-        id, 
-        first_name, 
-        last_name, 
-        username, 
-        photo_url, 
-        auth_date, 
-        hash 
+    let LoginTelegramQuestion {
+        id,
+        first_name,
+        last_name,
+        username,
+        photo_url,
+        auth_date,
+        hash,
     } = login_telegram_question.map_err(|e| ParamsDecodeError {
         reason: e.to_string(),
     })?;
@@ -50,15 +50,15 @@ pub async fn http_handler(
             format!("last_name={}", last_name),
             format!("auth_date={}", auth_date),
         ];
-    
+
         if let Some(username) = &username {
             parts.push(format!("username={}", username));
         }
-    
+
         if let Some(photo_url) = &photo_url {
             parts.push(format!("photo_url={}", photo_url));
         }
-    
+
         parts.sort();
         parts.join("\n")
     };
@@ -66,7 +66,9 @@ pub async fn http_handler(
     let computed_hash = hmac_sha256(&secret_key, &check_string);
 
     if computed_hash != hash {
-        return Err(TelegramError { reason: "incorrect signature".to_string() });
+        return Err(TelegramError {
+            reason: "incorrect signature".to_string(),
+        });
     }
 
     let telegram_base_author = BaseAuthor {
