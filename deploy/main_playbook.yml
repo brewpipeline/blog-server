@@ -80,17 +80,18 @@
     - name: Copy files
       copy: 
         src: "{{ item.path }}" 
-        dest: "{{PATHS.NGINX}}"
+        dest: "{{ PATHS.NGINX }}"
       with_items: "{{ ui_files.files }}"
 
     - name: update .service file and restart service
       import_tasks:
         file: deploy_linux_daemon.yml
       vars:
-        working_directory: "{{ DAEMON.WORKING_DIRECTORY}}"
+        working_directory: "{{ DAEMON.WORKING_DIRECTORY }}"
         exec_start: "{{ DAEMON.EXEC_START }}"
         service_name: "{{ DAEMON.SERVICE_NAME }}"
         services_folder: "{{ DAEMON.SERVICES_FOLDER }}"
+        syslog_identifier: "{{ DAEMON.SYSLOG_IDENTIFIER }}"
 
     - name: Delete extra files in NGinxFolder
       command: 

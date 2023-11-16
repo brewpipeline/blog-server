@@ -6,7 +6,7 @@
 
 - name: Copy template
   template:
-    src: tikitko_blog.service.j2
+    src: template_blog.service.j2
     dest: "{{ services_folder }}//{{ service_name }}.service"
 
 - name: Reload systemd
