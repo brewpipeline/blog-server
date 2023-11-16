@@ -1,0 +1,38 @@
+ENVIRONMENT:
+  TITLE: 
+  DESCRIPTION: 
+  KEYWORDS: 
+  ACCORDION_JSON: 
+  JWT_SECRET:
+  PG_URL: 
+  SERVER_ADDRESS: 
+  SITE_URL: 
+  API_URL: 
+  YANDEX_CLIENT_ID:
+  TELEGRAM_BOT_TOKEN: 
+  TELEGRAM_BOT_LOGIN:
+
+BUILD_BRANCH: 
+
+REPOS:
+  BLOG_SERVER: https://github.com/tikitko/blog-server
+  BLOG_UI: https://github.com/tikitko/blog-ui
+
+PATHS:
+  BLOG_SERVER: 
+  BLOG_UI: 
+  NGINX:
+
+UI_TOML:
+  DEPENDENCIES: 'blog-generic = { path = "../blog-server/blog-generic" }'
+  FEATURES: 'default = ["hydration", "telegram"]'
+
+SERVER:
+  FEATURES: '"ssr","telegram"'
+
+DAEMON:
+  #replace with concatenation of root path with subpath
+  WORKING_DIRECTORY: 
+  EXEC_START: 
+  SERVICE_NAME: 
+  SERVICES_FOLDER: /etc/systemd/system

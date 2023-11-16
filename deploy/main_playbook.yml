@@ -1,0 +1,101 @@
+- name: Deploy UI and Server
+  hosts: localhost
+  become: yes
+  #become_user: <username> 
+  vars_files:
+    - vars.yml
+  environment:
+    TITLE: "{{ENVIRONMENT.TITLE}}"
+    DESCRIPTION: "{{ENVIRONMENT.DESCRIPTION}}"
+    KEYWORDS: "{{ENVIRONMENT.KEYWORDS}}"
+    ACCORDION_JSON: "{{ENVIRONMENT.ACCORDION_JSON}}"
+    JWT_SECRET: "{{ENVIRONMENT.JWT_SECRET}}"
+    PG_URL: "{{ENVIRONMENT.PG_URL}}"
+    SERVER_ADDRESS: "{{ENVIRONMENT.SERVER_ADDRESS}}"
+    SITE_URL: "{{ENVIRONMENT.SITE_URL}}"
+    API_URL: "{{ENVIRONMENT.API_URL}}"
+    YANDEX_CLIENT_ID: "{{ENVIRONMENT.YANDEX_CLIENT_ID}}"
+    TELEGRAM_BOT_TOKEN: "{{ENVIRONMENT.TELEGRAM_BOT_TOKEN}}"
+    TELEGRAM_BOT_LOGIN: "{{ENVIRONMENT.TELEGRAM_BOT_LOGIN}}"
+  tasks:
+    - name: Show environment variables
+      debug:
+        msg: "{{environment}}"
+
+    - name: Prepare UI repository
+      import_tasks:
+        file: prepare_repo.yml
+      vars:
+        repository_path: "{{ PATHS.BLOG_UI }}" 
+        repository_url: "{{ REPOS.BLOG_UI }}"
+        build_branch: "{{ BUILD_BRANCH }}"
+
+    - name: Prepare server repository
+      import_tasks:
+        file: prepare_repo.yml
+      vars:
+        repository_path: "{{ PATHS.BLOG_SERVER }}" 
+        repository_url: "{{ REPOS.BLOG_SERVER }}"
+
+    - name: Replace Server dependency in toml file 
+      command: python3 server_cargo_edit.py {{PATHS.BLOG_SERVER}}//blog-server-api//Cargo.toml
+
+    - name: Replace UI dependencies and features in toml file 
+      command: 
+        argv:
+          - "python3"
+          - "ui_cargo_edit.py"
+          - "{{PATHS.BLOG_UI}}//Cargo.toml"
+          - "{{UI_TOML.DEPENDENCIES}}"
+          - "{{UI_TOML.FEATURES}}"
+
+    - name: Build UI using trunc
+      command: 
+        cmd: trunk build --release
+      args:
+        chdir: "{{PATHS.BLOG_UI}}"
+
+    - name: Move new index.html into server directory
+      command: mv {{PATHS.BLOG_UI}}//dist//index.html {{PATHS.BLOG_SERVER}}//index.html
+
+    - name: Build Server
+      command: 
+        cmd: "cargo build --release --features {{SERVER.FEATURES}}"
+      args:
+        chdir: "{{PATHS.BLOG_SERVER}}"      
+
+    - name: Capture builded wasm files
+      find:
+        paths: "{{PATHS.BLOG_UI}}//dist"
+        patterns:
+          - 'blog-ui-*.wasm'
+          - 'blog-ui-*.js'
+          - 'index-*.css'
+      register: ui_files
+
+    - name: Debug captured filenames
+      debug: 
+        msg: "{{ui_files}}"
+
+    - name: Copy files
+      copy: 
+        src: "{{ item.path }}" 
+        dest: "{{PATHS.NGINX}}"
+      with_items: "{{ ui_files.files }}"
+
+    - name: update .service file and restart service
+      import_tasks:
+        file: deploy_linux_daemon.yml
+      vars:
+        working_directory: "{{ DAEMON.WORKING_DIRECTORY}}"
+        exec_start: "{{ DAEMON.EXEC_START }}"
+        service_name: "{{ DAEMON.SERVICE_NAME }}"
+        services_folder: "{{ DAEMON.SERVICES_FOLDER }}"
+
+    - name: Delete extra files in NGinxFolder
+      command: 
+        argv: 
+          - "python3" 
+          - "delete_old_nginx.py"
+          - "{{PATHS.NGINX}}"
+          - "{{ ui_files.files | map(attribute='path') | map('basename') | join(',') }}"

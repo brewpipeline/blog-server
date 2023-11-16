@@ -1,0 +1,19 @@
+- name: Stop already running service
+  systemd:
+    name: "{{ service_name }}"
+    state: stopped
+  ignore_errors: yes #in case service is not running
+
+- name: Copy template
+  template:
+    src: tikitko_blog.service.j2
+    dest: "{{ services_folder }}//{{ service_name }}.service"
+
+- name: Reload systemd
+  become: yes
+  command: systemctl daemon-reload
+
+- name: Start the updated service
+  systemd:
+    name: "{{ service_name }}"
+    state: started

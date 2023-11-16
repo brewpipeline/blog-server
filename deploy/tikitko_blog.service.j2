@@ -1,0 +1,13 @@
+[Unit]
+Description= BLAZINGLY FAST blog service 
+
+[Service]
+WorkingDirectory={{ working_directory }}
+ExecStart={{ exec_start }}
+Restart=no
+KillSignal=SIGINT
+SyslogIdentifier=TikitkoBlog
+User=root
+
+[Install]
+WantedBy=multi-user.target

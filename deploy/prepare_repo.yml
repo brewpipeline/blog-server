@@ -1,0 +1,32 @@
+- name: Hard reset repository {{ repository_path }}
+  git:
+    repo: "{{ repository_url }}"
+    dest: "{{ repository_path }}"
+    version: HEAD
+    force: yes
+
+- name: Clone repository {{ repository_path }}
+  git:
+    repo: "{{ repository_url }}"
+    dest: "{{ repository_path }}"
+    version: "{{ build_branch | default('main') }}"
+
+- name: Remove target folder in repository
+  file: 
+    path: "{{ repository_path }}//target"
+    state: absent
+
+- name: Remove cargo.lock file
+  file: 
+    path: "{{ repository_path }}//Cargo.lock"
+    state: absent  
+
+- name: Remove dist folder 
+  file: 
+    path: "{{ repository_path }}//dist"
+    state: absent  
+
+- name: Run cargo update
+  command: "cargo update"
+  args:
+    chdir: "{{ repository_path }}"   
