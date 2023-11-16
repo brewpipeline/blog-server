@@ -23,9 +23,9 @@ pub struct LoginTelegramQuestion {
     #[serde(alias = "id")]
     pub id: u64,
     #[serde(alias = "first_name")]
-    pub first_name: String,
+    pub first_name: Option<String>,
     #[serde(alias = "last_name")]
-    pub last_name: String,
+    pub last_name: Option<String>,
     #[serde(alias = "username")]
     pub username: Option<String>,
     #[serde(alias = "photo_url")]

@@ -44,12 +44,17 @@ pub async fn http_handler(
 
     let secret_key = sha256(crate::TELEGRAM_BOT_TOKEN);
     let check_string = {
-        let mut parts = vec![
-            format!("id={}", id),
-            format!("first_name={}", first_name),
-            format!("last_name={}", last_name),
-            format!("auth_date={}", auth_date),
-        ];
+        let mut parts = vec![format!("id={}", id)];
+
+        if let Some(first_name) = &first_name {
+            parts.push(format!("first_name={}", first_name));
+        }
+
+        if let Some(last_name) = &last_name {
+            parts.push(format!("last_name={}", last_name));
+        }
+
+        parts.push(format!("auth_date={}", auth_date));
 
         if let Some(username) = &username {
             parts.push(format!("username={}", username));
@@ -73,9 +78,9 @@ pub async fn http_handler(
 
     let telegram_base_author = BaseAuthor {
         slug: username.unwrap_or(id.to_string()),
-        first_name: Some(first_name),
+        first_name,
         middle_name: None,
-        last_name: Some(last_name),
+        last_name,
         mobile: None,
         email: None,
         password_hash: None,
