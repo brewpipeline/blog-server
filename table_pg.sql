@@ -197,3 +197,13 @@ DO $$ BEGIN
     ALTER TABLE author ADD CONSTRAINT uq_telegram_id UNIQUE (telegram_id);
   END IF;
 END $$
+
+;
+
+DO $$ BEGIN
+  IF NOT EXISTS(select * from information_schema.columns where table_name = 'author' and column_name = 'notification_subscribed') THEN
+    ALTER TABLE author ADD COLUMN notification_subscribed SMALLINT NOT NULL DEFAULT 0;
+  END IF;
+END $$
+
+;

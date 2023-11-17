@@ -91,6 +91,7 @@ pub async fn http_handler(
         blocked: 0,
         yandex_id: None,
         telegram_id: Some(id),
+        notification_subscribed: Some(0),
     };
 
     let telegram_author_id = author_service

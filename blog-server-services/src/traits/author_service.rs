@@ -21,6 +21,7 @@ pub struct BaseAuthor {
     pub blocked: u8,
     pub yandex_id: Option<u64>,
     pub telegram_id: Option<u64>,
+    pub notification_subscribed: Option<u8>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -46,6 +47,7 @@ impl Into<EAuthor> for Author {
             image_url: self.base.image_url,
             editor: self.base.editor,
             blocked: self.base.blocked,
+            notification_subscribed: self.base.notification_subscribed,
         }
     }
 }
