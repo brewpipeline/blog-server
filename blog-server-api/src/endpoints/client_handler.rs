@@ -1,7 +1,5 @@
-use serde::Serialize;
-use std::sync::Arc;
-
 use crate::extensions::Resolve;
+use crate::utils::auth;
 use blog_generic::entities;
 use blog_server_services::traits::author_service::*;
 use blog_server_services::traits::entity_post_service::*;
@@ -38,9 +36,9 @@ const ROBOTS_TAG_BODY_PREFIX: &str = "<script data-page-content=\"robots\" type=
 const ROBOTS_TAG_BODY_SUFFIX: &str = "</script>";
 
 pub async fn client_handler<
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>>
-        + Resolve<Arc<Box<dyn PostService>>>
-        + Resolve<Arc<Box<dyn EntityPostService>>>,
+    Extensions: Resolve<std::sync::Arc<Box<dyn AuthorService>>>
+        + Resolve<std::sync::Arc<Box<dyn PostService>>>
+        + Resolve<std::sync::Arc<Box<dyn EntityPostService>>>,
 >(
     request: router::RoutedRequest<Request<Extensions>>,
 ) -> Response {
@@ -140,7 +138,7 @@ fn last_content(html: &String, prefix: &str, suffix: &str) -> Option<String> {
     Some(content)
 }
 
-fn app_content_encode<E: Serialize>(entity: &E) -> Option<AppContent> {
+fn app_content_encode<E: serde::Serialize>(entity: &E) -> Option<AppContent> {
     Some(AppContent {
         r#type: "application/json".to_string(),
         value: serde_json::to_string(entity).ok()?,
@@ -161,44 +159,67 @@ async fn app_content<Extensions>(
     request: &router::RoutedRequest<Request<Extensions>>,
 ) -> Option<AppContent>
 where
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>>
-        + Resolve<Arc<Box<dyn PostService>>>
-        + Resolve<Arc<Box<dyn EntityPostService>>>,
+    Extensions: Resolve<std::sync::Arc<Box<dyn AuthorService>>>
+        + Resolve<std::sync::Arc<Box<dyn PostService>>>
+        + Resolve<std::sync::Arc<Box<dyn EntityPostService>>>,
 {
     match Route::recognize_path(request.path.as_str())? {
         Route::Post { slug: _, id } | Route::EditPost { id } => {
-            let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
-            let entity_post_service: Arc<Box<dyn EntityPostService>> =
+            use crate::endpoints::post;
+            let post_service: std::sync::Arc<Box<dyn PostService>> =
                 request.origin.extensions.resolve();
-            let post = post_service.post_by_id(&id).await.ok().flatten()?;
-            if post.base.published == 0 {
-                return None;
-            }
-            let post_entity = entity_post_service
-                .posts_entities(vec![post])
+            let entity_post_service: std::sync::Arc<Box<dyn EntityPostService>> =
+                request.origin.extensions.resolve();
+
+            let Ok(post::PostResponseContentSuccess { container }) =
+                post::http_handler((post::PostRequestContent {
+                    id: id.to_string(),
+                    post_service,
+                    entity_post_service,
+                    auth_author_future: Box::pin(std::future::ready(Err(
+                        auth::Error::TokenMissing,
+                    ))),
+                },))
                 .await
-                .ok()?
-                .remove(0);
-            app_content_encode(&post_entity)
+            else {
+                return None;
+            };
+
+            app_content_encode(&container.post)
         }
         Route::Author { slug } => {
-            if slug.is_empty() {
-                return None;
-            }
-            let author_service: Arc<Box<dyn AuthorService>> = request.origin.extensions.resolve();
-            let author_entity: entities::Author = author_service
-                .author_by_slug(&slug)
+            use crate::endpoints::author;
+            let author_service: std::sync::Arc<Box<dyn AuthorService>> =
+                request.origin.extensions.resolve();
+
+            let Ok(author::AuthorResponseContentSuccess { container }) =
+                author::http_handler((author::AuthorRequestContent {
+                    slug,
+                    author_service,
+                },))
                 .await
-                .ok()
-                .flatten()?
-                .into();
-            app_content_encode(&author_entity)
+            else {
+                return None;
+            };
+
+            app_content_encode(&container.author)
         }
         Route::Tag { slug: _, id } => {
-            let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
-            let tag_entity: entities::Tag =
-                post_service.tag_by_id(&id).await.ok().flatten()?.into();
-            app_content_encode(&tag_entity)
+            use crate::endpoints::tag;
+            let post_service: std::sync::Arc<Box<dyn PostService>> =
+                request.origin.extensions.resolve();
+
+            let Ok(tag::TagResponseContentSuccess { container }) =
+                author::http_handler((tag::TagRequestContent {
+                    id: id.to_string(),
+                    post_service,
+                },))
+                .await
+            else {
+                return None;
+            };
+
+            app_content_encode(&container.tag)
         }
         _ => None,
     }
