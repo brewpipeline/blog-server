@@ -92,6 +92,16 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                             .and_path("/id/{id:[^/]*}/unblock")
                             .and_handler(author_block::http_handler_unblock),
                     )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::PATCH)
+                            .and_path("/id/{id:[^/]*}/subscribe")
+                            .and_handler(author_subscribe::http_handler_subscribe),
+                    )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::PATCH)
+                            .and_path("/id/{id:[^/]*}/unsubscribe")
+                            .and_handler(author_subscribe::http_handler_unsubscribe),
+                    )
                 })
                 .scoped("/authors", |r| {
                     r.route(
