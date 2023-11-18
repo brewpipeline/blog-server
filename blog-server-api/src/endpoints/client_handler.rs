@@ -22,6 +22,8 @@ const OG_TITLE_TAG: [&str; 2] = ["<meta property=\"og:title\" content=\"", "\">"
 const OG_DESCRIPTION_TAG: [&str; 2] = ["<meta property=\"og:description\" content=\"", "\">"];
 const OG_TYPE_TAG: [&str; 2] = ["<meta property=\"og:type\" content=\"", "\">"];
 const OG_IMAGE_TAG: [&str; 2] = ["<meta property=\"og:image\" content=\"", "\">"];
+const OG_IMAGE_WIDTH_TAG: [&str; 2] = ["<meta property=\"og:image:width\" content=\"", "\">"];
+const OG_IMAGE_HEIGHT_TAG: [&str; 2] = ["<meta property=\"og:image:height\" content=\"", "\">"];
 const OG_SITE_NAME_TAG: [&str; 2] = ["<meta property=\"og:site_name\" content=\"", "\">"];
 
 const TYPE_TAG_BODY: [&str; 2] = [
@@ -42,6 +44,14 @@ const KEYWORDS_TAG_BODY: [&str; 2] = [
 ];
 const IMAGE_TAG_BODY: [&str; 2] = [
     "<script data-page-content=\"image\" type=\"text/plain\">",
+    "</script>",
+];
+const IMAGE_WIDTH_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"image_width\" type=\"text/plain\">",
+    "</script>",
+];
+const IMAGE_HEIGHT_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"image_height\" type=\"text/plain\">",
     "</script>",
 ];
 const ROBOTS_TAG_BODY: [&str; 2] = [
@@ -105,6 +115,8 @@ fn update_meta(mut html: String) -> String {
     update_tag(&mut html, OG_DESCRIPTION_TAG, DESCRIPTION_TAG_BODY);
     update_tag(&mut html, OG_TYPE_TAG, TYPE_TAG_BODY);
     update_tag(&mut html, OG_IMAGE_TAG, IMAGE_TAG_BODY);
+    update_tag(&mut html, OG_IMAGE_WIDTH_TAG, IMAGE_WIDTH_TAG_BODY);
+    update_tag(&mut html, OG_IMAGE_HEIGHT_TAG, IMAGE_HEIGHT_TAG_BODY);
     update_tag(&mut html, OG_SITE_NAME_TAG, SITE_NAME_TAG_BODY);
     html
 }
