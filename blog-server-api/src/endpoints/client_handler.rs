@@ -34,6 +34,10 @@ const TITLE_TAG_BODY: [&str; 2] = [
     "<script data-page-content=\"title\" type=\"text/plain\">",
     "</script>",
 ];
+const SHORT_TITLE_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"short_title\" type=\"text/plain\">",
+    "</script>",
+];
 const DESCRIPTION_TAG_BODY: [&str; 2] = [
     "<script data-page-content=\"description\" type=\"text/plain\">",
     "</script>",
@@ -111,7 +115,7 @@ fn update_meta(mut html: String) -> String {
     update_tag(&mut html, DESCRIPTION_TAG, DESCRIPTION_TAG_BODY);
     update_tag(&mut html, KEYWORDS_TAG, KEYWORDS_TAG_BODY);
     update_tag(&mut html, ROBOTS_TAG, ROBOTS_TAG_BODY);
-    update_tag(&mut html, OG_TITLE_TAG, TITLE_TAG_BODY);
+    update_tag(&mut html, OG_TITLE_TAG, SHORT_TITLE_TAG_BODY);
     update_tag(&mut html, OG_DESCRIPTION_TAG, DESCRIPTION_TAG_BODY);
     update_tag(&mut html, OG_TYPE_TAG, TYPE_TAG_BODY);
     update_tag(&mut html, OG_IMAGE_TAG, IMAGE_TAG_BODY);
