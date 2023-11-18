@@ -67,6 +67,21 @@ impl Author {
     async fn set_blocked_by_id(rb: &RBatis, id: &u64, is_blocked: &u8) -> rbatis::Result<()> {
         impled!()
     }
+    #[py_sql(
+        "
+        UPDATE author \
+        SET \
+            notification_subscribed = #{is_subscribed} \
+        WHERE id = #{id}
+    "
+    )]
+    async fn set_notification_subscribed_by_id(
+        rb: &RBatis,
+        id: &u64,
+        is_subscribed: &u8,
+    ) -> rbatis::Result<()> {
+        impled!()
+    }
 }
 
 struct RbatisAuthorService {
@@ -77,9 +92,9 @@ impl RbatisAuthorService {
     #[py_sql(
     "
         INSERT INTO author
-        (slug,first_name,middle_name,last_name,mobile,email,password_hash,registered_at,status,image_url,editor,blocked,yandex_id,telegram_id)
+        (slug,first_name,middle_name,last_name,mobile,email,password_hash,registered_at,status,image_url,editor,blocked,yandex_id,telegram_id, notification_subscribed)
         VALUES
-        (#{base_author.slug},#{base_author.first_name},#{base_author.middle_name},#{base_author.last_name},#{base_author.mobile},#{base_author.email},#{base_author.password_hash},to_timestamp(#{base_author.registered_at}),#{base_author.status},#{base_author.image_url},#{base_author.editor},#{base_author.blocked},#{base_author.yandex_id},#{base_author.telegram_id})
+        (#{base_author.slug},#{base_author.first_name},#{base_author.middle_name},#{base_author.last_name},#{base_author.mobile},#{base_author.email},#{base_author.password_hash},to_timestamp(#{base_author.registered_at}),#{base_author.status},#{base_author.image_url},#{base_author.editor},#{base_author.blocked},#{base_author.yandex_id},#{base_author.telegram_id},#{base_author.notification_subscribed})
         RETURNING id
     "
     )]
@@ -104,6 +119,7 @@ impl RbatisAuthorService {
             blocked = #{base_author.blocked}, \
             yandex_id = #{base_author.yandex_id}, \
             telegram_id = #{base_author.telegram_id} \
+            notification_subscribed = #{base_author.notification_subscribed} \
         WHERE id = #{author_id} \
         RETURNING id
     "
@@ -204,6 +220,12 @@ impl AuthorService for RbatisAuthorService {
     }
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()> {
         let _ = Author::set_blocked_by_id(&mut self.rb.clone(), &id, &is_blocked).await;
+        Ok(())
+    }
+    async fn set_author_subscription_by_id(&self, id: &u64, is_subscribed: &u8) -> DResult<()> {
+        let _ =
+            Author::set_notification_subscribed_by_id(&mut self.rb.clone(), &id, &is_subscribed)
+                .await;
         Ok(())
     }
 }

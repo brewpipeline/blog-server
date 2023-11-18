@@ -21,6 +21,7 @@ pub struct BaseAuthor {
     pub blocked: u8,
     pub yandex_id: Option<u64>,
     pub telegram_id: Option<u64>,
+    pub notification_subscribed: Option<u8>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -46,6 +47,7 @@ impl Into<EAuthor> for Author {
             image_url: self.base.image_url,
             editor: self.base.editor,
             blocked: self.base.blocked,
+            notification_subscribed: self.base.notification_subscribed,
         }
     }
 }
@@ -71,4 +73,5 @@ pub trait AuthorService: Send + Sync {
         telegram_base_author: &BaseAuthor,
     ) -> DResult<u64>;
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()>;
+    async fn set_author_subscription_by_id(&self, id: &u64, is_subscribed: &u8) -> DResult<()>;
 }

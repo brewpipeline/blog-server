@@ -15,4 +15,5 @@ pub struct Author {
     pub image_url: Option<String>,
     pub editor: u8,
     pub blocked: u8,
+    pub notification_subscribed: Option<u8>,
 }
