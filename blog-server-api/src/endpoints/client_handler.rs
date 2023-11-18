@@ -14,25 +14,44 @@ const INDEX_HTML: &str = include_str!("../../../index.html");
 
 const APP_TAG_PREFIX: &str = "<div id=\"app\">";
 
-const TITLE_TAG_PREFIX: &str = "<title>";
-const TITLE_TAG_SUFFIX: &str = "</title>";
-const DESCRIPTION_TAG_PREFIX: &str = "<meta name=\"description\" content=\"";
-const DESCRIPTION_TAG_SUFFIX: &str = "\">";
-const KEYWORDS_TAG_PREFIX: &str = "<meta name=\"keywords\" content=\"";
-const KEYWORDS_TAG_SUFFIX: &str = "\">";
-const ROBOTS_TAG_PREFIX: &str = "<meta name=\"robots\" content=\"";
-const ROBOTS_TAG_SUFFIX: &str = "\">";
+const TITLE_TAG: [&str; 2] = ["<title>", "</title>"];
+const DESCRIPTION_TAG: [&str; 2] = ["<meta name=\"description\" content=\"", "\">"];
+const KEYWORDS_TAG: [&str; 2] = ["<meta name=\"keywords\" content=\"", "\">"];
+const ROBOTS_TAG: [&str; 2] = ["<meta name=\"robots\" content=\"", "\">"];
+const OG_TITLE_TAG: [&str; 2] = ["<meta property=\"og:title\" content=\"", "\">"];
+const OG_DESCRIPTION_TAG: [&str; 2] = ["<meta property=\"og:description\" content=\"", "\">"];
+const OG_TYPE_TAG: [&str; 2] = ["<meta property=\"og:type\" content=\"", "\">"];
+const OG_IMAGE_TAG: [&str; 2] = ["<meta property=\"og:image\" content=\"", "\">"];
+const OG_SITE_NAME_TAG: [&str; 2] = ["<meta property=\"og:site_name\" content=\"", "\">"];
 
-const TITLE_TAG_BODY_PREFIX: &str = "<script data-page-content=\"title\" type=\"text/plain\">";
-const TITLE_TAG_BODY_SUFFIX: &str = "</script>";
-const DESCRIPTION_TAG_BODY_PREFIX: &str =
-    "<script data-page-content=\"description\" type=\"text/plain\">";
-const DESCRIPTION_TAG_BODY_SUFFIX: &str = "</script>";
-const KEYWORDS_TAG_BODY_PREFIX: &str =
-    "<script data-page-content=\"keywords\" type=\"text/plain\">";
-const KEYWORDS_TAG_BODY_SUFFIX: &str = "</script>";
-const ROBOTS_TAG_BODY_PREFIX: &str = "<script data-page-content=\"robots\" type=\"text/plain\">";
-const ROBOTS_TAG_BODY_SUFFIX: &str = "</script>";
+const TYPE_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"type\" type=\"text/plain\">",
+    "</script>",
+];
+const TITLE_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"title\" type=\"text/plain\">",
+    "</script>",
+];
+const DESCRIPTION_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"description\" type=\"text/plain\">",
+    "</script>",
+];
+const KEYWORDS_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"keywords\" type=\"text/plain\">",
+    "</script>",
+];
+const IMAGE_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"image\" type=\"text/plain\">",
+    "</script>",
+];
+const ROBOTS_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"robots\" type=\"text/plain\">",
+    "</script>",
+];
+const SITE_NAME_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"site_name\" type=\"text/plain\">",
+    "</script>",
+];
 
 pub async fn client_handler<
     Extensions: Resolve<std::sync::Arc<Box<dyn AuthorService>>>
@@ -78,53 +97,28 @@ pub async fn client_handler<
 }
 
 fn update_meta(mut html: String) -> String {
-    update_tag(
-        &mut html,
-        TITLE_TAG_PREFIX,
-        TITLE_TAG_SUFFIX,
-        TITLE_TAG_BODY_PREFIX,
-        TITLE_TAG_BODY_SUFFIX,
-    );
-    update_tag(
-        &mut html,
-        DESCRIPTION_TAG_PREFIX,
-        DESCRIPTION_TAG_SUFFIX,
-        DESCRIPTION_TAG_BODY_PREFIX,
-        DESCRIPTION_TAG_BODY_SUFFIX,
-    );
-    update_tag(
-        &mut html,
-        KEYWORDS_TAG_PREFIX,
-        KEYWORDS_TAG_SUFFIX,
-        KEYWORDS_TAG_BODY_PREFIX,
-        KEYWORDS_TAG_BODY_SUFFIX,
-    );
-    update_tag(
-        &mut html,
-        ROBOTS_TAG_PREFIX,
-        ROBOTS_TAG_SUFFIX,
-        ROBOTS_TAG_BODY_PREFIX,
-        ROBOTS_TAG_BODY_SUFFIX,
-    );
+    update_tag(&mut html, TITLE_TAG, TITLE_TAG_BODY);
+    update_tag(&mut html, DESCRIPTION_TAG, DESCRIPTION_TAG_BODY);
+    update_tag(&mut html, KEYWORDS_TAG, KEYWORDS_TAG_BODY);
+    update_tag(&mut html, ROBOTS_TAG, ROBOTS_TAG_BODY);
+    update_tag(&mut html, OG_TITLE_TAG, TITLE_TAG_BODY);
+    update_tag(&mut html, OG_DESCRIPTION_TAG, DESCRIPTION_TAG_BODY);
+    update_tag(&mut html, OG_TYPE_TAG, TYPE_TAG_BODY);
+    update_tag(&mut html, OG_IMAGE_TAG, IMAGE_TAG_BODY);
+    update_tag(&mut html, OG_SITE_NAME_TAG, SITE_NAME_TAG_BODY);
     html
 }
 
-fn update_tag(
-    html: &mut String,
-    main_tag_prefix: &str,
-    main_tag_suffix: &str,
-    body_tag_prefix: &str,
-    body_tag_suffix: &str,
-) {
-    let Some(content) = last_content(&html, body_tag_prefix, body_tag_suffix) else {
+fn update_tag(html: &mut String, main_tag: [&str; 2], body_tag: [&str; 2]) {
+    let Some(content) = last_content(&html, body_tag[0], body_tag[1]) else {
         return;
     };
-    let empty_tag = main_tag_prefix.to_string() + main_tag_suffix;
+    let empty_tag = main_tag[0].to_string() + main_tag[1];
     let tag = {
         let mut tag = String::new();
-        tag.push_str(main_tag_prefix);
+        tag.push_str(main_tag[0]);
         tag.push_str(content.as_str());
-        tag.push_str(main_tag_suffix);
+        tag.push_str(main_tag[1]);
         tag
     };
     *html = html.replace(empty_tag.as_str(), tag.as_str());
