@@ -22,6 +22,7 @@ fn additional_secret_for_author(author: &Author) -> String {
         .password_hash
         .clone()
         .or(author.base.yandex_id.map(|i| i.to_string()))
+        .or(author.base.telegram_id.map(|i| i.to_string()))
         .unwrap_or(author.id.to_string())
 }
 
