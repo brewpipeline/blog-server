@@ -73,4 +73,5 @@ pub trait AuthorService: Send + Sync {
         telegram_base_author: &BaseAuthor,
     ) -> DResult<u64>;
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()>;
+    async fn set_author_subscription_by_id(&self, id: &u64, is_subscribed: &u8) -> DResult<()>;
 }

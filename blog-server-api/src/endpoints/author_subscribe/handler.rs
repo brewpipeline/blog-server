@@ -35,9 +35,18 @@ async fn http_handler(
         return Err(Forbidden);
     }
 
-    //TODO PULL INTO QUEUE
+    if author.base.telegram_id.is_none() {
+        return Err(NotSupported);
+    }
 
-    //TODO change subscription state
+    //TODO PULL Subscribe event INTO QUEUE
+
+    author_service
+        .set_author_subscription_by_id(&id, &subscribe)
+        .await
+        .map_err(|e| DatabaseError {
+            reason: e.to_string(),
+        })?;
 
     Ok(AuthorSubscribeRequestContentSuccess)
 }

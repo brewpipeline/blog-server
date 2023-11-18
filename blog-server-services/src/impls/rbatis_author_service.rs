@@ -67,6 +67,21 @@ impl Author {
     async fn set_blocked_by_id(rb: &RBatis, id: &u64, is_blocked: &u8) -> rbatis::Result<()> {
         impled!()
     }
+    #[py_sql(
+        "
+        UPDATE author \
+        SET \
+            notification_subscribed = #{is_subscribed} \
+        WHERE id = #{id}
+    "
+    )]
+    async fn set_notification_subscribed_by_id(
+        rb: &RBatis,
+        id: &u64,
+        is_subscribed: &u8,
+    ) -> rbatis::Result<()> {
+        impled!()
+    }
 }
 
 struct RbatisAuthorService {
@@ -205,6 +220,12 @@ impl AuthorService for RbatisAuthorService {
     }
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()> {
         let _ = Author::set_blocked_by_id(&mut self.rb.clone(), &id, &is_blocked).await;
+        Ok(())
+    }
+    async fn set_author_subscription_by_id(&self, id: &u64, is_subscribed: &u8) -> DResult<()> {
+        let _ =
+            Author::set_notification_subscribed_by_id(&mut self.rb.clone(), &id, &is_subscribed)
+                .await;
         Ok(())
     }
 }

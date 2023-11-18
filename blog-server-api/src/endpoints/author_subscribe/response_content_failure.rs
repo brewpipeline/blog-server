@@ -4,6 +4,7 @@ use screw_api::response::{ApiResponseContentBase, ApiResponseContentFailure};
 pub enum AuthorSubscribeResponseContentFailure {
     Unauthorized { reason: String },
     Forbidden,
+    NotSupported,
     DatabaseError { reason: String },
     IncorrectIdFormat { reason: String },
 }
@@ -15,6 +16,7 @@ impl ApiResponseContentBase for AuthorSubscribeResponseContentFailure {
                 &StatusCode::UNAUTHORIZED
             }
             AuthorSubscribeResponseContentFailure::Forbidden => &StatusCode::FORBIDDEN,
+            AuthorSubscribeResponseContentFailure::NotSupported => &StatusCode::NOT_IMPLEMENTED,
             AuthorSubscribeResponseContentFailure::DatabaseError { reason: _ } => {
                 &StatusCode::INTERNAL_SERVER_ERROR
             }
@@ -35,6 +37,7 @@ impl ApiResponseContentFailure for AuthorSubscribeResponseContentFailure {
                 "AUTHOR_SUBSCRIBE_DATABASE_ERROR"
             }
             AuthorSubscribeResponseContentFailure::Forbidden => "AUTHOR_SUBSCRIBE_FORBIDDEN",
+            AuthorSubscribeResponseContentFailure::NotSupported => "AUTHOR_SUBSCRIBE_NOTSUPPORTED",
             AuthorSubscribeResponseContentFailure::IncorrectIdFormat { reason: _ } => {
                 "AUTHOR_SUBSCRIBE_INCORRECT_ID_FORMAT"
             }
@@ -58,6 +61,9 @@ impl ApiResponseContentFailure for AuthorSubscribeResponseContentFailure {
                 }
             }
             AuthorSubscribeResponseContentFailure::Forbidden => String::from("insufficient rights"),
+            AuthorSubscribeResponseContentFailure::NotSupported => {
+                String::from("not supported for login type")
+            }
             AuthorSubscribeResponseContentFailure::IncorrectIdFormat { reason } => {
                 format!("incorrect value provided for author ID: {}", reason)
             }
