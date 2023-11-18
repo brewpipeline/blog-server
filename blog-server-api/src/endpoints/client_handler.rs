@@ -1,6 +1,5 @@
 use crate::extensions::Resolve;
 use crate::utils::auth;
-use blog_generic::entities;
 use blog_server_services::traits::author_service::*;
 use blog_server_services::traits::entity_post_service::*;
 use blog_server_services::traits::post_service::*;
@@ -210,7 +209,7 @@ where
                 request.origin.extensions.resolve();
 
             let Ok(tag::TagResponseContentSuccess { container }) =
-                author::http_handler((tag::TagRequestContent {
+                tag::http_handler((tag::TagRequestContent {
                     id: id.to_string(),
                     post_service,
                 },))
