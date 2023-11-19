@@ -1,6 +1,6 @@
 use crate::extensions::Resolve;
 use crate::utils::auth;
-use blog_server_services::traits::author_service::*;
+use blog_server_services::traits::{author_service::*, event_bus_service::EventBusService};
 use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
 use screw_components::dyn_fn::DFuture;
 use std::sync::Arc;
@@ -9,11 +9,12 @@ pub struct AuthorSubscribeRequestContent {
     pub(super) id: String,
     pub(super) author_service: Arc<Box<dyn AuthorService>>,
     pub(super) auth_author_future: DFuture<Result<Author, auth::Error>>,
+    pub(super) event_bus_service: Arc<Box<dyn EventBusService>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for AuthorSubscribeRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>>,
+    Extensions: Resolve<Arc<Box<dyn AuthorService>>> + Resolve<Arc<Box<dyn EventBusService>>>,
 {
     type Data = ();
 
@@ -29,6 +30,7 @@ where
                 &origin_content.http_parts,
                 origin_content.extensions.resolve(),
             )),
+            event_bus_service: origin_content.extensions.resolve(),
         }
     }
 }

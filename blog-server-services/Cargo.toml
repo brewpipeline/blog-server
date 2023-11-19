@@ -12,6 +12,7 @@ package = "screw-components"
 blog-generic = { path = "../blog-generic" }
 rbs = { version = "4.3" }
 rbatis = { version = "4.3" }
+amqprs = { version = "1.5.1", features = ["urispec"] }
 async-trait = { version = "0.1.68" }
 serde = { version = "1.0.160", features = ["derive"] }
 serde_repr = { version = "0.1.12" }
