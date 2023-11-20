@@ -44,7 +44,8 @@ async fn http_handler(
             user_telegram_id: telegram_id,
             new_state: subscribe,
         };
-        event_bus_service.publish(event).await;
+
+        tokio::spawn(async move { event_bus_service.publish(event).await });
     } else {
         return Err(NotSupported);
     }

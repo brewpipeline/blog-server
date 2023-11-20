@@ -74,7 +74,7 @@ impl Resolve<Arc<Box<dyn EventBusService>>> for ExtensionsProvider {
 
 pub fn make_extensions(
     rbatis: RBatis,
-    rabbit: Box<dyn EventBusService>,
+    event_bus: Box<dyn EventBusService>,
 ) -> impl ExtensionsProviderType {
     let authors_service = Arc::new(create_rbatis_author_service(rbatis.clone()));
     ExtensionsProvider {
@@ -83,6 +83,6 @@ pub fn make_extensions(
         comment_service: Arc::new(create_rbatis_comment_service(rbatis.clone())),
         entity_comment_service: Arc::new(create_entity_comment_service(authors_service.clone())),
         entity_post_service: Arc::new(create_entity_post_service(authors_service.clone())),
-        event_bus_service: Arc::new(rabbit),
+        event_bus_service: Arc::new(event_bus),
     }
 }

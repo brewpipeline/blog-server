@@ -1,6 +1,7 @@
 use crate::extensions::Resolve;
 use crate::utils::auth;
-use blog_server_services::traits::{author_service::*, event_bus_service::EventBusService};
+use blog_server_services::traits::author_service::*;
+use blog_server_services::traits::event_bus_service::*;
 use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
 use screw_components::dyn_fn::DFuture;
 use std::sync::Arc;
