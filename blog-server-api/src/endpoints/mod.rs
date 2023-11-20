@@ -1,6 +1,7 @@
 pub mod author;
 pub mod author_block;
 pub mod author_me;
+pub mod author_override_social_data;
 pub mod author_subscribe;
 pub mod authors;
 #[cfg(feature = "ssr")]

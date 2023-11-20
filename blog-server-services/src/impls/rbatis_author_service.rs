@@ -83,6 +83,21 @@ impl Author {
     ) -> rbatis::Result<()> {
         impled!()
     }
+    #[py_sql(
+        "
+        UPDATE author \
+        SET \
+            override_social_data = #{override_social_data} \
+        WHERE id = #{id}
+    "
+    )]
+    async fn set_override_social_data_by_id(
+        rb: &RBatis,
+        id: &u64,
+        override_social_data: &u8,
+    ) -> rbatis::Result<()> {
+        impled!()
+    }
 }
 
 struct RbatisAuthorService {
@@ -146,7 +161,8 @@ impl RbatisAuthorService {
             registered_at,
             image_url,
             yandex_id,
-            telegram_id
+            telegram_id,
+            override_social_data
         ) VALUES (
             #{base_minimal_author.slug},
             #{base_minimal_author.first_name},
@@ -154,11 +170,12 @@ impl RbatisAuthorService {
             to_timestamp(#{registered_at}),
             #{base_minimal_author.image_url},
             #{yandex_id},
-            #{telegram_id}
+            #{telegram_id},
+            0,
         ) RETURNING id
     "
     )]
-    async fn insert_minimal_author(
+    async fn insert_minimal_social_author(
         rb: &RBatis,
         base_minimal_author: &BaseMinimalAuthor,
         registered_at: &u64,
@@ -177,17 +194,39 @@ impl RbatisAuthorService {
             last_name = #{base_minimal_author.last_name}, \
             image_url = #{base_minimal_author.image_url}, \
             yandex_id = #{yandex_id}, \
-            telegram_id = #{telegram_id} \
+            telegram_id = #{telegram_id}, \
+            override_social_data = 0 \
         WHERE id = #{author_id} \
         RETURNING id
     "
     )]
-    async fn update_minimal_author_by_id(
+    async fn update_minimal_social_author_by_id(
         rb: &RBatis,
         author_id: &u64,
         base_minimal_author: &BaseMinimalAuthor,
         yandex_id: Option<&u64>,
         telegram_id: Option<&u64>,
+    ) -> rbatis::Result<u64> {
+        impled!()
+    }
+
+    #[py_sql(
+        "
+        UPDATE author \
+        SET \
+            slug = #{base_minimal_author.slug}, \
+            first_name = #{base_minimal_author.first_name}, \
+            last_name = #{base_minimal_author.last_name}, \
+            image_url = #{base_minimal_author.image_url}, \
+            override_social_data = 1 \
+        WHERE id = #{author_id} \
+        RETURNING id
+    "
+    )]
+    async fn update_minimal_custom_author_by_id(
+        rb: &RBatis,
+        author_id: &u64,
+        base_minimal_author: &BaseMinimalAuthor,
     ) -> rbatis::Result<u64> {
         impled!()
     }
@@ -230,7 +269,30 @@ impl AuthorService for RbatisAuthorService {
     async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>> {
         Ok(Author::select_by_slug(&mut self.rb.clone(), slug).await?)
     }
-    async fn create_or_update_minimal_author_by_social_id(
+    async fn set_author_override_social_data_by_id(
+        &self,
+        id: &u64,
+        override_social_data: &u8,
+    ) -> DResult<()> {
+        let _ =
+            Author::set_override_social_data_by_id(&mut self.rb.clone(), &id, override_social_data)
+                .await;
+        Ok(())
+    }
+    async fn update_minimal_author_by_id(
+        &self,
+        base_minimal_author: &BaseMinimalAuthor,
+        id: &u64,
+    ) -> DResult<u64> {
+        let updated_id = RbatisAuthorService::update_minimal_custom_author_by_id(
+            &mut self.rb.clone(),
+            &id,
+            base_minimal_author,
+        )
+        .await?;
+        Ok(updated_id)
+    }
+    async fn create_or_update_if_needed_minimal_author_by_social_id(
         &self,
         base_minimal_author: &BaseMinimalAuthor,
         social_id: &SocialId,
@@ -243,7 +305,10 @@ impl AuthorService for RbatisAuthorService {
                 Author::select_by_yandex_id(&mut self.rb.clone(), &yandex_id).await?
             }
         } {
-            let updated_id = RbatisAuthorService::update_minimal_author_by_id(
+            if author.base.override_social_data != 0 {
+                return Ok(author.id);
+            }
+            let updated_id = RbatisAuthorService::update_minimal_social_author_by_id(
                 &mut self.rb.clone(),
                 &author.id,
                 base_minimal_author,
@@ -253,7 +318,7 @@ impl AuthorService for RbatisAuthorService {
             .await?;
             Ok(updated_id)
         } else {
-            let insert_id = RbatisAuthorService::insert_minimal_author(
+            let insert_id = RbatisAuthorService::insert_minimal_social_author(
                 &mut self.rb.clone(),
                 base_minimal_author,
                 &time_utils::now_as_secs(),

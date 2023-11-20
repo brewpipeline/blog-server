@@ -78,7 +78,7 @@ pub async fn http_handler(
     };
 
     let yandex_author_id = author_service
-        .create_or_update_minimal_author_by_social_id(
+        .create_or_update_if_needed_minimal_author_by_social_id(
             &yandex_base_minimal_author,
             &SocialId::YandexId(yandex_id),
         )

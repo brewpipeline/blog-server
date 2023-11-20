@@ -16,4 +16,5 @@ pub struct Author {
     pub editor: u8,
     pub blocked: u8,
     pub notification_subscribed: Option<u8>,
+    pub override_social_data: u8,
 }

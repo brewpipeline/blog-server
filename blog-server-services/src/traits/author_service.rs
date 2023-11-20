@@ -22,6 +22,7 @@ pub struct BaseAuthor {
     pub yandex_id: Option<u64>,
     pub telegram_id: Option<u64>,
     pub notification_subscribed: Option<u8>,
+    pub override_social_data: u8,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -57,6 +58,7 @@ impl Into<EAuthor> for Author {
             editor: self.base.editor,
             blocked: self.base.blocked,
             notification_subscribed: self.base.notification_subscribed,
+            override_social_data: self.base.override_social_data,
         }
     }
 }
@@ -95,7 +97,17 @@ pub trait AuthorService: Send + Sync {
     async fn authors_by_ids(&self, ids: &HashSet<u64>) -> DResult<Vec<Author>>;
     async fn author_by_id(&self, id: &u64) -> DResult<Option<Author>>;
     async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>>;
-    async fn create_or_update_minimal_author_by_social_id(
+    async fn set_author_override_social_data_by_id(
+        &self,
+        id: &u64,
+        override_social_data: &u8,
+    ) -> DResult<()>;
+    async fn update_minimal_author_by_id(
+        &self,
+        base_minimal_author: &BaseMinimalAuthor,
+        id: &u64,
+    ) -> DResult<u64>;
+    async fn create_or_update_if_needed_minimal_author_by_social_id(
         &self,
         base_minimal_author: &BaseMinimalAuthor,
         social_id: &SocialId,

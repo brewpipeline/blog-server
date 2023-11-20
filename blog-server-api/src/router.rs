@@ -102,6 +102,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                             .and_path("/id/{id:[^/]*}/unsubscribe")
                             .and_handler(author_subscribe::http_handler_unsubscribe),
                     )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::PATCH)
+                            .and_path("/id/{id:[^/]*}/reset_override_social_data")
+                            .and_handler(author_override_social_data::http_handler_disabled),
+                    )
                 })
                 .scoped("/authors", |r| {
                     r.route(
