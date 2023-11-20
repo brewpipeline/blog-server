@@ -1,6 +1,5 @@
 use blog_generic::entities::LoginTelegramQuestion;
-use blog_server_services::traits::author_service::BaseAuthor;
-use blog_server_services::utils::time_utils;
+use blog_server_services::traits::author_service::{BaseMinimalAuthor, SocialId};
 use hmac::Mac;
 use sha2::{Digest, Sha256};
 
@@ -76,26 +75,18 @@ pub async fn http_handler(
         });
     }
 
-    let telegram_base_author = BaseAuthor {
+    let telegram_base_minimal_author = BaseMinimalAuthor {
         slug: username.unwrap_or(id.to_string()),
         first_name,
-        middle_name: None,
         last_name,
-        mobile: None,
-        email: None,
-        password_hash: None,
-        registered_at: time_utils::now_as_secs(),
-        status: None,
         image_url: photo_url,
-        editor: 0,
-        blocked: 0,
-        yandex_id: None,
-        telegram_id: Some(id),
-        notification_subscribed: Some(0),
     };
 
     let telegram_author_id = author_service
-        .create_or_update_telegram_author(&telegram_base_author)
+        .create_or_update_minimal_author_by_social_id(
+            &telegram_base_minimal_author,
+            &SocialId::TelegramId(id),
+        )
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),

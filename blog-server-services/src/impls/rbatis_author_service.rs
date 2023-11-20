@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 
-use crate::traits::author_service::{Author, AuthorService, BaseAuthor};
+use crate::traits::author_service::{Author, AuthorService, BaseMinimalAuthor, SocialId};
+use crate::utils::time_utils;
 use rbatis::rbatis::RBatis;
-use screw_components::dyn_result::{DError, DResult};
+use screw_components::dyn_result::DResult;
 
 pub fn create_rbatis_author_service(rb: RBatis) -> Box<dyn AuthorService> {
     Box::new(RbatisAuthorService { rb })
@@ -88,6 +89,7 @@ struct RbatisAuthorService {
     rb: RBatis,
 }
 
+/*
 impl RbatisAuthorService {
     #[py_sql(
     "
@@ -132,6 +134,64 @@ impl RbatisAuthorService {
         impled!()
     }
 }
+*/
+
+impl RbatisAuthorService {
+    #[py_sql(
+        "
+        INSERT INTO author (
+            slug,
+            first_name,
+            last_name,
+            registered_at,
+            image_url,
+            yandex_id,
+            telegram_id
+        ) VALUES (
+            #{base_minimal_author.slug},
+            #{base_minimal_author.first_name},
+            #{base_minimal_author.last_name},
+            to_timestamp(#{registered_at}),
+            #{base_minimal_author.image_url},
+            #{yandex_id},
+            #{telegram_id}
+        ) RETURNING id
+    "
+    )]
+    async fn insert_minimal_author(
+        rb: &RBatis,
+        base_minimal_author: &BaseMinimalAuthor,
+        registered_at: &u64,
+        yandex_id: Option<&u64>,
+        telegram_id: Option<&u64>,
+    ) -> rbatis::Result<u64> {
+        impled!()
+    }
+
+    #[py_sql(
+        "
+        UPDATE author \
+        SET \
+            slug = #{base_minimal_author.slug}, \
+            first_name = #{base_minimal_author.first_name}, \
+            last_name = #{base_minimal_author.last_name}, \
+            image_url = #{base_minimal_author.image_url}, \
+            yandex_id = #{yandex_id}, \
+            telegram_id = #{telegram_id} \
+        WHERE id = #{author_id} \
+        RETURNING id
+    "
+    )]
+    async fn update_minimal_author_by_id(
+        rb: &RBatis,
+        author_id: &u64,
+        base_minimal_author: &BaseMinimalAuthor,
+        yandex_id: Option<&u64>,
+        telegram_id: Option<&u64>,
+    ) -> rbatis::Result<u64> {
+        impled!()
+    }
+}
 
 #[async_trait]
 impl AuthorService for RbatisAuthorService {
@@ -170,51 +230,37 @@ impl AuthorService for RbatisAuthorService {
     async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>> {
         Ok(Author::select_by_slug(&mut self.rb.clone(), slug).await?)
     }
-    async fn create_or_update_yandex_author(
+    async fn create_or_update_minimal_author_by_social_id(
         &self,
-        yandex_base_author: &BaseAuthor,
+        base_minimal_author: &BaseMinimalAuthor,
+        social_id: &SocialId,
     ) -> DResult<u64> {
-        let Some(yandex_id) = yandex_base_author.yandex_id else {
-            return Err(DError::from("no yandex_id"));
-        };
-        if let Some(yandex_author) =
-            Author::select_by_yandex_id(&mut self.rb.clone(), &yandex_id).await?
-        {
-            let updated_id = RbatisAuthorService::update_author_by_id(
+        if let Some(author) = match &social_id {
+            SocialId::TelegramId(telegram_id) => {
+                Author::select_by_telegram_id(&mut self.rb.clone(), &telegram_id).await?
+            }
+            SocialId::YandexId(yandex_id) => {
+                Author::select_by_yandex_id(&mut self.rb.clone(), &yandex_id).await?
+            }
+        } {
+            let updated_id = RbatisAuthorService::update_minimal_author_by_id(
                 &mut self.rb.clone(),
-                &yandex_author.id,
-                yandex_base_author,
+                &author.id,
+                base_minimal_author,
+                social_id.yandex_id(),
+                social_id.telegram_id(),
             )
             .await?;
             Ok(updated_id)
         } else {
-            let insert_id =
-                RbatisAuthorService::insert_author(&mut self.rb.clone(), yandex_base_author)
-                    .await?;
-            Ok(insert_id)
-        }
-    }
-    async fn create_or_update_telegram_author(
-        &self,
-        telegram_base_author: &BaseAuthor,
-    ) -> DResult<u64> {
-        let Some(telegram_id) = telegram_base_author.telegram_id else {
-            return Err(DError::from("no telegram_id"));
-        };
-        if let Some(telegram_author) =
-            Author::select_by_telegram_id(&mut self.rb.clone(), &telegram_id).await?
-        {
-            let updated_id = RbatisAuthorService::update_author_by_id(
+            let insert_id = RbatisAuthorService::insert_minimal_author(
                 &mut self.rb.clone(),
-                &telegram_author.id,
-                telegram_base_author,
+                base_minimal_author,
+                &time_utils::now_as_secs(),
+                social_id.yandex_id(),
+                social_id.telegram_id(),
             )
             .await?;
-            Ok(updated_id)
-        } else {
-            let insert_id =
-                RbatisAuthorService::insert_author(&mut self.rb.clone(), telegram_base_author)
-                    .await?;
             Ok(insert_id)
         }
     }

@@ -26,6 +26,15 @@ pub struct BaseAuthor {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+pub struct BaseMinimalAuthor {
+    pub slug: String,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub image_url: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct Author {
     pub id: u64,
     #[serde(flatten)]
@@ -52,6 +61,26 @@ impl Into<EAuthor> for Author {
     }
 }
 
+pub enum SocialId {
+    TelegramId(u64),
+    YandexId(u64),
+}
+
+impl SocialId {
+    pub fn telegram_id(&self) -> Option<&u64> {
+        match self {
+            SocialId::TelegramId(telegram_id) => Some(telegram_id),
+            SocialId::YandexId(_) => None,
+        }
+    }
+    pub fn yandex_id(&self) -> Option<&u64> {
+        match self {
+            SocialId::TelegramId(_) => None,
+            SocialId::YandexId(yandex_id) => Some(yandex_id),
+        }
+    }
+}
+
 #[async_trait]
 pub trait AuthorService: Send + Sync {
     async fn authors_count_by_query(&self, query: &String) -> DResult<u64>;
@@ -66,11 +95,10 @@ pub trait AuthorService: Send + Sync {
     async fn authors_by_ids(&self, ids: &HashSet<u64>) -> DResult<Vec<Author>>;
     async fn author_by_id(&self, id: &u64) -> DResult<Option<Author>>;
     async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>>;
-    async fn create_or_update_yandex_author(&self, yandex_base_author: &BaseAuthor)
-        -> DResult<u64>;
-    async fn create_or_update_telegram_author(
+    async fn create_or_update_minimal_author_by_social_id(
         &self,
-        telegram_base_author: &BaseAuthor,
+        base_minimal_author: &BaseMinimalAuthor,
+        social_id: &SocialId,
     ) -> DResult<u64>;
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()>;
     async fn set_author_subscription_by_id(&self, id: &u64, is_subscribed: &u8) -> DResult<()>;
