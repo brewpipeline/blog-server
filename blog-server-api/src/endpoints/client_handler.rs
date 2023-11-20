@@ -1,8 +1,5 @@
-use serde::Serialize;
-use std::sync::Arc;
-
 use crate::extensions::Resolve;
-use blog_generic::entities;
+use crate::utils::auth;
 use blog_server_services::traits::author_service::*;
 use blog_server_services::traits::entity_post_service::*;
 use blog_server_services::traits::post_service::*;
@@ -17,30 +14,63 @@ const INDEX_HTML: &str = include_str!("../../../index.html");
 
 const APP_TAG_PREFIX: &str = "<div id=\"app\">";
 
-const TITLE_TAG_PREFIX: &str = "<title>";
-const TITLE_TAG_SUFFIX: &str = "</title>";
-const DESCRIPTION_TAG_PREFIX: &str = "<meta name=\"description\" content=\"";
-const DESCRIPTION_TAG_SUFFIX: &str = "\">";
-const KEYWORDS_TAG_PREFIX: &str = "<meta name=\"keywords\" content=\"";
-const KEYWORDS_TAG_SUFFIX: &str = "\">";
-const ROBOTS_TAG_PREFIX: &str = "<meta name=\"robots\" content=\"";
-const ROBOTS_TAG_SUFFIX: &str = "\">";
+const TITLE_TAG: [&str; 2] = ["<title>", "</title>"];
+const DESCRIPTION_TAG: [&str; 2] = ["<meta name=\"description\" content=\"", "\">"];
+const KEYWORDS_TAG: [&str; 2] = ["<meta name=\"keywords\" content=\"", "\">"];
+const ROBOTS_TAG: [&str; 2] = ["<meta name=\"robots\" content=\"", "\">"];
+const OG_TITLE_TAG: [&str; 2] = ["<meta property=\"og:title\" content=\"", "\">"];
+const OG_DESCRIPTION_TAG: [&str; 2] = ["<meta property=\"og:description\" content=\"", "\">"];
+const OG_TYPE_TAG: [&str; 2] = ["<meta property=\"og:type\" content=\"", "\">"];
+const OG_IMAGE_TAG: [&str; 2] = ["<meta property=\"og:image\" content=\"", "\">"];
+const OG_IMAGE_WIDTH_TAG: [&str; 2] = ["<meta property=\"og:image:width\" content=\"", "\">"];
+const OG_IMAGE_HEIGHT_TAG: [&str; 2] = ["<meta property=\"og:image:height\" content=\"", "\">"];
+const OG_SITE_NAME_TAG: [&str; 2] = ["<meta property=\"og:site_name\" content=\"", "\">"];
 
-const TITLE_TAG_BODY_PREFIX: &str = "<script data-page-content=\"title\" type=\"text/plain\">";
-const TITLE_TAG_BODY_SUFFIX: &str = "</script>";
-const DESCRIPTION_TAG_BODY_PREFIX: &str =
-    "<script data-page-content=\"description\" type=\"text/plain\">";
-const DESCRIPTION_TAG_BODY_SUFFIX: &str = "</script>";
-const KEYWORDS_TAG_BODY_PREFIX: &str =
-    "<script data-page-content=\"keywords\" type=\"text/plain\">";
-const KEYWORDS_TAG_BODY_SUFFIX: &str = "</script>";
-const ROBOTS_TAG_BODY_PREFIX: &str = "<script data-page-content=\"robots\" type=\"text/plain\">";
-const ROBOTS_TAG_BODY_SUFFIX: &str = "</script>";
+const TYPE_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"type\" type=\"text/plain\">",
+    "</script>",
+];
+const TITLE_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"title\" type=\"text/plain\">",
+    "</script>",
+];
+const SHORT_TITLE_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"short_title\" type=\"text/plain\">",
+    "</script>",
+];
+const DESCRIPTION_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"description\" type=\"text/plain\">",
+    "</script>",
+];
+const KEYWORDS_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"keywords\" type=\"text/plain\">",
+    "</script>",
+];
+const IMAGE_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"image\" type=\"text/plain\">",
+    "</script>",
+];
+const IMAGE_WIDTH_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"image_width\" type=\"text/plain\">",
+    "</script>",
+];
+const IMAGE_HEIGHT_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"image_height\" type=\"text/plain\">",
+    "</script>",
+];
+const ROBOTS_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"robots\" type=\"text/plain\">",
+    "</script>",
+];
+const SITE_NAME_TAG_BODY: [&str; 2] = [
+    "<script data-page-content=\"site_name\" type=\"text/plain\">",
+    "</script>",
+];
 
 pub async fn client_handler<
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>>
-        + Resolve<Arc<Box<dyn PostService>>>
-        + Resolve<Arc<Box<dyn EntityPostService>>>,
+    Extensions: Resolve<std::sync::Arc<Box<dyn AuthorService>>>
+        + Resolve<std::sync::Arc<Box<dyn PostService>>>
+        + Resolve<std::sync::Arc<Box<dyn EntityPostService>>>,
 >(
     request: router::RoutedRequest<Request<Extensions>>,
 ) -> Response {
@@ -81,53 +111,30 @@ pub async fn client_handler<
 }
 
 fn update_meta(mut html: String) -> String {
-    update_tag(
-        &mut html,
-        TITLE_TAG_PREFIX,
-        TITLE_TAG_SUFFIX,
-        TITLE_TAG_BODY_PREFIX,
-        TITLE_TAG_BODY_SUFFIX,
-    );
-    update_tag(
-        &mut html,
-        DESCRIPTION_TAG_PREFIX,
-        DESCRIPTION_TAG_SUFFIX,
-        DESCRIPTION_TAG_BODY_PREFIX,
-        DESCRIPTION_TAG_BODY_SUFFIX,
-    );
-    update_tag(
-        &mut html,
-        KEYWORDS_TAG_PREFIX,
-        KEYWORDS_TAG_SUFFIX,
-        KEYWORDS_TAG_BODY_PREFIX,
-        KEYWORDS_TAG_BODY_SUFFIX,
-    );
-    update_tag(
-        &mut html,
-        ROBOTS_TAG_PREFIX,
-        ROBOTS_TAG_SUFFIX,
-        ROBOTS_TAG_BODY_PREFIX,
-        ROBOTS_TAG_BODY_SUFFIX,
-    );
+    update_tag(&mut html, TITLE_TAG, TITLE_TAG_BODY);
+    update_tag(&mut html, DESCRIPTION_TAG, DESCRIPTION_TAG_BODY);
+    update_tag(&mut html, KEYWORDS_TAG, KEYWORDS_TAG_BODY);
+    update_tag(&mut html, ROBOTS_TAG, ROBOTS_TAG_BODY);
+    update_tag(&mut html, OG_TITLE_TAG, SHORT_TITLE_TAG_BODY);
+    update_tag(&mut html, OG_DESCRIPTION_TAG, DESCRIPTION_TAG_BODY);
+    update_tag(&mut html, OG_TYPE_TAG, TYPE_TAG_BODY);
+    update_tag(&mut html, OG_IMAGE_TAG, IMAGE_TAG_BODY);
+    update_tag(&mut html, OG_IMAGE_WIDTH_TAG, IMAGE_WIDTH_TAG_BODY);
+    update_tag(&mut html, OG_IMAGE_HEIGHT_TAG, IMAGE_HEIGHT_TAG_BODY);
+    update_tag(&mut html, OG_SITE_NAME_TAG, SITE_NAME_TAG_BODY);
     html
 }
 
-fn update_tag(
-    html: &mut String,
-    main_tag_prefix: &str,
-    main_tag_suffix: &str,
-    body_tag_prefix: &str,
-    body_tag_suffix: &str,
-) {
-    let Some(content) = last_content(&html, body_tag_prefix, body_tag_suffix) else {
+fn update_tag(html: &mut String, main_tag: [&str; 2], body_tag: [&str; 2]) {
+    let Some(content) = last_content(&html, body_tag[0], body_tag[1]) else {
         return;
     };
-    let empty_tag = main_tag_prefix.to_string() + main_tag_suffix;
+    let empty_tag = main_tag[0].to_string() + main_tag[1];
     let tag = {
         let mut tag = String::new();
-        tag.push_str(main_tag_prefix);
+        tag.push_str(main_tag[0]);
         tag.push_str(content.as_str());
-        tag.push_str(main_tag_suffix);
+        tag.push_str(main_tag[1]);
         tag
     };
     *html = html.replace(empty_tag.as_str(), tag.as_str());
@@ -140,7 +147,7 @@ fn last_content(html: &String, prefix: &str, suffix: &str) -> Option<String> {
     Some(content)
 }
 
-fn app_content_encode<E: Serialize>(entity: &E) -> Option<AppContent> {
+fn app_content_encode<E: serde::Serialize>(entity: &E) -> Option<AppContent> {
     Some(AppContent {
         r#type: "application/json".to_string(),
         value: serde_json::to_string(entity).ok()?,
@@ -161,44 +168,67 @@ async fn app_content<Extensions>(
     request: &router::RoutedRequest<Request<Extensions>>,
 ) -> Option<AppContent>
 where
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>>
-        + Resolve<Arc<Box<dyn PostService>>>
-        + Resolve<Arc<Box<dyn EntityPostService>>>,
+    Extensions: Resolve<std::sync::Arc<Box<dyn AuthorService>>>
+        + Resolve<std::sync::Arc<Box<dyn PostService>>>
+        + Resolve<std::sync::Arc<Box<dyn EntityPostService>>>,
 {
     match Route::recognize_path(request.path.as_str())? {
         Route::Post { slug: _, id } | Route::EditPost { id } => {
-            let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
-            let entity_post_service: Arc<Box<dyn EntityPostService>> =
+            use crate::endpoints::post;
+            let post_service: std::sync::Arc<Box<dyn PostService>> =
                 request.origin.extensions.resolve();
-            let post = post_service.post_by_id(&id).await.ok().flatten()?;
-            if post.base.published == 0 {
-                return None;
-            }
-            let post_entity = entity_post_service
-                .posts_entities(vec![post])
+            let entity_post_service: std::sync::Arc<Box<dyn EntityPostService>> =
+                request.origin.extensions.resolve();
+
+            let Ok(post::PostResponseContentSuccess { container }) =
+                post::http_handler((post::PostRequestContent {
+                    id: id.to_string(),
+                    post_service,
+                    entity_post_service,
+                    auth_author_future: Box::pin(std::future::ready(Err(
+                        auth::Error::TokenMissing,
+                    ))),
+                },))
                 .await
-                .ok()?
-                .remove(0);
-            app_content_encode(&post_entity)
+            else {
+                return None;
+            };
+
+            app_content_encode(&container.post)
         }
         Route::Author { slug } => {
-            if slug.is_empty() {
-                return None;
-            }
-            let author_service: Arc<Box<dyn AuthorService>> = request.origin.extensions.resolve();
-            let author_entity: entities::Author = author_service
-                .author_by_slug(&slug)
+            use crate::endpoints::author;
+            let author_service: std::sync::Arc<Box<dyn AuthorService>> =
+                request.origin.extensions.resolve();
+
+            let Ok(author::AuthorResponseContentSuccess { container }) =
+                author::http_handler((author::AuthorRequestContent {
+                    slug,
+                    author_service,
+                },))
                 .await
-                .ok()
-                .flatten()?
-                .into();
-            app_content_encode(&author_entity)
+            else {
+                return None;
+            };
+
+            app_content_encode(&container.author)
         }
         Route::Tag { slug: _, id } => {
-            let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
-            let tag_entity: entities::Tag =
-                post_service.tag_by_id(&id).await.ok().flatten()?.into();
-            app_content_encode(&tag_entity)
+            use crate::endpoints::tag;
+            let post_service: std::sync::Arc<Box<dyn PostService>> =
+                request.origin.extensions.resolve();
+
+            let Ok(tag::TagResponseContentSuccess { container }) =
+                tag::http_handler((tag::TagRequestContent {
+                    id: id.to_string(),
+                    post_service,
+                },))
+                .await
+            else {
+                return None;
+            };
+
+            app_content_encode(&container.tag)
         }
         _ => None,
     }
