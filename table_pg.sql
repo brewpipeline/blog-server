@@ -207,3 +207,11 @@ DO $$ BEGIN
 END $$
 
 ;
+
+DO $$ BEGIN
+  IF NOT EXISTS(select * from information_schema.columns where table_name = 'author' and column_name = 'override_social_data') THEN
+    ALTER TABLE author ADD COLUMN override_social_data SMALLINT NOT NULL DEFAULT 0;
+  END IF;
+END $$
+
+;

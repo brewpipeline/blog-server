@@ -1,6 +1,7 @@
 pub mod author;
 pub mod author_block;
 pub mod author_me;
+pub mod author_override_social_data;
 pub mod author_subscribe;
 pub mod authors;
 #[cfg(feature = "ssr")]
@@ -18,6 +19,7 @@ mod sitemap_handler;
 pub mod tag;
 #[cfg(feature = "telegram")]
 pub mod telegram_login;
+pub mod update_minimal_author;
 pub mod update_post;
 #[cfg(feature = "yandex")]
 pub mod yandex_login;

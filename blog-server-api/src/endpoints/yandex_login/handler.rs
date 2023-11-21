@@ -1,6 +1,5 @@
 use blog_generic::entities::LoginYandexQuestion;
-use blog_server_services::traits::author_service::BaseAuthor;
-use blog_server_services::utils::time_utils;
+use blog_server_services::traits::author_service::{BaseMinimalAuthor, SocialId};
 use serde::Deserialize;
 
 use super::request_content::LoginYandexRequestContent;
@@ -64,16 +63,10 @@ pub async fn http_handler(
         });
     };
 
-    let yandex_base_author = BaseAuthor {
-        slug: yandex_login_response.login,
+    let yandex_base_minimal_author = BaseMinimalAuthor {
+        slug: blog_generic::extend_author_slug(&yandex_login_response.login, &"y".to_string()),
         first_name: yandex_login_response.first_name,
-        middle_name: None,
         last_name: yandex_login_response.last_name,
-        mobile: yandex_login_response.default_phone.map(|p| p.number),
-        email: yandex_login_response.default_email,
-        password_hash: None,
-        registered_at: time_utils::now_as_secs(),
-        status: None,
         image_url: if !yandex_login_response.is_avatar_empty {
             Some(format!(
                 "https://avatars.yandex.net/get-yapic/{avatar_id}/islands-200",
@@ -82,15 +75,13 @@ pub async fn http_handler(
         } else {
             None
         },
-        editor: 0,
-        blocked: 0,
-        yandex_id: Some(yandex_id),
-        telegram_id: None,
-        notification_subscribed: Some(0),
     };
 
     let yandex_author_id = author_service
-        .create_or_update_yandex_author(&yandex_base_author)
+        .create_or_update_if_needed_minimal_author_by_social_id(
+            &yandex_base_minimal_author,
+            &SocialId::YandexId(yandex_id),
+        )
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
