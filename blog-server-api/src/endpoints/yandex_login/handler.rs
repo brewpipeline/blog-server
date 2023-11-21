@@ -64,7 +64,7 @@ pub async fn http_handler(
     };
 
     let yandex_base_minimal_author = BaseMinimalAuthor {
-        slug: yandex_login_response.login,
+        slug: blog_generic::extend_author_slug(&yandex_login_response.login, &"y".to_string()),
         first_name: yandex_login_response.first_name,
         last_name: yandex_login_response.last_name,
         image_url: if !yandex_login_response.is_avatar_empty {

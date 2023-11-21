@@ -31,11 +31,8 @@ pub async fn http_handler(
         })?;
 
     let mut base_minimal_author = base_minimal_author;
-    base_minimal_author.slug = format!(
-        "{slug}#{id}",
-        slug = base_minimal_author.slug,
-        id = author.id,
-    );
+    base_minimal_author.slug =
+        blog_generic::extend_author_slug(&base_minimal_author.slug, &"".to_string());
 
     author_service
         .update_minimal_author_by_id(&From::from(base_minimal_author), &author.id)
