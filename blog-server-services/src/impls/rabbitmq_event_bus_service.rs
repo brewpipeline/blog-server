@@ -5,7 +5,7 @@ use amqprs::{
     error::Error,
     BasicProperties,
 };
-use blog_generic::events::SubscriptionStateChanged;
+use blog_generic::events::{NewPostPublished, SubscriptionStateChanged};
 use serde::Serialize;
 
 use crate::traits::event_bus_service::{EventBusService, Publish};
@@ -113,6 +113,15 @@ impl Publish<SubscriptionStateChanged> for RabbitEventBusService {
     }
 }
 
+#[async_trait]
+impl Publish<NewPostPublished> for RabbitEventBusService {
+    async fn publish(&self, event: NewPostPublished) -> () {
+        println!("event published: {}", event.blog_user_id);
+
+        publish(to_bytes_payload(event), self.channel.clone()).await;
+    }
+}
+
 async fn publish(payload: Result<Vec<u8>, EventBusError>, channel: Option<Channel>) -> () {
     if let (Ok(payload), Some(channel)) = (payload, channel) {
         let res = internal_publish(payload, &channel).await;
@@ -155,6 +164,16 @@ impl Publish<SubscriptionStateChanged> for NotificationServiceMock {
         println!(
             "event NOT published. Mock eventBus is used: {}, {}",
             event.blog_user_id, event.user_telegram_id
+        );
+    }
+}
+
+#[async_trait]
+impl Publish<NewPostPublished> for NotificationServiceMock {
+    async fn publish(&self, event: NewPostPublished) -> () {
+        println!(
+            "event NOT published. Mock eventBus is used: {}",
+            event.blog_user_id
         );
     }
 }

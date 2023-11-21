@@ -1,4 +1,4 @@
-use blog_generic::events::SubscriptionStateChanged;
+use blog_generic::events::{NewPostPublished, SubscriptionStateChanged};
 use serde::Serialize;
 #[async_trait]
 pub trait Publish<T>: Send + Sync
@@ -8,4 +8,4 @@ where
     async fn publish(&self, event: T) -> ();
 }
 
-pub trait EventBusService: Publish<SubscriptionStateChanged> {}
+pub trait EventBusService: Publish<SubscriptionStateChanged> + Publish<NewPostPublished> {}
