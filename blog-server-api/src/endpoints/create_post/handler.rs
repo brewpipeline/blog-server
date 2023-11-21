@@ -81,7 +81,10 @@ pub async fn http_handler(
     if created_post_entity.published != 0 {
         let new_post_published = NewPostPublished {
             blog_user_id: created_post_entity.author.id,
-            post_sub_url: format!("/{}/{}", created_post_entity.slug, created_post_entity.id),
+            post_sub_url: format!(
+                "/post/{}/{}",
+                created_post_entity.slug, created_post_entity.id
+            ),
         };
         tokio::spawn(async move { event_bus_service.publish(new_post_published).await });
     }
