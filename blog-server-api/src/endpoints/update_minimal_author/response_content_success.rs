@@ -24,7 +24,7 @@ impl ApiResponseContentSuccess for UpdateMinimalAuthorContentSuccess {
     }
 
     fn description(&self) -> Option<String> {
-        Some(String::from("post record updated"))
+        Some(String::from("minimal author record updated"))
     }
 
     fn data(&self) -> &Self::Data {

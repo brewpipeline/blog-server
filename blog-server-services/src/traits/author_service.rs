@@ -1,6 +1,9 @@
 use std::collections::HashSet;
 
-use blog_generic::entities::{Author as EAuthor, CommonMinimalAuthor as ECommonMinimalAuthor};
+use blog_generic::entities::{
+    Author as EAuthor, CommonMinimalAuthor as ECommonMinimalAuthor,
+    CommonSecondaryAuthor as ECommonSecondaryAuthor,
+};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 
@@ -41,6 +44,24 @@ impl From<ECommonMinimalAuthor> for BaseMinimalAuthor {
             first_name: value.first_name,
             last_name: value.last_name,
             image_url: value.image_url,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct BaseSecondaryAuthor {
+    pub email: Option<String>,
+    pub mobile: Option<String>,
+    pub status: Option<String>,
+}
+
+impl From<ECommonSecondaryAuthor> for BaseSecondaryAuthor {
+    fn from(value: ECommonSecondaryAuthor) -> Self {
+        BaseSecondaryAuthor {
+            email: value.email,
+            mobile: value.mobile,
+            status: value.status,
         }
     }
 }
@@ -122,6 +143,11 @@ pub trait AuthorService: Send + Sync {
         &self,
         base_minimal_author: &BaseMinimalAuthor,
         social_id: &SocialId,
+    ) -> DResult<u64>;
+    async fn update_secondary_author_by_id(
+        &self,
+        base_secondary_author: &BaseSecondaryAuthor,
+        id: &u64,
     ) -> DResult<u64>;
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()>;
     async fn set_author_subscription_by_id(&self, id: &u64, is_subscribed: &u8) -> DResult<()>;
