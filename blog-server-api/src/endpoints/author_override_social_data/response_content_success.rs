@@ -4,6 +4,12 @@ use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
 #[derive(Debug, Clone)]
 pub struct AuthorOverrideSocialDataResponseContentSuccess;
 
+impl Into<AuthorOverrideSocialDataResponseContentSuccess> for () {
+    fn into(self) -> AuthorOverrideSocialDataResponseContentSuccess {
+        AuthorOverrideSocialDataResponseContentSuccess
+    }
+}
+
 impl ApiResponseContentBase for AuthorOverrideSocialDataResponseContentSuccess {
     fn status_code(&self) -> &'static StatusCode {
         &StatusCode::OK

@@ -5,7 +5,6 @@ pub enum AuthorOverrideSocialDataResponseContentFailure {
     Unauthorized { reason: String },
     Forbidden,
     DatabaseError { reason: String },
-    IncorrectIdFormat { reason: String },
 }
 
 impl ApiResponseContentBase for AuthorOverrideSocialDataResponseContentFailure {
@@ -17,9 +16,6 @@ impl ApiResponseContentBase for AuthorOverrideSocialDataResponseContentFailure {
             AuthorOverrideSocialDataResponseContentFailure::Forbidden => &StatusCode::FORBIDDEN,
             AuthorOverrideSocialDataResponseContentFailure::DatabaseError { reason: _ } => {
                 &StatusCode::INTERNAL_SERVER_ERROR
-            }
-            AuthorOverrideSocialDataResponseContentFailure::IncorrectIdFormat { reason: _ } => {
-                &StatusCode::BAD_REQUEST
             }
         }
     }
@@ -36,9 +32,6 @@ impl ApiResponseContentFailure for AuthorOverrideSocialDataResponseContentFailur
             }
             AuthorOverrideSocialDataResponseContentFailure::DatabaseError { reason: _ } => {
                 "AUTHOR_OVERRIDE_SOCIAL_DATA_DATABASE_ERROR"
-            }
-            AuthorOverrideSocialDataResponseContentFailure::IncorrectIdFormat { reason: _ } => {
-                "AUTHOR_OVERRIDE_SOCIAL_DATA_INCORRECT_ID_FORMAT"
             }
         }
     }
@@ -61,9 +54,6 @@ impl ApiResponseContentFailure for AuthorOverrideSocialDataResponseContentFailur
                 } else {
                     "internal database error".to_string()
                 }
-            }
-            AuthorOverrideSocialDataResponseContentFailure::IncorrectIdFormat { reason } => {
-                format!("incorrect value provided for author ID: {}", reason)
             }
         })
     }

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use blog_generic::entities::Author as EAuthor;
+use blog_generic::entities::{Author as EAuthor, CommonMinimalAuthor as ECommonMinimalAuthor};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 
@@ -32,6 +32,17 @@ pub struct BaseMinimalAuthor {
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub image_url: Option<String>,
+}
+
+impl From<ECommonMinimalAuthor> for BaseMinimalAuthor {
+    fn from(value: ECommonMinimalAuthor) -> Self {
+        BaseMinimalAuthor {
+            slug: value.slug,
+            first_name: value.first_name,
+            last_name: value.last_name,
+            image_url: value.image_url,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

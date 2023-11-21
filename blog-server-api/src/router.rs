@@ -104,8 +104,13 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                     )
                     .route(
                         route::first::Route::with_method(&hyper::Method::PATCH)
-                            .and_path("/id/{id:[^/]*}/reset_override_social_data")
+                            .and_path("/reset_override_social_data")
                             .and_handler(author_override_social_data::http_handler_disabled),
+                    )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::PATCH)
+                            .and_path("/minimal")
+                            .and_handler(update_minimal_author::http_handler),
                     )
                 })
                 .scoped("/authors", |r| {

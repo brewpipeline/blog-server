@@ -19,6 +19,7 @@ mod sitemap_handler;
 pub mod tag;
 #[cfg(feature = "telegram")]
 pub mod telegram_login;
+pub mod update_minimal_author;
 pub mod update_post;
 #[cfg(feature = "yandex")]
 pub mod yandex_login;

@@ -23,7 +23,6 @@ pub async fn http_handler_disabled(
 
 async fn http_handler(
     AuthorOverrideSocialDataRequestContent {
-        id,
         author_service,
         auth_author_future,
     }: AuthorOverrideSocialDataRequestContent,
@@ -32,24 +31,20 @@ async fn http_handler(
     AuthorOverrideSocialDataResponseContentSuccess,
     AuthorOverrideSocialDataResponseContentFailure,
 > {
-    let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
-        reason: e.to_string(),
-    })?;
-
     let author = auth_author_future.await.map_err(|e| Unauthorized {
         reason: e.to_string(),
     })?;
 
-    if author.base.editor != 1 {
+    if author.base.blocked == 1 {
         return Err(Forbidden);
     }
 
     author_service
-        .set_author_override_social_data_by_id(&id, &override_social_data)
+        .set_author_override_social_data_by_id(&author.id, &override_social_data)
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
         })?;
 
-    Ok(AuthorOverrideSocialDataResponseContentSuccess)
+    Ok(().into())
 }
