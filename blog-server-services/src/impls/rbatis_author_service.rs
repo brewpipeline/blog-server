@@ -104,53 +104,6 @@ struct RbatisAuthorService {
     rb: RBatis,
 }
 
-/*
-impl RbatisAuthorService {
-    #[py_sql(
-    "
-        INSERT INTO author
-        (slug,first_name,middle_name,last_name,mobile,email,password_hash,registered_at,status,image_url,editor,blocked,yandex_id,telegram_id,notification_subscribed)
-        VALUES
-        (#{base_author.slug},#{base_author.first_name},#{base_author.middle_name},#{base_author.last_name},#{base_author.mobile},#{base_author.email},#{base_author.password_hash},to_timestamp(#{base_author.registered_at}),#{base_author.status},#{base_author.image_url},#{base_author.editor},#{base_author.blocked},#{base_author.yandex_id},#{base_author.telegram_id},#{base_author.notification_subscribed})
-        RETURNING id
-    "
-    )]
-    async fn insert_author(rb: &RBatis, base_author: &BaseAuthor) -> rbatis::Result<u64> {
-        impled!()
-    }
-
-    #[py_sql(
-        "
-        UPDATE author \
-        SET \
-            slug = #{base_author.slug}, \
-            first_name = #{base_author.first_name}, \
-            middle_name = #{base_author.middle_name}, \
-            last_name = #{base_author.last_name}, \
-            mobile = #{base_author.mobile}, \
-            email = #{base_author.email}, \
-            password_hash = #{base_author.password_hash}, \
-            status = #{base_author.status}, \
-            image_url = #{base_author.image_url}, \
-            editor = #{base_author.editor}, \
-            blocked = #{base_author.blocked}, \
-            yandex_id = #{base_author.yandex_id}, \
-            telegram_id = #{base_author.telegram_id}, \
-            notification_subscribed = #{base_author.notification_subscribed} \
-        WHERE id = #{author_id} \
-        RETURNING id
-    "
-    )]
-    async fn update_author_by_id(
-        rb: &RBatis,
-        author_id: &u64,
-        base_author: &BaseAuthor,
-    ) -> rbatis::Result<u64> {
-        impled!()
-    }
-}
-*/
-
 impl RbatisAuthorService {
     #[py_sql(
         "
