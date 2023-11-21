@@ -17,7 +17,7 @@ pub struct CommonMinimalAuthor {
 fn validate_slug(slug: &String) -> Result<(), ValidationError> {
     let chars_count = slug.chars().count();
     if !(5 <= chars_count && chars_count <= 30) {
-        return Err(ValidationError::new("is_not_in_renge_5_30"));
+        return Err(ValidationError::new("is_not_in_range_5_30"));
     }
     if !slug.chars().all(|c| char::is_alphanumeric(c) || c == '_') {
         return Err(ValidationError::new(
