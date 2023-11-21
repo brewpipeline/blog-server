@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "1.0.160", features = ["derive"] }
-validator = { version = "0.16.1", features = ["derive", "unic"] }
+validator = { version = "0.16.1", features = ["derive", "unic", "phone"] }
