@@ -1,3 +1,4 @@
+use blog_generic::events::NewPostPublished;
 use validator::Validate;
 
 use super::request_content::CreatePostRequestContent;
@@ -11,6 +12,7 @@ pub async fn http_handler(
         post_service,
         entity_post_service,
         auth_author_future,
+        event_bus_service,
     },): (CreatePostRequestContent,),
 ) -> Result<CreatePostContentSuccess, CreatePostContentFailure> {
     let author = auth_author_future.await.map_err(|e| Unauthorized {
@@ -75,6 +77,17 @@ pub async fn http_handler(
             reason: e.to_string(),
         })?
         .remove(0);
+
+    if created_post_entity.published != 0 {
+        let new_post_published = NewPostPublished {
+            blog_user_id: created_post_entity.author.id,
+            post_sub_url: format!(
+                "/post/{}/{}",
+                created_post_entity.slug, created_post_entity.id
+            ),
+        };
+        tokio::spawn(async move { event_bus_service.publish(new_post_published).await });
+    }
 
     Ok(created_post_entity.into())
 }

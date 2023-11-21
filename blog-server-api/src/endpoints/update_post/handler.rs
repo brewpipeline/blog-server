@@ -1,3 +1,4 @@
+use blog_generic::events::NewPostPublished;
 use validator::Validate;
 
 use super::request_content::UpdatePostRequestContent;
@@ -12,6 +13,7 @@ pub async fn http_handler(
         post_service,
         entity_post_service,
         auth_author_future,
+        event_bus_service,
     },): (UpdatePostRequestContent,),
 ) -> Result<UpdatePostContentSuccess, UpdatePostContentFailure> {
     let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
@@ -92,6 +94,7 @@ pub async fn http_handler(
             reason: e.to_string(),
         })?
         .ok_or(PostNotFound)?;
+    let new_published_value = updated_post.base.published;
 
     let updated_post_entity = entity_post_service
         .posts_entities(vec![updated_post])
@@ -100,6 +103,17 @@ pub async fn http_handler(
             reason: e.to_string(),
         })?
         .remove(0);
+
+    if existing_post.base.published == 0 && new_published_value != 0 {
+        let new_post_published = NewPostPublished {
+            blog_user_id: updated_post_entity.author.id,
+            post_sub_url: format!(
+                "/post/{}/{}",
+                updated_post_entity.slug, updated_post_entity.id
+            ),
+        };
+        tokio::spawn(async move { event_bus_service.publish(new_post_published).await });
+    }
 
     Ok(updated_post_entity.into())
 }
