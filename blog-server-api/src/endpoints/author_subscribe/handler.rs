@@ -1,3 +1,5 @@
+use blog_generic::events::SubscriptionStateChanged;
+
 use super::request_content::AuthorSubscribeRequestContent;
 use super::response_content_failure::AuthorSubscribeResponseContentFailure;
 use super::response_content_failure::AuthorSubscribeResponseContentFailure::*;
@@ -20,6 +22,7 @@ async fn http_handler(
         id,
         author_service,
         auth_author_future,
+        event_bus_service,
     }: AuthorSubscribeRequestContent,
     subscribe: u8,
 ) -> Result<AuthorSubscribeRequestContentSuccess, AuthorSubscribeResponseContentFailure> {
@@ -35,11 +38,17 @@ async fn http_handler(
         return Err(Forbidden);
     }
 
-    if author.base.telegram_id.is_none() {
+    if let Some(telegram_id) = author.base.telegram_id {
+        let event = SubscriptionStateChanged {
+            blog_user_id: id,
+            user_telegram_id: telegram_id,
+            new_state: subscribe,
+        };
+
+        tokio::spawn(async move { event_bus_service.publish(event).await });
+    } else {
         return Err(NotSupported);
     }
-
-    //TODO PULL Subscribe event INTO QUEUE
 
     author_service
         .set_author_subscription_by_id(&id, &subscribe)
