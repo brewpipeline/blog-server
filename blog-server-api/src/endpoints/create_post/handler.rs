@@ -78,7 +78,7 @@ pub async fn http_handler(
         })?
         .remove(0);
 
-    if created_post_entity.published == 1 {
+    if created_post_entity.published != 0 {
         let new_post_published = NewPostPublished {
             blog_user_id: created_post_entity.author.id,
             post_sub_url: format!("/{}/{}", created_post_entity.slug, created_post_entity.id),
