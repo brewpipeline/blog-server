@@ -4,7 +4,7 @@ version = "0.0.1"
 edition = "2021"
 
 [features]
-ssr = ["blog-ui", "serde_json", "sitemap-rs"]
+ssr = ["blog-ui", "sitemap-rs"]
 yandex = ["reqwest", "blog-ui?/yandex"]
 telegram = ["sha2", "hmac", "hex", "blog-ui?/telegram"]
 
@@ -42,7 +42,7 @@ blog-server-services = { path = "../blog-server-services" }
 tokio = { version = "1.27.0", features = ["full"] }
 hyper = { version = "0.14.26", features = ["full"] }
 serde = { version = "1.0.160", features = ["derive"] }
-serde_json = { version = "1.0.104", optional = true }
+serde_json = { version = "1.0.104" }
 rbs = { version = "4.3" }
 rbatis = { version = "4.3" }
 rbdc-pg = { version = "4.3" }

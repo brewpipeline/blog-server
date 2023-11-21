@@ -1,4 +1,5 @@
 pub mod entities;
+pub mod events;
 
 const AUTHOR_SLUG_SPLIT_SYMBOL: char = '^';
 

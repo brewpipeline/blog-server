@@ -6,6 +6,7 @@ use blog_server_services::traits::author_service::AuthorService;
 use blog_server_services::traits::comment_service::CommentService;
 use blog_server_services::traits::entity_comment_service::EntityCommentService;
 use blog_server_services::traits::entity_post_service::EntityPostService;
+use blog_server_services::traits::event_bus_service::EventBusService;
 use blog_server_services::traits::post_service::PostService;
 use rbatis::rbatis::RBatis;
 use std::sync::Arc;
@@ -20,6 +21,7 @@ pub trait ExtensionsProviderType:
     + Resolve<Arc<Box<dyn CommentService>>>
     + Resolve<Arc<Box<dyn EntityCommentService>>>
     + Resolve<Arc<Box<dyn EntityPostService>>>
+    + Resolve<Arc<Box<dyn EventBusService>>>
 {
 }
 
@@ -29,6 +31,7 @@ struct ExtensionsProvider {
     comment_service: Arc<Box<dyn CommentService>>,
     entity_comment_service: Arc<Box<dyn EntityCommentService>>,
     entity_post_service: Arc<Box<dyn EntityPostService>>,
+    event_bus_service: Arc<Box<dyn EventBusService>>,
 }
 
 impl ExtensionsProviderType for ExtensionsProvider {}
@@ -63,7 +66,16 @@ impl Resolve<Arc<Box<dyn EntityPostService>>> for ExtensionsProvider {
     }
 }
 
-pub fn make_extensions(rbatis: RBatis) -> impl ExtensionsProviderType {
+impl Resolve<Arc<Box<dyn EventBusService>>> for ExtensionsProvider {
+    fn resolve(&self) -> Arc<Box<dyn EventBusService>> {
+        self.event_bus_service.clone()
+    }
+}
+
+pub fn make_extensions(
+    rbatis: RBatis,
+    event_bus: Box<dyn EventBusService>,
+) -> impl ExtensionsProviderType {
     let authors_service = Arc::new(create_rbatis_author_service(rbatis.clone()));
     ExtensionsProvider {
         author_service: authors_service.clone(),
@@ -71,5 +83,6 @@ pub fn make_extensions(rbatis: RBatis) -> impl ExtensionsProviderType {
         comment_service: Arc::new(create_rbatis_comment_service(rbatis.clone())),
         entity_comment_service: Arc::new(create_entity_comment_service(authors_service.clone())),
         entity_post_service: Arc::new(create_entity_post_service(authors_service.clone())),
+        event_bus_service: Arc::new(event_bus),
     }
 }
