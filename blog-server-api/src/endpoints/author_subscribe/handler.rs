@@ -37,10 +37,6 @@ async fn http_handler(
     let is_same_user = logged_in_author.id == id;
     let is_user_admin = logged_in_author.base.editor == 1;
 
-    if !is_same_user && !is_user_admin {
-        return Err(Forbidden);
-    }
-
     let subscriber_telegram_id = match (is_same_user, is_user_admin) {
         (true, _) => logged_in_author.base.telegram_id,
         (false, true) => {
@@ -55,7 +51,7 @@ async fn http_handler(
                 None => None,
             }
         }
-        _ => None,
+        (false, false) => Err(Forbidden)?,
     };
 
     if let Some(telegram_id) = subscriber_telegram_id {
