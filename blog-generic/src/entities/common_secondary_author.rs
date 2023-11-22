@@ -8,6 +8,6 @@ pub struct CommonSecondaryAuthor {
     pub email: Option<String>,
     #[validate(phone)]
     pub mobile: Option<String>,
-    #[validate(length(max = 255), non_control_character)]
+    #[validate(length(max = 150), non_control_character)]
     pub status: Option<String>,
 }
