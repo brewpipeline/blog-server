@@ -30,15 +30,31 @@ async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    let author = auth_author_future.await.map_err(|e| Unauthorized {
+    let logged_in_author = auth_author_future.await.map_err(|e| Unauthorized {
         reason: e.to_string(),
     })?;
 
-    if author.id != id && author.base.editor != 1 {
-        return Err(Forbidden);
-    }
+    let is_same_user = logged_in_author.id == id;
+    let is_user_admin = logged_in_author.base.editor == 1;
 
-    if let Some(telegram_id) = author.base.telegram_id {
+    let subscriber_telegram_id = match (is_same_user, is_user_admin) {
+        (true, _) => logged_in_author.base.telegram_id,
+        (false, true) => {
+            let author = author_service
+                .author_by_id(&id)
+                .await
+                .map_err(|e| DatabaseError {
+                    reason: e.to_string(),
+                })?;
+            match author {
+                Some(a) => a.base.telegram_id,
+                None => None,
+            }
+        }
+        (false, false) => Err(Forbidden)?,
+    };
+
+    if let Some(telegram_id) = subscriber_telegram_id {
         let event = SubscriptionStateChanged {
             blog_user_id: id,
             user_telegram_id: telegram_id,
