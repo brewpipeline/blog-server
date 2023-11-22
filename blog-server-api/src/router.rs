@@ -112,6 +112,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                             .and_path("/minimal")
                             .and_handler(update_minimal_author::http_handler),
                     )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::PATCH)
+                            .and_path("/secondary")
+                            .and_handler(update_secondary_author::http_handler),
+                    )
                 })
                 .scoped("/authors", |r| {
                     r.route(

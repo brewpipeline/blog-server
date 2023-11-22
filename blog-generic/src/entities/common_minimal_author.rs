@@ -10,7 +10,7 @@ pub struct CommonMinimalAuthor {
     pub first_name: Option<String>,
     #[validate(length(min = 2, max = 50), non_control_character)]
     pub last_name: Option<String>,
-    #[validate(length(max = 255), url)]
+    #[validate(length(max = 255), url, non_control_character)]
     pub image_url: Option<String>,
 }
 

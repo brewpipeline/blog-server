@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 
-use crate::traits::author_service::{Author, AuthorService, BaseMinimalAuthor, SocialId};
+use crate::traits::author_service::{
+    Author, AuthorService, BaseMinimalAuthor, BaseSecondaryAuthor, SocialId,
+};
 use crate::utils::time_utils;
 use rbatis::rbatis::RBatis;
 use screw_components::dyn_result::DResult;
@@ -183,6 +185,25 @@ impl RbatisAuthorService {
     ) -> rbatis::Result<u64> {
         impled!()
     }
+
+    #[py_sql(
+        "
+        UPDATE author \
+        SET \
+            email = #{base_secondary_author.email}, \
+            mobile = #{base_secondary_author.mobile}, \
+            status = #{base_secondary_author.status} \
+        WHERE id = #{author_id} \
+        RETURNING id
+    "
+    )]
+    async fn update_secondary_author_by_id(
+        rb: &RBatis,
+        author_id: &u64,
+        base_secondary_author: &BaseSecondaryAuthor,
+    ) -> rbatis::Result<u64> {
+        impled!()
+    }
 }
 
 #[async_trait]
@@ -281,6 +302,19 @@ impl AuthorService for RbatisAuthorService {
             .await?;
             Ok(insert_id)
         }
+    }
+    async fn update_secondary_author_by_id(
+        &self,
+        base_secondary_author: &BaseSecondaryAuthor,
+        id: &u64,
+    ) -> DResult<u64> {
+        let updated_id = RbatisAuthorService::update_secondary_author_by_id(
+            &mut self.rb.clone(),
+            id,
+            base_secondary_author,
+        )
+        .await?;
+        Ok(updated_id)
     }
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()> {
         let _ = Author::set_blocked_by_id(&mut self.rb.clone(), &id, &is_blocked).await;

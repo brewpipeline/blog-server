@@ -1,6 +1,9 @@
 use std::collections::HashSet;
 
-use blog_generic::entities::{Author as EAuthor, CommonMinimalAuthor as ECommonMinimalAuthor};
+use blog_generic::entities::{
+    Author as EAuthor, CommonMinimalAuthor as ECommonMinimalAuthor,
+    CommonSecondaryAuthor as ECommonSecondaryAuthor,
+};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 
@@ -47,6 +50,24 @@ impl From<ECommonMinimalAuthor> for BaseMinimalAuthor {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+pub struct BaseSecondaryAuthor {
+    pub email: Option<String>,
+    pub mobile: Option<String>,
+    pub status: Option<String>,
+}
+
+impl From<ECommonSecondaryAuthor> for BaseSecondaryAuthor {
+    fn from(value: ECommonSecondaryAuthor) -> Self {
+        BaseSecondaryAuthor {
+            email: value.email,
+            mobile: value.mobile,
+            status: value.status,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct Author {
     pub id: u64,
     #[serde(flatten)]
@@ -58,14 +79,14 @@ impl Into<EAuthor> for Author {
         EAuthor {
             id: self.id,
             slug: self.base.slug,
-            first_name: self.base.first_name,
-            last_name: self.base.last_name,
-            middle_name: self.base.middle_name,
-            mobile: self.base.mobile,
-            email: self.base.email,
+            first_name: self.base.first_name.filter(|_| self.base.blocked == 0),
+            last_name: self.base.last_name.filter(|_| self.base.blocked == 0),
+            middle_name: self.base.middle_name.filter(|_| self.base.blocked == 0),
+            mobile: self.base.mobile.filter(|_| self.base.blocked == 0),
+            email: self.base.email.filter(|_| self.base.blocked == 0),
             registered_at: self.base.registered_at,
-            status: self.base.status,
-            image_url: self.base.image_url,
+            status: self.base.status.filter(|_| self.base.blocked == 0),
+            image_url: self.base.image_url.filter(|_| self.base.blocked == 0),
             editor: self.base.editor,
             blocked: self.base.blocked,
             notification_subscribed: self.base.notification_subscribed,
@@ -122,6 +143,11 @@ pub trait AuthorService: Send + Sync {
         &self,
         base_minimal_author: &BaseMinimalAuthor,
         social_id: &SocialId,
+    ) -> DResult<u64>;
+    async fn update_secondary_author_by_id(
+        &self,
+        base_secondary_author: &BaseSecondaryAuthor,
+        id: &u64,
     ) -> DResult<u64>;
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()>;
     async fn set_author_subscription_by_id(&self, id: &u64, is_subscribed: &u8) -> DResult<()>;
