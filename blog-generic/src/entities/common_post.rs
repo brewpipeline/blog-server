@@ -14,7 +14,7 @@ pub struct CommonPost {
     pub content: Option<String>,
     #[validate(custom(function = "validate_tags"))]
     pub tags: Vec<String>,
-    #[validate(length(max = 150), url)]
+    #[validate(length(max = 150), url, non_control_character)]
     pub image_url: Option<String>,
 }
 
