@@ -3,7 +3,7 @@ use amqprs::{
     channel::{BasicPublishArguments, Channel, QueueBindArguments},
     connection::{Connection, OpenConnectionArguments},
     error::Error,
-    BasicProperties,
+    BasicProperties, FieldTable,
 };
 use blog_generic::events::{NewPostPublished, SubscriptionStateChanged};
 use serde::Serialize;
@@ -13,6 +13,26 @@ use crate::traits::event_bus_service::{EventBusService, Publish};
 enum EventBusError {
     SerializationError,
     PublishingError,
+}
+
+struct SendParametersDto {
+    bytes_payload: Result<Vec<u8>, EventBusError>,
+    routing_header_value: String,
+    channel: Option<Channel>,
+}
+
+impl SendParametersDto {
+    fn new(
+        bytes_payload: Result<Vec<u8>, EventBusError>,
+        routing_header_value: String,
+        channel: Option<Channel>,
+    ) -> SendParametersDto {
+        SendParametersDto {
+            bytes_payload,
+            routing_header_value,
+            channel,
+        }
+    }
 }
 
 pub async fn create_rabbit_event_bus_service(
@@ -45,6 +65,7 @@ pub async fn create_rabbit_event_bus_service(
 const ROUTING_KEY: &'static str = "blog.events";
 const EXCHANGE_NAME: &'static str = "blog.events";
 const QUEUE_NAME: &'static str = "blog.events";
+const ROUTING_HEADER_KEY: &'static str = "blog.events.type";
 
 struct RabbitEventBusService {
     connection_configuration: OpenConnectionArguments,
@@ -108,8 +129,12 @@ impl Publish<SubscriptionStateChanged> for RabbitEventBusService {
             "event published: {}, {}",
             event.blog_user_id, event.user_telegram_id
         );
-
-        publish(to_bytes_payload(event), self.channel.clone()).await;
+        let send_parameters = SendParametersDto::new(
+            to_bytes_payload(event),
+            String::from("subscriptionstatechanged"),
+            self.channel.clone(),
+        );
+        publish(send_parameters).await;
     }
 }
 
@@ -118,13 +143,18 @@ impl Publish<NewPostPublished> for RabbitEventBusService {
     async fn publish(&self, event: NewPostPublished) -> () {
         println!("event published: {}", event.blog_user_id);
 
-        publish(to_bytes_payload(event), self.channel.clone()).await;
+        let send_parameters = SendParametersDto::new(
+            to_bytes_payload(event),
+            String::from("newpostpublished"),
+            self.channel.clone(),
+        );
+        publish(send_parameters).await;
     }
 }
 
-async fn publish(payload: Result<Vec<u8>, EventBusError>, channel: Option<Channel>) -> () {
-    if let (Ok(payload), Some(channel)) = (payload, channel) {
-        let res = internal_publish(payload, &channel).await;
+async fn publish(parameters: SendParametersDto) -> () {
+    if let (Ok(payload), Some(channel)) = (parameters.bytes_payload, parameters.channel) {
+        let res = internal_publish(payload, &channel, parameters.routing_header_value).await;
         if res.is_err() {
             println!("Error while publishing message");
         }
@@ -141,13 +171,20 @@ fn to_bytes_payload<T: Serialize>(event: T) -> Result<Vec<u8>, EventBusError> {
 }
 
 //TODO add publisher confirms
-async fn internal_publish(payload: Vec<u8>, channel: &Channel) -> Result<(), EventBusError> {
+async fn internal_publish(
+    payload: Vec<u8>,
+    channel: &Channel,
+    routing_value: String,
+) -> Result<(), EventBusError> {
     let args = BasicPublishArguments::new(EXCHANGE_NAME, ROUTING_KEY);
 
-    match channel
-        .basic_publish(BasicProperties::default(), payload, args)
-        .await
-    {
+    let mut props = BasicProperties::default();
+    let mut field_table = FieldTable::new();
+    let header_key = ROUTING_HEADER_KEY.try_into().unwrap();
+    field_table.insert(header_key, routing_value.into());
+    props.with_headers(field_table);
+
+    match channel.basic_publish(props, payload, args).await {
         Ok(_) => Ok(()),
         Err(_) => Err(EventBusError::PublishingError),
     }
