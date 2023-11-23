@@ -1,5 +1,6 @@
 use blog_generic::entities::LoginTelegramQuestion;
-use blog_server_services::traits::author_service::{BaseMinimalAuthor, SocialId};
+use blog_server_services::traits::author_service::BaseMinimalAuthor;
+use blog_server_services::traits::social_service::SocialId;
 use hmac::Mac;
 use sha2::{Digest, Sha256};
 
@@ -26,7 +27,7 @@ fn hmac_sha256(key: &[u8], data: &str) -> String {
 pub async fn http_handler(
     (LoginTelegramRequestContent {
         login_telegram_question,
-        author_service,
+        social_service,
     },): (LoginTelegramRequestContent,),
 ) -> Result<LoginTelegramResponseContentSuccess, LoginTelegramResponseContentFailure> {
     let LoginTelegramQuestion {
@@ -85,24 +86,11 @@ pub async fn http_handler(
         image_url: photo_url,
     };
 
-    let telegram_author_id = author_service
-        .create_or_update_if_needed_minimal_author_by_social_id(
-            &telegram_base_minimal_author,
-            &SocialId::TelegramId(id),
-        )
+    let telegram_author = social_service
+        .process_auth_by_id(&SocialId::TelegramId(id), &telegram_base_minimal_author)
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
-        })?;
-
-    let telegram_author = author_service
-        .author_by_id(&telegram_author_id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
-        .ok_or(DatabaseError {
-            reason: "insert error".to_string(),
         })?;
 
     let token = auth::token(telegram_author).map_err(|e| TokenGeneratingError {

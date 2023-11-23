@@ -31,7 +31,7 @@ pub async fn http_handler(
         })?;
 
     author_service
-        .update_minimal_author_by_id(&From::from(base_minimal_author), &author.id)
+        .update_minimal_custom_author_by_id(&author.id, &From::from(base_minimal_author))
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),

@@ -95,26 +95,6 @@ impl Into<EAuthor> for Author {
     }
 }
 
-pub enum SocialId {
-    TelegramId(u64),
-    YandexId(u64),
-}
-
-impl SocialId {
-    pub fn telegram_id(&self) -> Option<&u64> {
-        match self {
-            SocialId::TelegramId(telegram_id) => Some(telegram_id),
-            SocialId::YandexId(_) => None,
-        }
-    }
-    pub fn yandex_id(&self) -> Option<&u64> {
-        match self {
-            SocialId::TelegramId(_) => None,
-            SocialId::YandexId(yandex_id) => Some(yandex_id),
-        }
-    }
-}
-
 #[async_trait]
 pub trait AuthorService: Send + Sync {
     async fn authors_count_by_query(&self, query: &String) -> DResult<u64>;
@@ -129,25 +109,35 @@ pub trait AuthorService: Send + Sync {
     async fn authors_by_ids(&self, ids: &HashSet<u64>) -> DResult<Vec<Author>>;
     async fn author_by_id(&self, id: &u64) -> DResult<Option<Author>>;
     async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>>;
+    async fn author_by_yandex_id(&self, yandex_id: &u64) -> DResult<Option<Author>>;
+    async fn author_by_telegram_id(&self, telegram_id: &u64) -> DResult<Option<Author>>;
     async fn set_author_override_social_data_by_id(
         &self,
         id: &u64,
         override_social_data: &u8,
     ) -> DResult<()>;
-    async fn update_minimal_author_by_id(
+    async fn update_minimal_custom_author_by_id(
         &self,
-        base_minimal_author: &BaseMinimalAuthor,
         id: &u64,
+        base_minimal_author: &BaseMinimalAuthor,
     ) -> DResult<u64>;
-    async fn create_or_update_if_needed_minimal_author_by_social_id(
+    async fn update_minimal_social_author_by_id(
+        &self,
+        id: &u64,
+        base_minimal_author: &BaseMinimalAuthor,
+        yandex_id: Option<&u64>,
+        telegram_id: Option<&u64>,
+    ) -> DResult<u64>;
+    async fn insert_minimal_social_author(
         &self,
         base_minimal_author: &BaseMinimalAuthor,
-        social_id: &SocialId,
+        yandex_id: Option<&u64>,
+        telegram_id: Option<&u64>,
     ) -> DResult<u64>;
     async fn update_secondary_author_by_id(
         &self,
-        base_secondary_author: &BaseSecondaryAuthor,
         id: &u64,
+        base_secondary_author: &BaseSecondaryAuthor,
     ) -> DResult<u64>;
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()>;
     async fn set_author_subscription_by_id(&self, id: &u64, is_subscribed: &u8) -> DResult<()>;
