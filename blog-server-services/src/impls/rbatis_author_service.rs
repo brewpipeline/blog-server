@@ -1,11 +1,11 @@
+use rbatis::rbatis::RBatis;
+use screw_components::dyn_result::DResult;
 use std::collections::HashSet;
 
 use crate::traits::author_service::{
-    Author, AuthorService, BaseMinimalAuthor, BaseSecondaryAuthor, SocialId,
+    Author, AuthorService, BaseMinimalAuthor, BaseSecondaryAuthor,
 };
 use crate::utils::time_utils;
-use rbatis::rbatis::RBatis;
-use screw_components::dyn_result::DResult;
 
 pub fn create_rbatis_author_service(rb: RBatis) -> Box<dyn AuthorService> {
     Box::new(RbatisAuthorService { rb })
@@ -126,7 +126,7 @@ impl RbatisAuthorService {
             #{base_minimal_author.image_url},
             #{yandex_id},
             #{telegram_id},
-            0,
+            0
         ) RETURNING id
     "
     )]
@@ -243,6 +243,12 @@ impl AuthorService for RbatisAuthorService {
     async fn author_by_slug(&self, slug: &String) -> DResult<Option<Author>> {
         Ok(Author::select_by_slug(&mut self.rb.clone(), slug).await?)
     }
+    async fn author_by_yandex_id(&self, yandex_id: &u64) -> DResult<Option<Author>> {
+        Ok(Author::select_by_yandex_id(&mut self.rb.clone(), yandex_id).await?)
+    }
+    async fn author_by_telegram_id(&self, telegram_id: &u64) -> DResult<Option<Author>> {
+        Ok(Author::select_by_telegram_id(&mut self.rb.clone(), telegram_id).await?)
+    }
     async fn set_author_override_social_data_by_id(
         &self,
         id: &u64,
@@ -253,10 +259,10 @@ impl AuthorService for RbatisAuthorService {
                 .await;
         Ok(())
     }
-    async fn update_minimal_author_by_id(
+    async fn update_minimal_custom_author_by_id(
         &self,
-        base_minimal_author: &BaseMinimalAuthor,
         id: &u64,
+        base_minimal_author: &BaseMinimalAuthor,
     ) -> DResult<u64> {
         let updated_id = RbatisAuthorService::update_minimal_custom_author_by_id(
             &mut self.rb.clone(),
@@ -266,47 +272,43 @@ impl AuthorService for RbatisAuthorService {
         .await?;
         Ok(updated_id)
     }
-    async fn create_or_update_if_needed_minimal_author_by_social_id(
+    async fn update_minimal_social_author_by_id(
+        &self,
+        id: &u64,
+        base_minimal_author: &BaseMinimalAuthor,
+        yandex_id: Option<&u64>,
+        telegram_id: Option<&u64>,
+    ) -> DResult<u64> {
+        let updated_id = RbatisAuthorService::update_minimal_social_author_by_id(
+            &mut self.rb.clone(),
+            &id,
+            base_minimal_author,
+            yandex_id,
+            telegram_id,
+        )
+        .await?;
+        Ok(updated_id)
+    }
+    async fn insert_minimal_social_author(
         &self,
         base_minimal_author: &BaseMinimalAuthor,
-        social_id: &SocialId,
+        yandex_id: Option<&u64>,
+        telegram_id: Option<&u64>,
     ) -> DResult<u64> {
-        if let Some(author) = match &social_id {
-            SocialId::TelegramId(telegram_id) => {
-                Author::select_by_telegram_id(&mut self.rb.clone(), &telegram_id).await?
-            }
-            SocialId::YandexId(yandex_id) => {
-                Author::select_by_yandex_id(&mut self.rb.clone(), &yandex_id).await?
-            }
-        } {
-            if author.base.override_social_data != 0 {
-                return Ok(author.id);
-            }
-            let updated_id = RbatisAuthorService::update_minimal_social_author_by_id(
-                &mut self.rb.clone(),
-                &author.id,
-                base_minimal_author,
-                social_id.yandex_id(),
-                social_id.telegram_id(),
-            )
-            .await?;
-            Ok(updated_id)
-        } else {
-            let insert_id = RbatisAuthorService::insert_minimal_social_author(
-                &mut self.rb.clone(),
-                base_minimal_author,
-                &time_utils::now_as_secs(),
-                social_id.yandex_id(),
-                social_id.telegram_id(),
-            )
-            .await?;
-            Ok(insert_id)
-        }
+        let inserted_id = RbatisAuthorService::insert_minimal_social_author(
+            &mut self.rb.clone(),
+            base_minimal_author,
+            &time_utils::now_as_secs(),
+            yandex_id,
+            telegram_id,
+        )
+        .await?;
+        Ok(inserted_id)
     }
     async fn update_secondary_author_by_id(
         &self,
-        base_secondary_author: &BaseSecondaryAuthor,
         id: &u64,
+        base_secondary_author: &BaseSecondaryAuthor,
     ) -> DResult<u64> {
         let updated_id = RbatisAuthorService::update_secondary_author_by_id(
             &mut self.rb.clone(),

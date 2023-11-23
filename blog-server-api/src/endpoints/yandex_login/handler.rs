@@ -1,5 +1,6 @@
 use blog_generic::entities::LoginYandexQuestion;
-use blog_server_services::traits::author_service::{BaseMinimalAuthor, SocialId};
+use blog_server_services::traits::author_service::BaseMinimalAuthor;
+use blog_server_services::traits::social_service::SocialId;
 use serde::Deserialize;
 
 use super::request_content::LoginYandexRequestContent;
@@ -32,7 +33,7 @@ struct YandexLoginResponse {
 pub async fn http_handler(
     (LoginYandexRequestContent {
         login_yandex_question,
-        author_service,
+        social_service,
     },): (LoginYandexRequestContent,),
 ) -> Result<LoginYandexResponseContentSuccess, LoginYandexResponseContentFailure> {
     let LoginYandexQuestion {
@@ -77,24 +78,11 @@ pub async fn http_handler(
         },
     };
 
-    let yandex_author_id = author_service
-        .create_or_update_if_needed_minimal_author_by_social_id(
-            &yandex_base_minimal_author,
-            &SocialId::YandexId(yandex_id),
-        )
+    let yandex_author = social_service
+        .process_auth_by_id(&SocialId::YandexId(yandex_id), &yandex_base_minimal_author)
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
-        })?;
-
-    let yandex_author = author_service
-        .author_by_id(&yandex_author_id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
-        .ok_or(DatabaseError {
-            reason: "insert error".to_string(),
         })?;
 
     let token = auth::token(yandex_author).map_err(|e| TokenGeneratingError {

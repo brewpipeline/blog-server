@@ -1,5 +1,3 @@
-use blog_generic::events::SubscriptionStateChanged;
-
 use super::request_content::AuthorSubscribeRequestContent;
 use super::response_content_failure::AuthorSubscribeResponseContentFailure;
 use super::response_content_failure::AuthorSubscribeResponseContentFailure::*;
@@ -20,9 +18,9 @@ pub async fn http_handler_unsubscribe(
 async fn http_handler(
     AuthorSubscribeRequestContent {
         id,
+        social_service,
         author_service,
         auth_author_future,
-        event_bus_service,
     }: AuthorSubscribeRequestContent,
     subscribe: u8,
 ) -> Result<AuthorSubscribeRequestContentSuccess, AuthorSubscribeResponseContentFailure> {
@@ -37,37 +35,20 @@ async fn http_handler(
     let is_same_user = logged_in_author.id == id;
     let is_user_admin = logged_in_author.base.editor == 1;
 
-    let subscriber_telegram_id = match (is_same_user, is_user_admin) {
-        (true, _) => logged_in_author.base.telegram_id,
-        (false, true) => {
-            let author = author_service
-                .author_by_id(&id)
-                .await
-                .map_err(|e| DatabaseError {
-                    reason: e.to_string(),
-                })?;
-            match author {
-                Some(a) => a.base.telegram_id,
-                None => None,
-            }
-        }
+    let subscriber_author = match (is_same_user, is_user_admin) {
+        (true, _) => logged_in_author,
+        (false, true) => author_service
+            .author_by_id(&id)
+            .await
+            .map_err(|e| DatabaseError {
+                reason: e.to_string(),
+            })?
+            .ok_or_else(|| NotFound)?,
         (false, false) => Err(Forbidden)?,
     };
 
-    if let Some(telegram_id) = subscriber_telegram_id {
-        let event = SubscriptionStateChanged {
-            blog_user_id: id,
-            user_telegram_id: telegram_id,
-            new_state: subscribe,
-        };
-
-        tokio::spawn(async move { event_bus_service.publish(event).await });
-    } else {
-        return Err(NotSupported);
-    }
-
-    author_service
-        .set_author_subscription_by_id(&id, &subscribe)
+    social_service
+        .set_subscribe_for_author(&subscriber_author, &subscribe)
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
