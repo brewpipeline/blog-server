@@ -1,6 +1,6 @@
 use crate::extensions::Resolve;
 use crate::utils::auth;
-use blog_server_services::traits::author_service::*;
+use blog_server_services::traits::author_service::{Author, AuthorService};
 use blog_server_services::traits::social_service::SocialService;
 use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
 use screw_components::dyn_fn::DFuture;
