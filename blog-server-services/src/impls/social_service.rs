@@ -88,6 +88,7 @@ impl SocialServiceTrait for SocialService {
             .await?
             .ok_or::<DError>("insert error".into())?;
 
+        // TODO: remove after button?
         let _ = self.set_subscribe_for_author(&social_author, &1).await;
 
         Ok(social_author)
