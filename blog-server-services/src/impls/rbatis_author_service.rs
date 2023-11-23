@@ -126,7 +126,7 @@ impl RbatisAuthorService {
             #{base_minimal_author.image_url},
             #{yandex_id},
             #{telegram_id},
-            0,
+            0
         ) RETURNING id
     "
     )]
