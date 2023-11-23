@@ -33,6 +33,8 @@ impl SocialServiceTrait for SocialService {
 
             let event_bus_service = self.event_bus_service.clone();
             tokio::spawn(async move { event_bus_service.publish(event).await });
+        } else {
+            Err(DError::from("not supported for current author"))?
         }
 
         self.author_service
