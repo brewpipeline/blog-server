@@ -7,7 +7,7 @@ pub fn create_rbatis_comment_service(rb: RBatis) -> Box<dyn CommentService> {
 }
 
 impl_select!(Comment {select_all_by_post_id_with_limit_and_offset(post_id: &u64, limit: &u64, offset: &u64) => 
-    "`WHERE post_id = #{post_id} LIMIT #{limit} OFFSET #{offset}`"}, "post_comment");
+    "`WHERE post_id = #{post_id} ORDER BY created_at ASC LIMIT #{limit} OFFSET #{offset}`"}, "post_comment");
 impl_select!(Comment {select_by_id(id: &u64) -> Option => 
     "`WHERE id = #{id} LIMIT 1`"}, "post_comment");
 impl_delete!(Comment {delete_all_by_post_id(post_id: &u64) =>

@@ -14,7 +14,7 @@ impl_insert!(BasePost {}, "post");
 impl_insert!(NewTag {}, "tag");
 impl_select!(Tag {select_by_id(id: &u64) -> Option => 
     "`WHERE id = #{id} LIMIT 1`"});
-impl_select!(PostTag {select_by_post_id(post_id: &u64) =>
+impl_select!(PostTag {select_all_by_post_id(post_id: &u64) =>
     "`WHERE post_id = #{post_id}`"});
 impl_insert!(PostTag {}, "post_tag");
 
@@ -573,7 +573,7 @@ impl PostService for RbatisPostService {
             set
         });
 
-        let existing_tags_map = PostTag::select_by_post_id(&mut self.rb.clone(), post_id)
+        let existing_tags_map = PostTag::select_all_by_post_id(&mut self.rb.clone(), post_id)
             .await?
             .into_iter()
             .fold(HashSet::new(), |mut set, post_tag| {
