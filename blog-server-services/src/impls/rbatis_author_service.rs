@@ -20,9 +20,9 @@ impl_select!(Author {select_by_telegram_id(telegram_id: &u64) -> Option =>
 impl_select!(Author {select_by_slug(slug: &String) -> Option => 
     "`WHERE slug = #{slug} LIMIT 1`"});
 impl_select!(Author {select_all_with_offset_and_limit(offset: &u64, limit: &u64) => 
-    "`ORDER BY author.editor ASC, author.registered_at LIMIT #{limit} OFFSET #{offset}`"});
+    "`ORDER BY author.editor DESC, author.registered_at ASC LIMIT #{limit} OFFSET #{offset}`"});
 impl_select!(Author {select_all_by_query_with_offset_and_limit(query: &String, offset: &u64, limit: &u64) => 
-    "`WHERE author.slug ILIKE '%' || #{query} || '%' OR author.first_name ILIKE '%' || #{query} || '%' OR author.middle_name ILIKE '%' || #{query} || '%' OR author.last_name ILIKE '%' || #{query} || '%' ORDER BY author.editor ASC, author.registered_at LIMIT #{limit} OFFSET #{offset}`"});
+    "`WHERE author.slug ILIKE '%' || #{query} || '%' OR author.first_name ILIKE '%' || #{query} || '%' OR author.middle_name ILIKE '%' || #{query} || '%' OR author.last_name ILIKE '%' || #{query} || '%' ORDER BY author.editor DESC, author.registered_at ASC LIMIT #{limit} OFFSET #{offset}`"});
 
 impl Author {
     #[py_sql(
