@@ -33,8 +33,7 @@ impl Comment {
         "
         SELECT COUNT(1) \
         FROM post_comment \
-        WHERE post_id = #{post_id} \
-        ORDER BY created_at ASC
+        WHERE post_id = #{post_id}
     "
     )]
     async fn count_by_post_id(rb: &RBatis, post_id: &u64) -> rbatis::Result<u64> {

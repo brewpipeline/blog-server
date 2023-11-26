@@ -90,7 +90,6 @@ impl Post {
         SELECT COUNT(1) \
         FROM post \
         WHERE post.published = 1 \
-        ORDER BY post.id DESC \
     "
     )]
     async fn count(rb: &RBatis) -> rbatis::Result<u64> {
@@ -102,7 +101,6 @@ impl Post {
         FROM post \
         WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
         AND post.published = 1 \
-        ORDER BY post.id DESC \
     "
     )]
     async fn count_by_query(rb: &RBatis, query: &String) -> rbatis::Result<u64> {
@@ -114,7 +112,6 @@ impl Post {
         FROM post \
         WHERE post.author_id = #{author_id} \
         AND post.published = 1 \
-        ORDER BY post.id DESC \
     "
     )]
     async fn count_by_author_id(rb: &RBatis, author_id: &u64) -> rbatis::Result<u64> {
@@ -127,7 +124,6 @@ impl Post {
         JOIN post_tag ON post.id = post_tag.post_id \
         WHERE post_tag.tag_id = #{tag_id} \
         AND post.published = 1 \
-        ORDER BY post.id DESC \
     "
     )]
     async fn count_by_tag_id(rb: &RBatis, tag_id: &u64) -> rbatis::Result<u64> {
@@ -138,7 +134,6 @@ impl Post {
         SELECT COUNT(1) \
         FROM post \
         WHERE post.published = 0 \
-        ORDER BY post.id DESC \
     "
     )]
     async fn count_unpublished(rb: &RBatis) -> rbatis::Result<u64> {
@@ -150,7 +145,6 @@ impl Post {
         FROM post \
         WHERE post.author_id = #{author_id} \
         AND post.published = 0 \
-        ORDER BY post.id DESC \
     "
     )]
     async fn count_unpublished_by_author_id(rb: &RBatis, author_id: &u64) -> rbatis::Result<u64> {
