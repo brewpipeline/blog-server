@@ -14,7 +14,7 @@ impl_insert!(BasePost {}, "post");
 impl_insert!(NewTag {}, "tag");
 impl_select!(Tag {select_by_id(id: &u64) -> Option => 
     "`WHERE id = #{id} LIMIT 1`"});
-impl_select!(PostTag {select_by_post_id(post_id: &u64) =>
+impl_select!(PostTag {select_all_by_post_id(post_id: &u64) =>
     "`WHERE post_id = #{post_id}`"});
 impl_insert!(PostTag {}, "post_tag");
 
@@ -90,6 +90,7 @@ impl Post {
         SELECT COUNT(1) \
         FROM post \
         WHERE post.published = 1 \
+        ORDER BY post.id DESC \
     "
     )]
     async fn count(rb: &RBatis) -> rbatis::Result<u64> {
@@ -101,6 +102,7 @@ impl Post {
         FROM post \
         WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
         AND post.published = 1 \
+        ORDER BY post.id DESC \
     "
     )]
     async fn count_by_query(rb: &RBatis, query: &String) -> rbatis::Result<u64> {
@@ -112,6 +114,7 @@ impl Post {
         FROM post \
         WHERE post.author_id = #{author_id} \
         AND post.published = 1 \
+        ORDER BY post.id DESC \
     "
     )]
     async fn count_by_author_id(rb: &RBatis, author_id: &u64) -> rbatis::Result<u64> {
@@ -124,6 +127,7 @@ impl Post {
         JOIN post_tag ON post.id = post_tag.post_id \
         WHERE post_tag.tag_id = #{tag_id} \
         AND post.published = 1 \
+        ORDER BY post.id DESC \
     "
     )]
     async fn count_by_tag_id(rb: &RBatis, tag_id: &u64) -> rbatis::Result<u64> {
@@ -134,6 +138,7 @@ impl Post {
         SELECT COUNT(1) \
         FROM post \
         WHERE post.published = 0 \
+        ORDER BY post.id DESC \
     "
     )]
     async fn count_unpublished(rb: &RBatis) -> rbatis::Result<u64> {
@@ -145,6 +150,7 @@ impl Post {
         FROM post \
         WHERE post.author_id = #{author_id} \
         AND post.published = 0 \
+        ORDER BY post.id DESC \
     "
     )]
     async fn count_unpublished_by_author_id(rb: &RBatis, author_id: &u64) -> rbatis::Result<u64> {
@@ -573,7 +579,7 @@ impl PostService for RbatisPostService {
             set
         });
 
-        let existing_tags_map = PostTag::select_by_post_id(&mut self.rb.clone(), post_id)
+        let existing_tags_map = PostTag::select_all_by_post_id(&mut self.rb.clone(), post_id)
             .await?
             .into_iter()
             .fold(HashSet::new(), |mut set, post_tag| {
