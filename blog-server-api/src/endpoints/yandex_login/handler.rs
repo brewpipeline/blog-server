@@ -1,6 +1,7 @@
 use blog_generic::entities::LoginYandexQuestion;
 use blog_server_services::traits::author_service::BaseMinimalAuthor;
 use blog_server_services::traits::social_service::SocialId;
+use blog_server_services::utils::time_utils;
 use serde::Deserialize;
 
 use super::request_content::LoginYandexRequestContent;
@@ -70,8 +71,9 @@ pub async fn http_handler(
         last_name: yandex_login_response.last_name,
         image_url: if !yandex_login_response.is_avatar_empty {
             Some(format!(
-                "https://avatars.yandex.net/get-yapic/{avatar_id}/islands-200",
-                avatar_id = yandex_login_response.default_avatar_id
+                "https://avatars.yandex.net/get-yapic/{avatar_id}/islands-200?timestamp={timestamp}",
+                avatar_id = yandex_login_response.default_avatar_id,
+                timestamp = time_utils::now_as_secs()
             ))
         } else {
             None

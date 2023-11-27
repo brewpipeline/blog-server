@@ -1,6 +1,7 @@
 use blog_generic::entities::LoginTelegramQuestion;
 use blog_server_services::traits::author_service::BaseMinimalAuthor;
 use blog_server_services::traits::social_service::SocialId;
+use blog_server_services::utils::time_utils;
 use hmac::Mac;
 use sha2::{Digest, Sha256};
 
@@ -83,7 +84,13 @@ pub async fn http_handler(
         ),
         first_name,
         last_name,
-        image_url: photo_url,
+        image_url: photo_url.map(|u| {
+            format!(
+                "{photo_url}?timestamp={timestamp}",
+                photo_url = u,
+                timestamp = time_utils::now_as_secs()
+            )
+        }),
     };
 
     let telegram_author = social_service
