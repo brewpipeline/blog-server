@@ -56,20 +56,23 @@ impl SocialServiceTrait for SocialService {
                 self.author_service.author_by_yandex_id(&yandex_id).await?
             }
         } {
-            (if author.base.override_social_data != 0 {
-                author.id
-            } else {
-                let updated_id = self
-                    .author_service
-                    .update_minimal_social_author_by_id(
-                        &author.id,
-                        base_minimal_author,
-                        social_id.yandex_id(),
-                        social_id.telegram_id(),
-                    )
-                    .await?;
-                updated_id
-            }, false)
+            (
+                if author.base.override_social_data != 0 {
+                    author.id
+                } else {
+                    let updated_id = self
+                        .author_service
+                        .update_minimal_social_author_by_id(
+                            &author.id,
+                            base_minimal_author,
+                            social_id.yandex_id(),
+                            social_id.telegram_id(),
+                        )
+                        .await?;
+                    updated_id
+                },
+                false,
+            )
         } else {
             let insert_id = self
                 .author_service
