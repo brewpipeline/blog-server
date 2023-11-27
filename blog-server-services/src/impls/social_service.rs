@@ -46,7 +46,7 @@ impl SocialServiceTrait for SocialService {
         social_id: &SocialId,
         base_minimal_author: &BaseMinimalAuthor,
     ) -> DResult<Author> {
-        let social_author_id = if let Some(author) = match &social_id {
+        let (social_author_id, is_new_author) = if let Some(author) = match &social_id {
             SocialId::TelegramId(telegram_id) => {
                 self.author_service
                     .author_by_telegram_id(&telegram_id)
@@ -56,20 +56,23 @@ impl SocialServiceTrait for SocialService {
                 self.author_service.author_by_yandex_id(&yandex_id).await?
             }
         } {
-            if author.base.override_social_data != 0 {
-                author.id
-            } else {
-                let updated_id = self
-                    .author_service
-                    .update_minimal_social_author_by_id(
-                        &author.id,
-                        base_minimal_author,
-                        social_id.yandex_id(),
-                        social_id.telegram_id(),
-                    )
-                    .await?;
-                updated_id
-            }
+            (
+                if author.base.override_social_data != 0 {
+                    author.id
+                } else {
+                    let updated_id = self
+                        .author_service
+                        .update_minimal_social_author_by_id(
+                            &author.id,
+                            base_minimal_author,
+                            social_id.yandex_id(),
+                            social_id.telegram_id(),
+                        )
+                        .await?;
+                    updated_id
+                },
+                false,
+            )
         } else {
             let insert_id = self
                 .author_service
@@ -79,7 +82,7 @@ impl SocialServiceTrait for SocialService {
                     social_id.telegram_id(),
                 )
                 .await?;
-            insert_id
+            (insert_id, true)
         };
 
         let social_author = self
@@ -88,8 +91,9 @@ impl SocialServiceTrait for SocialService {
             .await?
             .ok_or::<DError>("insert error".into())?;
 
-        // TODO: remove after button?
-        let _ = self.set_subscribe_for_author(&social_author, &1).await;
+        if is_new_author {
+            let _ = self.set_subscribe_for_author(&social_author, &1).await;
+        }
 
         Ok(social_author)
     }
