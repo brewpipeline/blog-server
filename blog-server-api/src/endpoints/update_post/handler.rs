@@ -6,6 +6,8 @@ use super::response_content_failure::UpdatePostContentFailure;
 use super::response_content_failure::UpdatePostContentFailure::*;
 use super::response_content_success::UpdatePostContentSuccess;
 
+use crate::utils::html;
+
 pub async fn http_handler(
     (UpdatePostRequestContent {
         id,
@@ -48,9 +50,10 @@ pub async fn http_handler(
         return Err(EditingForbidden);
     }
 
-    let base_post = updated_post_data.map_err(|e| ValidationError {
+    let mut base_post = updated_post_data.map_err(|e| ValidationError {
         reason: e.to_string(),
     })?;
+    base_post.content = base_post.content.map(|c| html::clean(&c));
 
     if let Some(err) = base_post.validate().err() {
         return Err(ValidationError {
