@@ -4,7 +4,7 @@ pub fn clean(src: &str) -> String {
         .add_tag_attributes("table", &["border"])
         .add_allowed_classes("img", &["article-img"])
         .add_tags(&["video"])
-        .add_tag_attributes("video", &["controls"])
+        .add_tag_attributes("video", &["controls", "autoplay", "loop"])
         .add_allowed_classes("video", &["article-img"])
         .add_tags(&["source"])
         .add_tag_attributes("source", &["src", "type"])
