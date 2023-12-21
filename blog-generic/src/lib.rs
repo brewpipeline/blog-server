@@ -17,7 +17,7 @@ pub const ITEMS_PER_PAGE: u64 = 10;
 
 pub fn offset_for_page<const LIMIT: u64>(page: &u64) -> u64 {
     let Some(real_page) = page.checked_sub(1) else {
-        return 0
+        return 0;
     };
     let offset = real_page * LIMIT;
     offset

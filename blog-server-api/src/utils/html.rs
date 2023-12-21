@@ -9,7 +9,18 @@ pub fn clean(src: &str) -> String {
         .add_tags(&["source"])
         .add_tag_attributes("source", &["src", "type"])
         .add_tags(&["iframe"])
-        .add_tag_attributes("iframe", &["src", "allowfullscreen", "width", "height", "frameBorder", "allow", "loading"])
+        .add_tag_attributes(
+            "iframe",
+            &[
+                "src",
+                "allowfullscreen",
+                "width",
+                "height",
+                "frameBorder",
+                "allow",
+                "loading",
+            ],
+        )
         .add_allowed_classes("iframe", &["article-iframe"])
         .clean(src)
         .to_string()

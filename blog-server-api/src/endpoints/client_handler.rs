@@ -174,12 +174,13 @@ where
         + Resolve<std::sync::Arc<Box<dyn PostService>>>
         + Resolve<std::sync::Arc<Box<dyn EntityPostService>>>,
 {
-    let offset = offset_for_page::<ITEMS_PER_PAGE>(&request
-        .query
-        .get("page")
-        .map(|v| v.parse().ok())
-        .flatten()
-        .unwrap_or(1)
+    let offset = offset_for_page::<ITEMS_PER_PAGE>(
+        &request
+            .query
+            .get("page")
+            .map(|v| v.parse().ok())
+            .flatten()
+            .unwrap_or(1),
     );
     match Route::recognize_path(request.path.as_str())? {
         Route::Post { slug: _, id } | Route::EditPost { id } => {
