@@ -8,6 +8,7 @@ use screw_core::request::*;
 use screw_core::response::*;
 use screw_core::routing::*;
 
+use blog_generic::*;
 use blog_ui::*;
 
 const INDEX_HTML: &str = include_str!("../../../index.html");
@@ -164,6 +165,7 @@ async fn status<Extensions>(
     }
 }
 
+// TODO: think how to split
 async fn app_content<Extensions>(
     request: &router::RoutedRequest<Request<Extensions>>,
 ) -> Option<AppContent>
@@ -172,6 +174,13 @@ where
         + Resolve<std::sync::Arc<Box<dyn PostService>>>
         + Resolve<std::sync::Arc<Box<dyn EntityPostService>>>,
 {
+    let offset = offset_for_page::<ITEMS_PER_PAGE>(&request
+        .query
+        .get("page")
+        .map(|v| v.parse().ok())
+        .flatten()
+        .unwrap_or(1)
+    );
     match Route::recognize_path(request.path.as_str())? {
         Route::Post { slug: _, id } | Route::EditPost { id } => {
             use crate::endpoints::post;
@@ -194,7 +203,7 @@ where
                 return None;
             };
 
-            app_content_encode(&container.post)
+            app_content_encode(&container)
         }
         Route::Author { slug } => {
             use crate::endpoints::author;
@@ -211,7 +220,7 @@ where
                 return None;
             };
 
-            app_content_encode(&container.author)
+            app_content_encode(&container)
         }
         Route::Tag { slug: _, id } => {
             use crate::endpoints::tag;
@@ -228,7 +237,48 @@ where
                 return None;
             };
 
-            app_content_encode(&container.tag)
+            app_content_encode(&container)
+        }
+        Route::Posts => {
+            use crate::endpoints::posts;
+            let post_service: std::sync::Arc<Box<dyn PostService>> =
+                request.origin.extensions.resolve();
+            let entity_post_service: std::sync::Arc<Box<dyn EntityPostService>> =
+                request.origin.extensions.resolve();
+
+            let Ok(posts::PostsResponseContentSuccess { container }) =
+                posts::http_handler((posts::PostsRequestContent {
+                    filter: None,
+                    offset: Some(offset),
+                    limit: Some(ITEMS_PER_PAGE),
+                    post_service,
+                    entity_post_service,
+                },))
+                .await
+            else {
+                return None;
+            };
+
+            app_content_encode(&container)
+        }
+        Route::Authors => {
+            use crate::endpoints::authors;
+            let author_service: std::sync::Arc<Box<dyn AuthorService>> =
+                request.origin.extensions.resolve();
+
+            let Ok(authors::AuthorsResponseContentSuccess { container }) =
+                authors::http_handler((authors::AuthorsRequestContent {
+                    query: None,
+                    offset: Some(offset),
+                    limit: Some(ITEMS_PER_PAGE),
+                    author_service,
+                },))
+                .await
+            else {
+                return None;
+            };
+
+            app_content_encode(&container)
         }
         _ => None,
     }
