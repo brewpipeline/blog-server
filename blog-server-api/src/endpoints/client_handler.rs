@@ -1,3 +1,4 @@
+use crate::endpoints::*;
 use crate::extensions::Resolve;
 use blog_server_services::traits::author_service::*;
 use blog_server_services::traits::entity_post_service::*;
@@ -185,42 +186,39 @@ where
     };
     let limit = || -> u64 { ITEMS_PER_PAGE };
     match Route::recognize_path(request.path.as_str())? {
-        Route::Post { slug: _, id } | Route::EditPost { id } => app_content_encode(
-            &crate::endpoints::post::direct_handler(
-                id.to_string(),
-                request.origin.extensions.resolve(),
-                request.origin.extensions.resolve(),
-            )
-            .await,
-        ),
-        Route::Author { slug } => app_content_encode(
-            &crate::endpoints::author::direct_handler(slug, request.origin.extensions.resolve())
-                .await,
-        ),
-        Route::Tag { slug: _, id } => app_content_encode(
-            &crate::endpoints::tag::direct_handler(
-                id.to_string(),
-                request.origin.extensions.resolve(),
-            )
-            .await,
-        ),
-        Route::Posts => app_content_encode(
-            &crate::endpoints::posts::direct_handler(
-                offset(),
-                limit(),
-                request.origin.extensions.resolve(),
-                request.origin.extensions.resolve(),
-            )
-            .await,
-        ),
-        Route::Authors => app_content_encode(
-            &crate::endpoints::authors::direct_handler(
-                offset(),
-                limit(),
-                request.origin.extensions.resolve(),
-            )
-            .await,
-        ),
+        Route::Post { slug: _, id } | Route::EditPost { id } => post::direct_handler(
+            id.to_string(),
+            request.origin.extensions.resolve(),
+            request.origin.extensions.resolve(),
+        )
+        .await
+        .map(|v| app_content_encode(&v.post))
+        .flatten(),
+        Route::Author { slug } => author::direct_handler(slug, request.origin.extensions.resolve())
+            .await
+            .map(|v| app_content_encode(&v.author))
+            .flatten(),
+        Route::Tag { slug: _, id } => {
+            tag::direct_handler(id.to_string(), request.origin.extensions.resolve())
+                .await
+                .map(|v| app_content_encode(&v.tag))
+                .flatten()
+        }
+        Route::Posts => posts::direct_handler(
+            offset(),
+            limit(),
+            request.origin.extensions.resolve(),
+            request.origin.extensions.resolve(),
+        )
+        .await
+        .map(|v| app_content_encode(&v))
+        .flatten(),
+        Route::Authors => {
+            authors::direct_handler(offset(), limit(), request.origin.extensions.resolve())
+                .await
+                .map(|v| app_content_encode(&v))
+                .flatten()
+        }
         _ => None,
     }
 }
