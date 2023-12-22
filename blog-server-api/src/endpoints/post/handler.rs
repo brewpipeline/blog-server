@@ -1,3 +1,11 @@
+use std::sync::Arc;
+
+use blog_generic::entities::PostContainer;
+use blog_server_services::traits::entity_post_service::EntityPostService;
+use blog_server_services::traits::post_service::PostService;
+
+use crate::utils::auth;
+
 use super::request_content::PostRequestContent;
 use super::response_content_failure::PostResponseContentFailure;
 use super::response_content_failure::PostResponseContentFailure::*;
@@ -43,4 +51,20 @@ pub async fn http_handler(
         .remove(0);
 
     Ok(post_entity.into())
+}
+
+pub async fn direct_handler(
+    id: String,
+    post_service: Arc<Box<dyn PostService>>,
+    entity_post_service: Arc<Box<dyn EntityPostService>>,
+) -> Option<PostContainer> {
+    http_handler((PostRequestContent {
+        id,
+        post_service,
+        entity_post_service,
+        auth_author_future: Box::pin(std::future::ready(Err(auth::Error::TokenMissing))),
+    },))
+    .await
+    .ok()
+    .map(|s| s.container)
 }

@@ -1,5 +1,4 @@
 use crate::extensions::Resolve;
-use crate::utils::auth;
 use blog_server_services::traits::author_service::*;
 use blog_server_services::traits::entity_post_service::*;
 use blog_server_services::traits::post_service::*;
@@ -165,7 +164,7 @@ async fn status<Extensions>(
     }
 }
 
-// TODO: think how to split
+// TODO: to think, if it's not a cringe
 async fn app_content<Extensions>(
     request: &router::RoutedRequest<Request<Extensions>>,
 ) -> Option<AppContent>
@@ -174,113 +173,54 @@ where
         + Resolve<std::sync::Arc<Box<dyn PostService>>>
         + Resolve<std::sync::Arc<Box<dyn EntityPostService>>>,
 {
-    let offset = offset_for_page::<ITEMS_PER_PAGE>(
-        &request
-            .query
-            .get("page")
-            .map(|v| v.parse().ok())
-            .flatten()
-            .unwrap_or(1),
-    );
+    let offset = || -> u64 {
+        offset_for_page::<ITEMS_PER_PAGE>(
+            &request
+                .query
+                .get("page")
+                .map(|v| v.parse().ok())
+                .flatten()
+                .unwrap_or(1),
+        )
+    };
+    let limit = || -> u64 { ITEMS_PER_PAGE };
     match Route::recognize_path(request.path.as_str())? {
-        Route::Post { slug: _, id } | Route::EditPost { id } => {
-            use crate::endpoints::post;
-            let post_service: std::sync::Arc<Box<dyn PostService>> =
-                request.origin.extensions.resolve();
-            let entity_post_service: std::sync::Arc<Box<dyn EntityPostService>> =
-                request.origin.extensions.resolve();
-
-            let Ok(post::PostResponseContentSuccess { container }) =
-                post::http_handler((post::PostRequestContent {
-                    id: id.to_string(),
-                    post_service,
-                    entity_post_service,
-                    auth_author_future: Box::pin(std::future::ready(Err(
-                        auth::Error::TokenMissing,
-                    ))),
-                },))
-                .await
-            else {
-                return None;
-            };
-
-            app_content_encode(&container)
-        }
-        Route::Author { slug } => {
-            use crate::endpoints::author;
-            let author_service: std::sync::Arc<Box<dyn AuthorService>> =
-                request.origin.extensions.resolve();
-
-            let Ok(author::AuthorResponseContentSuccess { container }) =
-                author::http_handler((author::AuthorRequestContent {
-                    slug,
-                    author_service,
-                },))
-                .await
-            else {
-                return None;
-            };
-
-            app_content_encode(&container)
-        }
-        Route::Tag { slug: _, id } => {
-            use crate::endpoints::tag;
-            let post_service: std::sync::Arc<Box<dyn PostService>> =
-                request.origin.extensions.resolve();
-
-            let Ok(tag::TagResponseContentSuccess { container }) =
-                tag::http_handler((tag::TagRequestContent {
-                    id: id.to_string(),
-                    post_service,
-                },))
-                .await
-            else {
-                return None;
-            };
-
-            app_content_encode(&container)
-        }
-        Route::Posts => {
-            use crate::endpoints::posts;
-            let post_service: std::sync::Arc<Box<dyn PostService>> =
-                request.origin.extensions.resolve();
-            let entity_post_service: std::sync::Arc<Box<dyn EntityPostService>> =
-                request.origin.extensions.resolve();
-
-            let Ok(posts::PostsResponseContentSuccess { container }) =
-                posts::http_handler((posts::PostsRequestContent {
-                    filter: None,
-                    offset: Some(offset),
-                    limit: Some(ITEMS_PER_PAGE),
-                    post_service,
-                    entity_post_service,
-                },))
-                .await
-            else {
-                return None;
-            };
-
-            app_content_encode(&container)
-        }
-        Route::Authors => {
-            use crate::endpoints::authors;
-            let author_service: std::sync::Arc<Box<dyn AuthorService>> =
-                request.origin.extensions.resolve();
-
-            let Ok(authors::AuthorsResponseContentSuccess { container }) =
-                authors::http_handler((authors::AuthorsRequestContent {
-                    query: None,
-                    offset: Some(offset),
-                    limit: Some(ITEMS_PER_PAGE),
-                    author_service,
-                },))
-                .await
-            else {
-                return None;
-            };
-
-            app_content_encode(&container)
-        }
+        Route::Post { slug: _, id } | Route::EditPost { id } => app_content_encode(
+            &crate::endpoints::post::direct_handler(
+                id.to_string(),
+                request.origin.extensions.resolve(),
+                request.origin.extensions.resolve(),
+            )
+            .await,
+        ),
+        Route::Author { slug } => app_content_encode(
+            &crate::endpoints::author::direct_handler(slug, request.origin.extensions.resolve())
+                .await,
+        ),
+        Route::Tag { slug: _, id } => app_content_encode(
+            &crate::endpoints::tag::direct_handler(
+                id.to_string(),
+                request.origin.extensions.resolve(),
+            )
+            .await,
+        ),
+        Route::Posts => app_content_encode(
+            &crate::endpoints::posts::direct_handler(
+                offset(),
+                limit(),
+                request.origin.extensions.resolve(),
+                request.origin.extensions.resolve(),
+            )
+            .await,
+        ),
+        Route::Authors => app_content_encode(
+            &crate::endpoints::authors::direct_handler(
+                offset(),
+                limit(),
+                request.origin.extensions.resolve(),
+            )
+            .await,
+        ),
         _ => None,
     }
 }

@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use blog_generic::entities::{AuthorsContainer, TotalOffsetLimitContainer};
+use blog_server_services::traits::author_service::AuthorService;
 
 use super::request_content::AuthorsRequestContent;
 use super::response_content_failure::AuthorsResponseContentFailure;
@@ -49,4 +52,20 @@ pub async fn http_handler(
         },
     }
     .into())
+}
+
+pub async fn direct_handler(
+    offset: u64,
+    limit: u64,
+    author_service: Arc<Box<dyn AuthorService>>,
+) -> Option<AuthorsContainer> {
+    http_handler((AuthorsRequestContent {
+        query: None,
+        offset: Some(offset),
+        limit: Some(limit),
+        author_service,
+    },))
+    .await
+    .ok()
+    .map(|s| s.container)
 }

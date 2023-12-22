@@ -1,6 +1,10 @@
+use std::sync::Arc;
+
 use crate::utils::auth;
 use blog_generic::entities::{PostsContainer, TotalOffsetLimitContainer};
 use blog_server_services::traits::author_service::Author;
+use blog_server_services::traits::entity_post_service::EntityPostService;
+use blog_server_services::traits::post_service::PostService;
 use screw_components::dyn_fn::DFuture;
 
 use super::request_content::{PostsRequestContentFilter as Filter, *};
@@ -123,4 +127,22 @@ async fn handler(
         },
     }
     .into())
+}
+
+pub async fn direct_handler(
+    offset: u64,
+    limit: u64,
+    post_service: Arc<Box<dyn PostService>>,
+    entity_post_service: Arc<Box<dyn EntityPostService>>,
+) -> Option<PostsContainer> {
+    http_handler((PostsRequestContent {
+        filter: None,
+        offset: Some(offset),
+        limit: Some(limit),
+        post_service,
+        entity_post_service,
+    },))
+    .await
+    .ok()
+    .map(|s| s.container)
 }
