@@ -4,8 +4,8 @@ use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
 use std::sync::Arc;
 
 pub struct AuthorRequestContent {
-    pub(crate) slug: String,
-    pub(crate) author_service: Arc<Box<dyn AuthorService>>,
+    pub(super) slug: String,
+    pub(super) author_service: Arc<Box<dyn AuthorService>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for AuthorRequestContent

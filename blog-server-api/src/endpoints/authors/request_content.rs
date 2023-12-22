@@ -4,10 +4,10 @@ use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
 use std::sync::Arc;
 
 pub struct AuthorsRequestContent {
-    pub(crate) query: Option<String>,
-    pub(crate) offset: Option<u64>,
-    pub(crate) limit: Option<u64>,
-    pub(crate) author_service: Arc<Box<dyn AuthorService>>,
+    pub(super) query: Option<String>,
+    pub(super) offset: Option<u64>,
+    pub(super) limit: Option<u64>,
+    pub(super) author_service: Arc<Box<dyn AuthorService>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for AuthorsRequestContent

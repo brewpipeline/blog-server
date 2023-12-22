@@ -15,11 +15,11 @@ pub enum PostsRequestContentFilter {
 }
 
 pub struct PostsRequestContent {
-    pub(crate) filter: Option<PostsRequestContentFilter>,
-    pub(crate) offset: Option<u64>,
-    pub(crate) limit: Option<u64>,
-    pub(crate) post_service: Arc<Box<dyn PostService>>,
-    pub(crate) entity_post_service: Arc<Box<dyn EntityPostService>>,
+    pub(super) filter: Option<PostsRequestContentFilter>,
+    pub(super) offset: Option<u64>,
+    pub(super) limit: Option<u64>,
+    pub(super) post_service: Arc<Box<dyn PostService>>,
+    pub(super) entity_post_service: Arc<Box<dyn EntityPostService>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for PostsRequestContent

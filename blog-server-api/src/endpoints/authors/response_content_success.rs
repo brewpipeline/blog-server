@@ -4,7 +4,7 @@ use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
 
 #[derive(Debug, Clone)]
 pub struct AuthorsResponseContentSuccess {
-    pub(crate) container: AuthorsContainer,
+    pub(super) container: AuthorsContainer,
 }
 
 impl Into<AuthorsResponseContentSuccess> for AuthorsContainer {

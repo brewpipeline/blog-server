@@ -9,10 +9,10 @@ use screw_components::dyn_fn::DFuture;
 use std::sync::Arc;
 
 pub struct PostRequestContent {
-    pub(crate) id: String,
-    pub(crate) post_service: Arc<Box<dyn PostService>>,
-    pub(crate) entity_post_service: Arc<Box<dyn EntityPostService>>,
-    pub(crate) auth_author_future: DFuture<Result<Author, auth::Error>>,
+    pub(super) id: String,
+    pub(super) post_service: Arc<Box<dyn PostService>>,
+    pub(super) entity_post_service: Arc<Box<dyn EntityPostService>>,
+    pub(super) auth_author_future: DFuture<Result<Author, auth::Error>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for PostRequestContent
