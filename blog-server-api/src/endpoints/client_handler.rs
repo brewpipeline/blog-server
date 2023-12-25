@@ -1,5 +1,5 @@
+use crate::endpoints::*;
 use crate::extensions::Resolve;
-use crate::utils::auth;
 use blog_server_services::traits::author_service::*;
 use blog_server_services::traits::entity_post_service::*;
 use blog_server_services::traits::post_service::*;
@@ -8,6 +8,7 @@ use screw_core::request::*;
 use screw_core::response::*;
 use screw_core::routing::*;
 
+use blog_generic::*;
 use blog_ui::*;
 
 const INDEX_HTML: &str = include_str!("../../../index.html");
@@ -83,7 +84,7 @@ pub async fn client_handler<
     };
 
     let status = status(&request).await;
-    let app_content = app_content(&request).await;
+    let app_content = app_content::<_, DefaultPageProcessor>(&request).await;
 
     let rendered = server_renderer(
         request.path.as_str().to_string(),
@@ -164,72 +165,60 @@ async fn status<Extensions>(
     }
 }
 
-async fn app_content<Extensions>(
+// TODO: to think, if it's not a cringe
+async fn app_content<Extensions, PP>(
     request: &router::RoutedRequest<Request<Extensions>>,
 ) -> Option<AppContent>
 where
     Extensions: Resolve<std::sync::Arc<Box<dyn AuthorService>>>
         + Resolve<std::sync::Arc<Box<dyn PostService>>>
         + Resolve<std::sync::Arc<Box<dyn EntityPostService>>>,
+    PP: PageProcessor,
 {
+    let page_processor = PP::create_for_page(
+        &request
+            .query
+            .get("page")
+            .map(|v| v.parse().ok())
+            .flatten()
+            .unwrap_or(1),
+    );
     match Route::recognize_path(request.path.as_str())? {
-        Route::Post { slug: _, id } | Route::EditPost { id } => {
-            use crate::endpoints::post;
-            let post_service: std::sync::Arc<Box<dyn PostService>> =
-                request.origin.extensions.resolve();
-            let entity_post_service: std::sync::Arc<Box<dyn EntityPostService>> =
-                request.origin.extensions.resolve();
-
-            let Ok(post::PostResponseContentSuccess { container }) =
-                post::http_handler((post::PostRequestContent {
-                    id: id.to_string(),
-                    post_service,
-                    entity_post_service,
-                    auth_author_future: Box::pin(std::future::ready(Err(
-                        auth::Error::TokenMissing,
-                    ))),
-                },))
-                .await
-            else {
-                return None;
-            };
-
-            app_content_encode(&container.post)
-        }
-        Route::Author { slug } => {
-            use crate::endpoints::author;
-            let author_service: std::sync::Arc<Box<dyn AuthorService>> =
-                request.origin.extensions.resolve();
-
-            let Ok(author::AuthorResponseContentSuccess { container }) =
-                author::http_handler((author::AuthorRequestContent {
-                    slug,
-                    author_service,
-                },))
-                .await
-            else {
-                return None;
-            };
-
-            app_content_encode(&container.author)
-        }
+        Route::Post { slug: _, id } | Route::EditPost { id } => post::direct_handler(
+            id.to_string(),
+            request.origin.extensions.resolve(),
+            request.origin.extensions.resolve(),
+        )
+        .await
+        .map(|v| app_content_encode(&v.post))
+        .flatten(),
+        Route::Author { slug } => author::direct_handler(slug, request.origin.extensions.resolve())
+            .await
+            .map(|v| app_content_encode(&v.author))
+            .flatten(),
         Route::Tag { slug: _, id } => {
-            use crate::endpoints::tag;
-            let post_service: std::sync::Arc<Box<dyn PostService>> =
-                request.origin.extensions.resolve();
-
-            let Ok(tag::TagResponseContentSuccess { container }) =
-                tag::http_handler((tag::TagRequestContent {
-                    id: id.to_string(),
-                    post_service,
-                },))
+            tag::direct_handler(id.to_string(), request.origin.extensions.resolve())
                 .await
-            else {
-                return None;
-            };
-
-            app_content_encode(&container.tag)
+                .map(|v| app_content_encode(&v.tag))
+                .flatten()
         }
+        Route::Posts => posts::direct_handler(
+            page_processor.offset(),
+            page_processor.limit(),
+            request.origin.extensions.resolve(),
+            request.origin.extensions.resolve(),
+        )
+        .await
+        .map(|v| app_content_encode(&v))
+        .flatten(),
+        Route::Authors => authors::direct_handler(
+            page_processor.offset(),
+            page_processor.limit(),
+            request.origin.extensions.resolve(),
+        )
+        .await
+        .map(|v| app_content_encode(&v))
+        .flatten(),
         _ => None,
     }
 }

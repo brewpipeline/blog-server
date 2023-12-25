@@ -5,7 +5,7 @@ use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
 
 #[derive(Debug, Clone)]
 pub struct TagResponseContentSuccess {
-    pub container: TagContainer,
+    pub(super) container: TagContainer,
 }
 
 impl Into<TagResponseContentSuccess> for ServiceTag {

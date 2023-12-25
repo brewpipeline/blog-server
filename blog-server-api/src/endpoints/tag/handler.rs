@@ -1,3 +1,8 @@
+use std::sync::Arc;
+
+use blog_generic::entities::TagContainer;
+use blog_server_services::traits::post_service::PostService;
+
 use super::request_content::TagRequestContent;
 use super::response_content_failure::TagResponseContentFailure;
 use super::response_content_failure::TagResponseContentFailure::*;
@@ -19,4 +24,14 @@ pub async fn http_handler(
         .ok_or(NotFound)?;
 
     Ok(tag.into())
+}
+
+pub async fn direct_handler(
+    id: String,
+    post_service: Arc<Box<dyn PostService>>,
+) -> Option<TagContainer> {
+    http_handler((TagRequestContent { id, post_service },))
+        .await
+        .ok()
+        .map(|s| s.container)
 }

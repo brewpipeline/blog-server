@@ -1,4 +1,4 @@
-use blog_generic::entities::LoginTelegramQuestion;
+use blog_generic::*;
 use blog_server_services::traits::author_service::BaseMinimalAuthor;
 use blog_server_services::traits::social_service::SocialId;
 use blog_server_services::utils::time_utils;
@@ -31,7 +31,7 @@ pub async fn http_handler(
         social_service,
     },): (LoginTelegramRequestContent,),
 ) -> Result<LoginTelegramResponseContentSuccess, LoginTelegramResponseContentFailure> {
-    let LoginTelegramQuestion {
+    let entities::LoginTelegramQuestion {
         id,
         first_name,
         last_name,
@@ -78,7 +78,7 @@ pub async fn http_handler(
     }
 
     let telegram_base_minimal_author = BaseMinimalAuthor {
-        slug: blog_generic::extend_author_slug(
+        slug: author_slug_utils::extend(
             &username.unwrap_or(id.to_string()),
             &"t".to_string(),
         ),

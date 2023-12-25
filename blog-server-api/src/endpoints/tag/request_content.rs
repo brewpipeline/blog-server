@@ -4,8 +4,8 @@ use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
 use std::sync::Arc;
 
 pub struct TagRequestContent {
-    pub id: String,
-    pub post_service: Arc<Box<dyn PostService>>,
+    pub(super) id: String,
+    pub(super) post_service: Arc<Box<dyn PostService>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for TagRequestContent
