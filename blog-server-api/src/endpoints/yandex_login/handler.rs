@@ -1,4 +1,4 @@
-use blog_generic::entities::LoginYandexQuestion;
+use blog_generic::*;
 use blog_server_services::traits::author_service::BaseMinimalAuthor;
 use blog_server_services::traits::social_service::SocialId;
 use blog_server_services::utils::time_utils;
@@ -37,7 +37,7 @@ pub async fn http_handler(
         social_service,
     },): (LoginYandexRequestContent,),
 ) -> Result<LoginYandexResponseContentSuccess, LoginYandexResponseContentFailure> {
-    let LoginYandexQuestion {
+    let entities::LoginYandexQuestion {
         access_token,
         token_type: _,
         expires_in: _,
@@ -66,7 +66,7 @@ pub async fn http_handler(
     };
 
     let yandex_base_minimal_author = BaseMinimalAuthor {
-        slug: blog_generic::extend_author_slug(&yandex_login_response.login, &"y".to_string()),
+        slug: author_slug_utils::extend(&yandex_login_response.login, &"y".to_string()),
         first_name: yandex_login_response.first_name,
         last_name: yandex_login_response.last_name,
         image_url: if !yandex_login_response.is_avatar_empty {

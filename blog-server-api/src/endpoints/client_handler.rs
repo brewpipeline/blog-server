@@ -84,7 +84,7 @@ pub async fn client_handler<
     };
 
     let status = status(&request).await;
-    let app_content = app_content(&request).await;
+    let app_content = app_content::<_, DefaultPageProcessor>(&request).await;
 
     let rendered = server_renderer(
         request.path.as_str().to_string(),
@@ -166,25 +166,23 @@ async fn status<Extensions>(
 }
 
 // TODO: to think, if it's not a cringe
-async fn app_content<Extensions>(
+async fn app_content<Extensions, PP>(
     request: &router::RoutedRequest<Request<Extensions>>,
 ) -> Option<AppContent>
 where
     Extensions: Resolve<std::sync::Arc<Box<dyn AuthorService>>>
         + Resolve<std::sync::Arc<Box<dyn PostService>>>
         + Resolve<std::sync::Arc<Box<dyn EntityPostService>>>,
+    PP: PageProcessor,
 {
-    let offset = || -> u64 {
-        offset_for_page::<ITEMS_PER_PAGE>(
-            &request
-                .query
-                .get("page")
-                .map(|v| v.parse().ok())
-                .flatten()
-                .unwrap_or(1),
-        )
-    };
-    let limit = || -> u64 { ITEMS_PER_PAGE };
+    let page_processor = PP::create_for_page(
+        &request
+            .query
+            .get("page")
+            .map(|v| v.parse().ok())
+            .flatten()
+            .unwrap_or(1),
+    );
     match Route::recognize_path(request.path.as_str())? {
         Route::Post { slug: _, id } | Route::EditPost { id } => post::direct_handler(
             id.to_string(),
@@ -205,20 +203,22 @@ where
                 .flatten()
         }
         Route::Posts => posts::direct_handler(
-            offset(),
-            limit(),
+            page_processor.offset(),
+            page_processor.limit(),
             request.origin.extensions.resolve(),
             request.origin.extensions.resolve(),
         )
         .await
         .map(|v| app_content_encode(&v))
         .flatten(),
-        Route::Authors => {
-            authors::direct_handler(offset(), limit(), request.origin.extensions.resolve())
-                .await
-                .map(|v| app_content_encode(&v))
-                .flatten()
-        }
+        Route::Authors => authors::direct_handler(
+            page_processor.offset(),
+            page_processor.limit(),
+            request.origin.extensions.resolve(),
+        )
+        .await
+        .map(|v| app_content_encode(&v))
+        .flatten(),
         _ => None,
     }
 }
