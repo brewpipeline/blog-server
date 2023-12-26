@@ -33,6 +33,7 @@ pub struct BasePost {
     pub published: u8,
     pub created_at: u64,
     pub content: Option<String>,
+    pub plain_text_content: Option<String>,
     pub image_url: Option<String>,
 }
 
@@ -52,7 +53,8 @@ impl From<(u64, ECommonPost)> for BasePost {
             title: value.1.title,
             summary: value.1.summary,
             published: value.1.published,
-            content: value.1.content,
+            content: value.1.content.as_ref().map(|c| html::clean(c)),
+            plain_text_content: value.1.content.as_ref().map(|c| html::to_plain(c)),
             image_url: value.1.image_url,
         }
     }

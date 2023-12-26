@@ -215,3 +215,11 @@ DO $$ BEGIN
 END $$
 
 ;
+
+DO $$ BEGIN
+  IF NOT EXISTS(select * from information_schema.columns where table_name = 'post' and column_name = 'plain_text_content') THEN
+    ALTER TABLE post ADD COLUMN plain_text_content TEXT;
+  END IF;
+END $$
+
+;
