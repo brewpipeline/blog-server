@@ -33,7 +33,7 @@ async fn main() -> screw_components::dyn_result::DResult<()> {
 }
 
 pub async fn init_db() -> rbatis::RBatis {
-    let rb = rbatis::RBatis::new_with_opt(rbatis::RBatisOption::default());
+    let rb = rbatis::RBatis::new();
     rb.init(rbdc_pg::driver::PgDriver {}, PG_URL).unwrap();
 
     let sql = std::fs::read_to_string("./table_pg.sql").unwrap();

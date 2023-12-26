@@ -43,9 +43,9 @@ tokio = { version = "1.27.0", features = ["full"] }
 hyper = { version = "0.14.26", features = ["full"] }
 serde = { version = "1.0.160", features = ["derive"] }
 serde_json = { version = "1.0.104" }
-rbs = { version = "4.3.3" }
-rbatis = { version = "4.3.15" }
-rbdc-pg = { version = "4.3.12" }
+rbs = { version = "4.5.2" }
+rbatis = { version = "4.5.7" }
+rbdc-pg = { version = "4.5.2" }
 async-trait = { version = "0.1.68" }
 password-hash = "0.5.0"
 argon2 = "0.5.0"
