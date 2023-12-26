@@ -10,8 +10,8 @@ package = "screw-components"
 
 [dependencies]
 blog-generic = { path = "../blog-generic" }
-rbs = { version = "4.3" }
-rbatis = { version = "4.3" }
+rbs = { version = "4.3.3" }
+rbatis = { version = "4.3.15" }
 amqprs = { version = "1.5.1", features = ["urispec"] }
 async-trait = { version = "0.1.68" }
 serde = { version = "1.0.160", features = ["derive"] }
