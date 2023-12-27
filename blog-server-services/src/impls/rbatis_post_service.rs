@@ -220,6 +220,10 @@ impl Post {
         ORDER BY \
             rank \
         DESC \
+        LIMIT \
+            #{limit} \
+        OFFSET \
+            #{offset} \
     "
     )]
     async fn select_by_query_with_limit_and_offset(
