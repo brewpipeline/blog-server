@@ -2,6 +2,7 @@
 
 mod endpoints;
 mod extensions;
+mod migrations;
 mod router;
 mod utils;
 
@@ -36,44 +37,16 @@ pub async fn init_db() -> rbatis::RBatis {
     let rb = rbatis::RBatis::new();
     rb.init(rbdc_pg::driver::PgDriver {}, PG_URL)
         .expect("DB init failed");
-    migrate_db(&rb).await.expect("DB migration failed");
+    migrations::exec(&rb).await.expect("DB migration failed");
     return rb;
-}
-
-async fn migrate_db(rb: &rbatis::RBatis) -> Result<(), Box<dyn std::error::Error>> {
-    let sql = std::fs::read_to_string("./table_pg.sql")?;
-    rb.exec(&sql, vec![]).await?;
-
-    let posts: Vec<blog_server_services::traits::post_service::Post> =
-        rb.query_decode("select * from post", vec![]).await?;
-    for post in posts {
-        let content = post
-            .base
-            .content
-            .as_ref()
-            .map(|c| blog_server_services::utils::html::clean(c));
-        let plain_text_content = content
-            .as_ref()
-            .map(|c| blog_server_services::utils::html::to_plain(c));
-        rb.query(
-            "update post set content=?, plain_text_content=? where id=?",
-            vec![
-                rbs::to_value!(content),
-                rbs::to_value!(plain_text_content),
-                rbs::to_value!(post.id),
-            ],
-        )
-        .await?;
-    }
-
-    Ok(())
 }
 
 pub async fn init_rabbit(
 ) -> Box<dyn blog_server_services::traits::event_bus_service::EventBusService> {
-    if RABBIT_URL.is_empty() {
-        blog_server_services::impls::create_rabbit_event_bus_service(None).await
+    blog_server_services::impls::create_rabbit_event_bus_service(if RABBIT_URL.is_empty() {
+        None
     } else {
-        blog_server_services::impls::create_rabbit_event_bus_service(Some(RABBIT_URL)).await
-    }
+        Some(RABBIT_URL)
+    })
+    .await
 }
