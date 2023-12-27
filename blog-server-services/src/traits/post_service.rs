@@ -38,24 +38,27 @@ pub struct BasePost {
 }
 
 impl From<(u64, ECommonPost)> for BasePost {
-    fn from(value: (u64, ECommonPost)) -> Self {
+    fn from((author_id, post): (u64, ECommonPost)) -> Self {
+        let slug = {
+            let transliterated = transliteration::ru_to_latin_single(
+                post.title.clone(),
+                transliteration::TranslitOption::ToLowerCase,
+            )
+            .transliterated;
+            string_filter::remove_non_latin_or_number_chars(&transliterated)
+        };
+        let content = post.content.as_ref().map(|c| html::clean(c));
+        let plain_text_content = content.as_ref().map(|c| html::to_plain(c));
         BasePost {
-            author_id: value.0,
+            author_id,
             created_at: time_utils::now_as_secs(),
-            slug: {
-                let transliterated = transliteration::ru_to_latin_single(
-                    value.1.title.clone(),
-                    transliteration::TranslitOption::ToLowerCase,
-                )
-                .transliterated;
-                string_filter::remove_non_latin_or_number_chars(&transliterated)
-            },
-            title: value.1.title,
-            summary: value.1.summary,
-            published: value.1.published,
-            content: value.1.content.as_ref().map(|c| html::clean(c)),
-            plain_text_content: value.1.content.as_ref().map(|c| html::to_plain(c)),
-            image_url: value.1.image_url,
+            slug,
+            title: post.title,
+            summary: post.summary,
+            published: post.published,
+            content,
+            plain_text_content,
+            image_url: post.image_url,
         }
     }
 }
