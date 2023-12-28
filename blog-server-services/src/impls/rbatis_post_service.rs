@@ -102,7 +102,7 @@ impl Post {
         FROM \
             post, \
             plainto_tsquery('russian', LOWER(#{query})) query, \
-            to_tsvector('russian', LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content )) textsearch \
+            to_tsvector('russian', LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content)) textsearch \
         WHERE \
             textsearch @@ query \
         AND \
@@ -212,7 +212,7 @@ impl Post {
         FROM \
             post, \
             plainto_tsquery('russian', LOWER(#{query})) query, \
-            to_tsvector('russian', LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content )) textsearch \
+            to_tsvector('russian', LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content)) textsearch \
         WHERE \
             textsearch @@ query \
         AND \
