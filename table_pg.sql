@@ -215,3 +215,23 @@ DO $$ BEGIN
 END $$
 
 ;
+
+DO $$ BEGIN
+  IF NOT EXISTS(select * from information_schema.columns where table_name = 'post' and column_name = 'plain_text_content') THEN
+    ALTER TABLE post ADD COLUMN plain_text_content TEXT;
+  END IF;
+END $$
+
+;
+
+DO $$ BEGIN
+  IF NOT EXISTS(select * from pg_tables where schemaname = 'public' and tablename = 'migration') THEN
+    CREATE TABLE migration (
+      key VARCHAR(100) NOT NULL,
+      created_at TIMESTAMP(0) NOT NULL,
+      PRIMARY KEY (key)
+    );
+  END IF;
+END $$
+
+;

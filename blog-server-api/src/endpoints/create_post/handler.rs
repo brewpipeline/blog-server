@@ -6,8 +6,6 @@ use super::response_content_failure::CreatePostContentFailure;
 use super::response_content_failure::CreatePostContentFailure::*;
 use super::response_content_success::CreatePostContentSuccess;
 
-use crate::utils::html;
-
 pub async fn http_handler(
     (CreatePostRequestContent {
         new_post_data,
@@ -25,10 +23,9 @@ pub async fn http_handler(
         return Err(CreatingForbidden);
     }
 
-    let mut base_post = new_post_data.map_err(|e| ValidationError {
+    let base_post = new_post_data.map_err(|e| ValidationError {
         reason: e.to_string(),
     })?;
-    base_post.content = base_post.content.map(|c| html::clean(&c));
 
     if let Some(err) = base_post.validate().err() {
         return Err(ValidationError {

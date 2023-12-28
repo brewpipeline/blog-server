@@ -25,3 +25,7 @@ pub fn clean(src: &str) -> String {
         .clean(src)
         .to_string()
 }
+
+pub fn to_plain(src: &str) -> String {
+    html2text::from_read(src.as_bytes(), usize::MAX)
+}

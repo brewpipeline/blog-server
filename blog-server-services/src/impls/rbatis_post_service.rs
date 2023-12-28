@@ -97,10 +97,16 @@ impl Post {
     }
     #[py_sql(
         "
-        SELECT COUNT(1) \
-        FROM post \
-        WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
-        AND post.published = 1 \
+        SELECT \
+            COUNT(1) \
+        FROM \
+            post, \
+            plainto_tsquery('russian', LOWER(#{query})) query, \
+            to_tsvector('russian', LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content)) textsearch \
+        WHERE \
+            textsearch @@ query \
+        AND \
+            post.published = 1 \
     "
     )]
     async fn count_by_query(rb: &RBatis, query: &String) -> rbatis::Result<u64> {
@@ -201,13 +207,23 @@ impl Post {
     #[py_sql(
         "
         SELECT \
-            post.* \
-        FROM post \
-        WHERE post.title ILIKE '%' || #{query} || '%' OR post.summary ILIKE '%' || #{query} || '%' OR post.content ILIKE '%' || #{query} || '%' \
-        AND post.published = 1 \
-        ORDER BY post.id DESC \
-        LIMIT #{limit} \
-        OFFSET #{offset} \
+            post.*, \
+            ts_rank_cd(textsearch, query) AS rank \
+        FROM \
+            post, \
+            plainto_tsquery('russian', LOWER(#{query})) query, \
+            to_tsvector('russian', LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content)) textsearch \
+        WHERE \
+            textsearch @@ query \
+        AND \
+            post.published = 1 \
+        ORDER BY \
+            rank \
+        DESC \
+        LIMIT \
+            #{limit} \
+        OFFSET \
+            #{offset} \
     "
     )]
     async fn select_by_query_with_limit_and_offset(
@@ -312,9 +328,9 @@ impl RbatisPostService {
     #[py_sql(
         "
         INSERT INTO post 
-        (author_id,title,slug,summary,published,created_at,content,image_url) 
+        (author_id,title,slug,summary,published,created_at,content,plain_text_content,image_url) 
         VALUES 
-        (#{post.author_id},#{post.title},#{post.slug},#{post.summary},#{post.published},to_timestamp(#{post.created_at}),#{post.content},#{post.image_url})
+        (#{post.author_id},#{post.title},#{post.slug},#{post.summary},#{post.published},to_timestamp(#{post.created_at}),#{post.content},#{post.plain_text_content},#{post.image_url})
         RETURNING id
     "
     )]
@@ -331,6 +347,7 @@ impl RbatisPostService {
             summary = #{post_data.summary}, \
             published = #{post_data.published}, \
             content = #{post_data.content}, \
+            plain_text_content = #{post_data.plain_text_content}, \
             image_url = #{post_data.image_url} \
         WHERE id = #{post_id} \
         RETURNING id

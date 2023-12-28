@@ -78,10 +78,7 @@ pub async fn http_handler(
     }
 
     let telegram_base_minimal_author = BaseMinimalAuthor {
-        slug: author_slug_utils::extend(
-            &username.unwrap_or(id.to_string()),
-            &"t".to_string(),
-        ),
+        slug: author_slug_utils::extend(&username.unwrap_or(id.to_string()), &"t".to_string()),
         first_name,
         last_name,
         image_url: photo_url.map(|u| {

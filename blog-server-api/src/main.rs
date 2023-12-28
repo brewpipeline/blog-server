@@ -2,6 +2,7 @@
 
 mod endpoints;
 mod extensions;
+mod migrations;
 mod router;
 mod utils;
 
@@ -33,19 +34,19 @@ async fn main() -> screw_components::dyn_result::DResult<()> {
 }
 
 pub async fn init_db() -> rbatis::RBatis {
-    let rb = rbatis::RBatis::new_with_opt(rbatis::RBatisOption::default());
-    rb.init(rbdc_pg::driver::PgDriver {}, PG_URL).unwrap();
-
-    let sql = std::fs::read_to_string("./table_pg.sql").unwrap();
-    rb.exec(&sql, vec![]).await.expect("DB migration failed");
+    let rb = rbatis::RBatis::new();
+    rb.init(rbdc_pg::driver::PgDriver {}, PG_URL)
+        .expect("DB init failed");
+    migrations::exec(&rb).await.expect("DB migration failed");
     return rb;
 }
 
 pub async fn init_rabbit(
 ) -> Box<dyn blog_server_services::traits::event_bus_service::EventBusService> {
-    if RABBIT_URL.is_empty() {
-        blog_server_services::impls::create_rabbit_event_bus_service(None).await
+    blog_server_services::impls::create_rabbit_event_bus_service(if RABBIT_URL.is_empty() {
+        None
     } else {
-        blog_server_services::impls::create_rabbit_event_bus_service(Some(RABBIT_URL)).await
-    }
+        Some(RABBIT_URL)
+    })
+    .await
 }
