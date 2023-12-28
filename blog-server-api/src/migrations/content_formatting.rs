@@ -1,11 +1,16 @@
+const KEY: &'static str = "content_formatting_migration_status";
+
 pub async fn exec(rb: &rbatis::RBatis) -> Result<(), Box<dyn std::error::Error>> {
     let is_content_migrated: bool = rb
-        .query_decode::<u64>(
-            "select count(1) as count from migration where key='content_migration'",
-            vec![],
+        .query_decode::<Option<String>>(
+            "select value from property where key=?",
+            vec![
+                rbs::to_value!(KEY)
+            ],
         )
         .await?
-        > 0;
+        .map(|v| v == "ok")
+        .unwrap_or_default();
 
     if !is_content_migrated {
         let posts: Vec<blog_server_services::traits::post_service::Post> =
@@ -30,8 +35,10 @@ pub async fn exec(rb: &rbatis::RBatis) -> Result<(), Box<dyn std::error::Error>>
             .await?;
         }
         rb.query(
-            "insert into migration (key) values ('content_migration')",
-            vec![],
+            "insert into property (key, value) values (?, 'ok')",
+            vec![
+                rbs::to_value!(KEY)
+            ],
         )
         .await?;
     }
