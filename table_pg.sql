@@ -228,6 +228,7 @@ DO $$ BEGIN
   IF NOT EXISTS(select * from pg_tables where schemaname = 'public' and tablename = 'migration') THEN
     CREATE TABLE migration (
       key VARCHAR(100) NOT NULL,
+      created_at TIMESTAMP(0) NOT NULL,
       PRIMARY KEY (key)
     );
   END IF;

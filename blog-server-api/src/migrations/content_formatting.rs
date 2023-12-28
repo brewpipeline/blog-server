@@ -1,4 +1,4 @@
-const KEY: &'static str = "content_formatting_migration_status";
+const KEY: &'static str = "content_formatting";
 
 pub async fn exec(rb: &rbatis::RBatis) -> Result<(), Box<dyn std::error::Error>> {
     let is_content_migrated: bool = rb
@@ -32,8 +32,11 @@ pub async fn exec(rb: &rbatis::RBatis) -> Result<(), Box<dyn std::error::Error>>
             .await?;
         }
         rb.query(
-            "insert into migration (key) values (?)",
-            vec![rbs::to_value!(KEY)],
+            "insert into migration (key, created_at) values (?, to_timestamp(?))",
+            vec![
+                rbs::to_value!(KEY),
+                rbs::to_value!(blog_server_services::utils::time_utils::now_as_secs()),
+            ],
         )
         .await?;
     }
