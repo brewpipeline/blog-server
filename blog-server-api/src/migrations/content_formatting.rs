@@ -4,9 +4,7 @@ pub async fn exec(rb: &rbatis::RBatis) -> Result<(), Box<dyn std::error::Error>>
     let is_content_migrated: bool = rb
         .query_decode::<Option<String>>(
             "select value from property where key=?",
-            vec![
-                rbs::to_value!(KEY)
-            ],
+            vec![rbs::to_value!(KEY)],
         )
         .await?
         .map(|v| v == "ok")
@@ -36,9 +34,7 @@ pub async fn exec(rb: &rbatis::RBatis) -> Result<(), Box<dyn std::error::Error>>
         }
         rb.query(
             "insert into property (key, value) values (?, 'ok')",
-            vec![
-                rbs::to_value!(KEY)
-            ],
+            vec![rbs::to_value!(KEY)],
         )
         .await?;
     }
