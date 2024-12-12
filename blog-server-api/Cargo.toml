@@ -4,7 +4,6 @@ version = "0.0.1"
 edition = "2021"
 
 [features]
-default = ["telegram"]
 ssr = ["blog-ui", "sitemap-rs"]
 yandex = ["reqwest", "blog-ui?/yandex"]
 telegram = ["sha2", "hmac", "hex", "blog-ui?/telegram"]
@@ -31,8 +30,8 @@ git = "https://github.com/Tikitko/screw.git"
 package = "screw-ws"
 
 [dependencies.blog-ui]
-#git = "https://github.com/Tikitko/blog-ui.git"
-path = "../../blog-ui"
+git = "https://github.com/Tikitko/blog-ui.git"
+#path = "../../blog-ui"
 default-features = false
 features = ["server"]
 optional = true
