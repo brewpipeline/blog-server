@@ -523,8 +523,8 @@ impl PostService for RbatisPostService {
 
     async fn delete_post_by_id(&self, id: &u64) -> DResult<()> {
         let tx = self.rb.acquire_begin().await?;
-        let mut tx = tx.defer_async(|mut tx| async move {
-            if !tx.done {
+        let mut tx = tx.defer_async(|tx| async move {
+            if !tx.done() {
                 let _ = tx.rollback().await;
             }
         });
