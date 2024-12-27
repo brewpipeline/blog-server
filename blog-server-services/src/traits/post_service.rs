@@ -100,7 +100,12 @@ pub trait PostService: Send + Sync {
     ) -> DResult<Vec<Post>>;
     async fn post_by_id(&self, id: &u64) -> DResult<Option<Post>>;
     async fn create_post(&self, post: &BasePost) -> DResult<u64>;
-    async fn update_post_by_id(&self, id: &u64, post: &BasePost) -> DResult<()>;
+    async fn update_post_by_id(
+        &self,
+        id: &u64,
+        post: &BasePost,
+        update_created_at: &bool,
+    ) -> DResult<()>;
     async fn delete_post_by_id(&self, id: &u64) -> DResult<()>;
 
     async fn tag_by_id(&self, id: &u64) -> DResult<Option<Tag>>;
