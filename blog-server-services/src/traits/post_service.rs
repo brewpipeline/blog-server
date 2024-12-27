@@ -104,7 +104,7 @@ pub trait PostService: Send + Sync {
         &self,
         id: &u64,
         post: &BasePost,
-        update_created_at: bool,
+        update_created_at: &bool,
     ) -> DResult<()>;
     async fn delete_post_by_id(&self, id: &u64) -> DResult<()>;
 

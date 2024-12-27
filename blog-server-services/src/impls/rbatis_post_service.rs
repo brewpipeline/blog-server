@@ -346,7 +346,7 @@ impl RbatisPostService {
             slug = #{post_data.slug}, \
             summary = #{post_data.summary}, \
             published = #{post_data.published},
-            if update_created_at == 1:
+            if update_created_at:
                 created_at = to_timestamp(#{post_data.created_at}),
             content = #{post_data.content}, \
             plain_text_content = #{post_data.plain_text_content}, \
@@ -359,7 +359,7 @@ impl RbatisPostService {
         rb: &RBatis,
         post_id: &u64,
         post_data: &BasePost,
-        update_created_at: &u8,
+        update_created_at: &bool,
     ) -> rbatis::Result<u64> {
         impled!()
     }
@@ -523,10 +523,9 @@ impl PostService for RbatisPostService {
         &self,
         id: &u64,
         post_data: &BasePost,
-        update_created_at: bool,
+        update_created_at: &bool,
     ) -> DResult<()> {
-        RbatisPostService::update_post_by_id(&self.rb, id, post_data, &update_created_at.into())
-            .await?;
+        RbatisPostService::update_post_by_id(&self.rb, id, post_data, update_created_at).await?;
         Ok(())
     }
 

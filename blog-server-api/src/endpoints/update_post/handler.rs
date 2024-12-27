@@ -71,7 +71,7 @@ pub async fn http_handler(
         .update_post_by_id(
             &id,
             &From::from((author.id, base_post)),
-            is_published_changed,
+            &is_published_changed,
         )
         .await
         .map_err(|e| DatabaseError {
