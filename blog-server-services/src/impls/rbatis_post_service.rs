@@ -1,4 +1,4 @@
-use crate::traits::post_service::{BasePost, Post, PostService, PostsRequest, PostsResponse, Tag};
+use crate::traits::post_service::{BasePost, Post, PostService, PostsQuery, PostsQueryAnswer, Tag};
 use crate::utils::{string_filter, transliteration};
 use rbatis::executor::RBatisTxExecutorGuard;
 use rbatis::{rbatis::RBatis, rbdc::db::ExecResult};
@@ -255,13 +255,13 @@ struct RbatisPost {
 impl PostService for RbatisPostService {
     async fn posts<'q, 'a, 't, 'p, 'o, 'l>(
         &self,
-        request: PostsRequest<'q, 'a, 't, 'p, 'o, 'l>,
-    ) -> DResult<PostsResponse> {
+        query: PostsQuery<'q, 'a, 't, 'p, 'o, 'l>,
+    ) -> DResult<PostsQueryAnswer> {
         let mut args: Vec<Value> = vec![];
         let query = vec![
             {
                 let mut select_parts = vec!["post.*"];
-                if let Some(_) = request.query {
+                if let Some(_) = query.search_query {
                     select_parts.push("ts_rank_cd(textsearch, query) AS rank");
                 }
                 select_parts.push("COUNT(*) OVER() AS total_count");
@@ -269,16 +269,16 @@ impl PostService for RbatisPostService {
             },
             {
                 let mut from_parts = vec!["post"];
-                if let Some(query) = request.query {
+                if let Some(search_query) = query.search_query {
                     from_parts.push("plainto_tsquery('russian', LOWER(?)) query");
-                    args.push(to_value!(query));
+                    args.push(to_value!(search_query));
                     from_parts.push("to_tsvector('russian', LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content)) textsearch");
                 }
                 Some(format!("FROM {}", from_parts.join(", ")))
             },
             {
                 let mut join_parts = vec![];
-                if let Some(_) = request.tag_id {
+                if let Some(_) = query.tag_id {
                     join_parts.push("post_tag ON post.id = post_tag.post_id");
                 }
                 if join_parts.is_empty() {
@@ -289,18 +289,18 @@ impl PostService for RbatisPostService {
             },
             {
                 let mut where_parts = vec![];
-                if let Some(_) = request.query {
+                if let Some(_) = query.search_query {
                     where_parts.push("textsearch @@ query");
                 }
-                if let Some(author_id) = request.author_id {
+                if let Some(author_id) = query.author_id {
                     where_parts.push("author_id = ?");
                     args.push(to_value!(author_id));
                 }
-                if let Some(tag_id) = request.tag_id {
+                if let Some(tag_id) = query.tag_id {
                     where_parts.push("post_tag.tag_id = ?");
                     args.push(to_value!(tag_id));
                 }
-                if let Some(publish_type) = request.publish_type {
+                if let Some(publish_type) = query.publish_type {
                     where_parts.push("publish_type = ?");
                     args.push(to_value!(publish_type));
                 }
@@ -312,21 +312,25 @@ impl PostService for RbatisPostService {
             },
             {
                 let mut order_by_parts = vec![];
-                if let Some(_) = request.query {
+                if let Some(_) = query.search_query {
                     order_by_parts.push("rank");
                 }
                 order_by_parts.push("post.id DESC");
                 Some(format!("ORDER BY {}", order_by_parts.join(", ")))
             },
             {
-                args.push(to_value!(request.limit));
+                args.push(to_value!(query.limit));
                 Some("LIMIT ?".to_string())
             },
             {
-                args.push(to_value!(request.offset));
+                args.push(to_value!(query.offset));
                 Some("OFFSET ?".to_string())
             }
-        ].into_iter().filter_map(|x| x).collect::<Vec<String>>().join(" ");
+        ]
+            .into_iter()
+            .filter_map(|x| x)
+            .collect::<Vec<String>>()
+            .join(" ");
 
         let rbatis_posts: Vec<RbatisPost> = self.rb.query_decode(query.as_str(), args).await?;
 
@@ -335,7 +339,7 @@ impl PostService for RbatisPostService {
 
         let posts_with_tags = RbatisPostService::saturate_posts_with_tags(&self, posts).await?;
 
-        Ok(PostsResponse {
+        Ok(PostsQueryAnswer {
             total_count,
             posts: posts_with_tags,
         })

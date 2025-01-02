@@ -73,8 +73,8 @@ pub struct Post {
     pub base: BasePost,
 }
 
-pub struct PostsRequest<'q, 'a, 't, 'p, 'o, 'l> {
-    pub query: Option<&'q String>,
+pub struct PostsQuery<'q, 'a, 't, 'p, 'o, 'l> {
+    pub search_query: Option<&'q String>,
     pub author_id: Option<&'a u64>,
     pub tag_id: Option<&'t u64>,
     pub publish_type: Option<&'p PublishType>,
@@ -82,10 +82,10 @@ pub struct PostsRequest<'q, 'a, 't, 'p, 'o, 'l> {
     pub limit: &'l u64,
 }
 
-impl<'q, 'a, 't, 'p, 'o, 'l> PostsRequest<'q, 'a, 't, 'p, 'o, 'l> {
+impl<'q, 'a, 't, 'p, 'o, 'l> PostsQuery<'q, 'a, 't, 'p, 'o, 'l> {
     pub fn offset_and_limit(offset: &'o u64, limit: &'l u64) -> Self {
         Self {
-            query: None,
+            search_query: None,
             author_id: None,
             tag_id: None,
             publish_type: None,
@@ -93,8 +93,8 @@ impl<'q, 'a, 't, 'p, 'o, 'l> PostsRequest<'q, 'a, 't, 'p, 'o, 'l> {
             limit,
         }
     }
-    pub fn query(mut self, query: Option<&'q String>) -> Self {
-        self.query = query;
+    pub fn search_query(mut self, search_query: Option<&'q String>) -> Self {
+        self.search_query = search_query;
         self
     }
     pub fn author_id(mut self, author_id: Option<&'a u64>) -> Self {
@@ -111,7 +111,7 @@ impl<'q, 'a, 't, 'p, 'o, 'l> PostsRequest<'q, 'a, 't, 'p, 'o, 'l> {
     }
 }
 
-pub struct PostsResponse {
+pub struct PostsQueryAnswer {
     pub total_count: u64,
     pub posts: Vec<Post>,
 }
@@ -120,8 +120,8 @@ pub struct PostsResponse {
 pub trait PostService: Send + Sync {
     async fn posts<'q, 'a, 't, 'p, 'o, 'l>(
         &self,
-        request: PostsRequest<'q, 'a, 't, 'p, 'o, 'l>,
-    ) -> DResult<PostsResponse>;
+        request: PostsQuery<'q, 'a, 't, 'p, 'o, 'l>,
+    ) -> DResult<PostsQueryAnswer>;
 
     async fn post_by_id(&self, id: &u64) -> DResult<Option<Post>>;
     async fn create_post(&self, post: &BasePost) -> DResult<u64>;

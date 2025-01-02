@@ -4,7 +4,7 @@ use crate::utils::auth;
 use blog_generic::entities::{PostsContainer, PublishType, TotalOffsetLimitContainer};
 use blog_server_services::traits::author_service::Author;
 use blog_server_services::traits::entity_post_service::EntityPostService;
-use blog_server_services::traits::post_service::{PostService, PostsRequest, PostsResponse};
+use blog_server_services::traits::post_service::{PostService, PostsQuery, PostsQueryAnswer};
 use screw_components::dyn_fn::DFuture;
 
 use super::request_content::{PostsRequestContentFilter as Filter, *};
@@ -66,23 +66,22 @@ async fn handler(
 ) -> Result<PostsResponseContentSuccess, PostsResponseContentFailure> {
     let offset = offset.unwrap_or(0).max(0);
     let limit = limit.unwrap_or(50).max(0).min(50);
-    let base_posts_request = PostsRequest::offset_and_limit(&offset, &limit);
 
-    let posts_result = match handler_type {
+    let PostsQueryAnswer { total_count, posts } = match handler_type {
         HandlerType::Published => match filter {
             Some(Filter::SearchQuery(search_query)) => {
                 post_service
                     .posts(
-                        base_posts_request
+                        PostsQuery::offset_and_limit(&offset, &limit)
                             .publish_type(Some(&PublishType::Published))
-                            .query(Some(&search_query)),
+                            .search_query(Some(&search_query)),
                     )
                     .await
             }
             Some(Filter::AuthorId(author_id)) => {
                 post_service
                     .posts(
-                        base_posts_request
+                        PostsQuery::offset_and_limit(&offset, &limit)
                             .publish_type(Some(&PublishType::Published))
                             .author_id(Some(&author_id)),
                     )
@@ -91,7 +90,7 @@ async fn handler(
             Some(Filter::TagId(tag_id)) => {
                 post_service
                     .posts(
-                        base_posts_request
+                        PostsQuery::offset_and_limit(&offset, &limit)
                             .publish_type(Some(&PublishType::Published))
                             .tag_id(Some(&tag_id)),
                     )
@@ -99,7 +98,10 @@ async fn handler(
             }
             None => {
                 post_service
-                    .posts(base_posts_request.publish_type(Some(&PublishType::Published)))
+                    .posts(
+                        PostsQuery::offset_and_limit(&offset, &limit)
+                            .publish_type(Some(&PublishType::Published)),
+                    )
                     .await
             }
         },
@@ -111,13 +113,13 @@ async fn handler(
                         if author.base.editor == 1 || author_id == author.id {
                             post_service
                                 .posts(
-                                    base_posts_request
+                                    PostsQuery::offset_and_limit(&offset, &limit)
                                         .publish_type(Some(&PublishType::Unpublished))
                                         .author_id(Some(&author_id)),
                                 )
                                 .await
                         } else {
-                            Ok(PostsResponse {
+                            Ok(PostsQueryAnswer {
                                 total_count: 0,
                                 posts: vec![],
                             })
@@ -128,12 +130,12 @@ async fn handler(
                         if author.base.editor == 1 {
                             post_service
                                 .posts(
-                                    base_posts_request
+                                    PostsQuery::offset_and_limit(&offset, &limit)
                                         .publish_type(Some(&PublishType::Unpublished)),
                                 )
                                 .await
                         } else {
-                            Ok(PostsResponse {
+                            Ok(PostsQueryAnswer {
                                 total_count: 0,
                                 posts: vec![],
                             })
@@ -141,7 +143,7 @@ async fn handler(
                     }
                 }
             } else {
-                Ok(PostsResponse {
+                Ok(PostsQueryAnswer {
                     total_count: 0,
                     posts: vec![],
                 })
@@ -160,27 +162,26 @@ async fn handler(
                     None => {
                         post_service
                             .posts(
-                                PostsRequest::offset_and_limit(&offset, &limit)
+                                PostsQuery::offset_and_limit(&offset, &limit)
                                     .publish_type(Some(&PublishType::Hidden)),
                             )
                             .await
                     }
                 }
             } else {
-                Ok(PostsResponse {
+                Ok(PostsQueryAnswer {
                     total_count: 0,
                     posts: vec![],
                 })
             }
         }
-    };
-
-    let posts_response = posts_result.map_err(|e| DatabaseError {
+    }
+    .map_err(|e| DatabaseError {
         reason: e.to_string(),
     })?;
 
     let posts_entities = entity_post_service
-        .posts_entities(posts_response.posts)
+        .posts_entities(posts)
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
@@ -189,7 +190,7 @@ async fn handler(
     Ok(PostsContainer {
         posts: posts_entities,
         base: TotalOffsetLimitContainer {
-            total: posts_response.total_count,
+            total: total_count,
             offset,
             limit,
         },
