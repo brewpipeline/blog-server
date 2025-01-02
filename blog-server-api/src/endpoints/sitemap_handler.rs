@@ -24,7 +24,7 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<Box<dyn PostService>>>>(
             query: None,
             author_id: None,
             tag_id: None,
-            published_type: Some(&PublishedType::Published),
+            publish_type: Some(&PublishType::Published),
             offset: &0,
             limit: &(RECORDS_LIMIT as u64),
         })

@@ -3,34 +3,34 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(from = "u8", into = "u8")]
-pub enum PublishedType {
+pub enum PublishType {
     Unpublished = 0,
     Published = 1,
     Hidden = 2,
 }
 
-impl PublishedType {
+impl PublishType {
     pub fn is_published(&self) -> bool {
         match self {
-            PublishedType::Unpublished => false,
-            PublishedType::Published | PublishedType::Hidden => true,
+            PublishType::Unpublished => false,
+            PublishType::Published | PublishType::Hidden => true,
         }
     }
 }
 
-impl From<u8> for PublishedType {
+impl From<u8> for PublishType {
     fn from(value: u8) -> Self {
         match value {
-            0 => PublishedType::Unpublished,
-            1 => PublishedType::Published,
-            2 => PublishedType::Hidden,
-            _ => PublishedType::Unpublished,
+            0 => PublishType::Unpublished,
+            1 => PublishType::Published,
+            2 => PublishType::Hidden,
+            _ => PublishType::Unpublished,
         }
     }
 }
 
-impl From<PublishedType> for u8 {
-    fn from(status: PublishedType) -> Self {
+impl From<PublishType> for u8 {
+    fn from(status: PublishType) -> Self {
         status as u8
     }
 }
@@ -42,7 +42,7 @@ pub struct Post {
     pub title: String,
     pub slug: String,
     pub summary: String,
-    pub published_type: PublishedType,
+    pub publish_type: PublishType,
     pub created_at: u64,
     pub content: Option<String>,
     pub author: Author,

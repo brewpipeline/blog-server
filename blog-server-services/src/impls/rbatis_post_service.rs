@@ -133,9 +133,9 @@ impl RbatisPostService {
     #[py_sql(
         "
         INSERT INTO post 
-        (author_id,title,slug,summary,published_type,created_at,content,plain_text_content,image_url)
+        (author_id,title,slug,summary,publish_type,created_at,content,plain_text_content,image_url)
         VALUES 
-        (#{post.author_id},#{post.title},#{post.slug},#{post.summary},#{post.published_type},to_timestamp(#{post.created_at}),#{post.content},#{post.plain_text_content},#{post.image_url})
+        (#{post.author_id},#{post.title},#{post.slug},#{post.summary},#{post.publish_type},to_timestamp(#{post.created_at}),#{post.content},#{post.plain_text_content},#{post.image_url})
         RETURNING id
     "
     )]
@@ -150,7 +150,7 @@ impl RbatisPostService {
             title = #{post_data.title}, \
             slug = #{post_data.slug}, \
             summary = #{post_data.summary}, \
-            published_type = #{post_data.published_type},
+            publish_type = #{post_data.publish_type},
             if update_created_at:
                 created_at = to_timestamp(#{post_data.created_at}),
             content = #{post_data.content}, \
@@ -300,9 +300,9 @@ impl PostService for RbatisPostService {
                     where_parts.push("post_tag.tag_id = ?");
                     args.push(to_value!(tag_id));
                 }
-                if let Some(published_type) = request.published_type {
-                    where_parts.push("published_type = ?");
-                    args.push(to_value!(published_type));
+                if let Some(publish_type) = request.publish_type {
+                    where_parts.push("publish_type = ?");
+                    args.push(to_value!(publish_type));
                 }
                 if where_parts.is_empty() {
                     None

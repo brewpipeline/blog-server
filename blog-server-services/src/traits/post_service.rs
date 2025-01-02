@@ -1,5 +1,5 @@
 use blog_generic::entities::Tag as ETag;
-use blog_generic::entities::{CommonPost as ECommonPost, PublishedType};
+use blog_generic::entities::{CommonPost as ECommonPost, PublishType};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 
@@ -30,7 +30,7 @@ pub struct BasePost {
     pub title: String,
     pub slug: String,
     pub summary: String,
-    pub published_type: PublishedType,
+    pub publish_type: PublishType,
     pub created_at: u64,
     pub content: Option<String>,
     pub plain_text_content: Option<String>,
@@ -55,7 +55,7 @@ impl From<(u64, ECommonPost)> for BasePost {
             slug,
             title: post.title,
             summary: post.summary,
-            published_type: post.published_type,
+            publish_type: post.publish_type,
             content,
             plain_text_content,
             image_url: post.image_url,
@@ -77,7 +77,7 @@ pub struct PostsRequest<'q, 'a, 't, 'p, 'o, 'l> {
     pub query: Option<&'q String>,
     pub author_id: Option<&'a u64>,
     pub tag_id: Option<&'t u64>,
-    pub published_type: Option<&'p PublishedType>,
+    pub publish_type: Option<&'p PublishType>,
     pub offset: &'o u64,
     pub limit: &'l u64,
 }
@@ -88,7 +88,7 @@ impl<'q, 'a, 't, 'p, 'o, 'l> PostsRequest<'q, 'a, 't, 'p, 'o, 'l> {
             query: None,
             author_id: None,
             tag_id: None,
-            published_type: None,
+            publish_type: None,
             offset,
             limit,
         }
@@ -105,8 +105,8 @@ impl<'q, 'a, 't, 'p, 'o, 'l> PostsRequest<'q, 'a, 't, 'p, 'o, 'l> {
         self.tag_id = tag_id;
         self
     }
-    pub fn published_type(mut self, published_type: Option<&'p PublishedType>) -> Self {
-        self.published_type = published_type;
+    pub fn publish_type(mut self, publish_type: Option<&'p PublishType>) -> Self {
+        self.publish_type = publish_type;
         self
     }
 }

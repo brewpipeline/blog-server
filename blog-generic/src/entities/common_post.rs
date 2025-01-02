@@ -7,7 +7,7 @@ use validator::{Validate, ValidationError};
 pub struct CommonPost {
     #[validate(length(min = 10, max = 75), non_control_character)]
     pub title: String,
-    pub published_type: PublishedType,
+    pub publish_type: PublishType,
     #[validate(length(min = 50, max = 255), non_control_character)]
     pub summary: String,
     #[validate(length(min = 50))]

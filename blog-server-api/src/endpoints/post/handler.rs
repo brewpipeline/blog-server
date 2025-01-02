@@ -31,7 +31,7 @@ pub async fn http_handler(
         })?
         .ok_or(NotFound)?;
 
-    if !post.base.published_type.is_published() {
+    if !post.base.publish_type.is_published() {
         let have_access = if let Some(author) = auth_author_future.await.ok() {
             post.base.author_id == author.id || author.base.editor == 1
         } else {

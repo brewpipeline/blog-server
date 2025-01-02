@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::utils::auth;
-use blog_generic::entities::{PostsContainer, PublishedType, TotalOffsetLimitContainer};
+use blog_generic::entities::{PostsContainer, PublishType, TotalOffsetLimitContainer};
 use blog_server_services::traits::author_service::Author;
 use blog_server_services::traits::entity_post_service::EntityPostService;
 use blog_server_services::traits::post_service::{PostService, PostsRequest, PostsResponse};
@@ -74,7 +74,7 @@ async fn handler(
                 post_service
                     .posts(
                         base_posts_request
-                            .published_type(Some(&PublishedType::Published))
+                            .publish_type(Some(&PublishType::Published))
                             .query(Some(&search_query)),
                     )
                     .await
@@ -83,7 +83,7 @@ async fn handler(
                 post_service
                     .posts(
                         base_posts_request
-                            .published_type(Some(&PublishedType::Published))
+                            .publish_type(Some(&PublishType::Published))
                             .author_id(Some(&author_id)),
                     )
                     .await
@@ -92,7 +92,7 @@ async fn handler(
                 post_service
                     .posts(
                         base_posts_request
-                            .published_type(Some(&PublishedType::Published))
+                            .publish_type(Some(&PublishType::Published))
                             .tag_id(Some(&tag_id)),
                     )
                     .await
@@ -101,7 +101,7 @@ async fn handler(
                 post_service
                     .posts(
                         base_posts_request
-                            .published_type(Some(&PublishedType::Published)),
+                            .publish_type(Some(&PublishType::Published)),
                     )
                     .await
             }
@@ -115,7 +115,7 @@ async fn handler(
                             post_service
                                 .posts(
                                     base_posts_request
-                                        .published_type(Some(&PublishedType::Unpublished))
+                                        .publish_type(Some(&PublishType::Unpublished))
                                         .author_id(Some(&author_id)),
                                 )
                                 .await
@@ -132,7 +132,7 @@ async fn handler(
                             post_service
                                 .posts(
                                     base_posts_request
-                                        .published_type(Some(&PublishedType::Unpublished)),
+                                        .publish_type(Some(&PublishType::Unpublished)),
                                 )
                                 .await
                         } else {
@@ -164,7 +164,7 @@ async fn handler(
                         post_service
                             .posts(
                                 PostsRequest::offset_and_limit(&offset, &limit)
-                                    .published_type(Some(&PublishedType::Hidden)),
+                                    .publish_type(Some(&PublishType::Hidden)),
                             )
                             .await
                     }

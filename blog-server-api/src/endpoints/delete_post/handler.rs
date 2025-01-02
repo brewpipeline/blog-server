@@ -32,14 +32,14 @@ pub async fn http_handler(
         .ok_or(NotFound)?;
 
     if !(post.base.author_id == author.id || author.base.editor == 1) {
-        return Err(if post.base.published_type.is_published() {
+        return Err(if post.base.publish_type.is_published() {
             EditingForbidden
         } else {
             NotFound
         });
     }
 
-    if post.base.published_type.is_published() && author.base.editor == 0 {
+    if post.base.publish_type.is_published() && author.base.editor == 0 {
         return Err(EditingForbidden);
     }
 

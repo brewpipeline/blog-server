@@ -238,7 +238,7 @@ END $$
 
 DO $$ BEGIN
   IF EXISTS(select * from information_schema.columns where table_name = 'post' and column_name = 'published') THEN
-ALTER TABLE post RENAME COLUMN published TO published_type;
+ALTER TABLE post RENAME COLUMN published TO publish_type;
 END IF;
 END $$
 
