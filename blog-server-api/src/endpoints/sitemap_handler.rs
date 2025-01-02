@@ -19,8 +19,16 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<Box<dyn PostService>>>>(
     let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
 
     let posts = post_service
-        .posts(&0, &(RECORDS_LIMIT as u64))
+        .posts(PostsRequest {
+            query: None,
+            author_id: None,
+            tag_id: None,
+            published_type: None,
+            offset: &0,
+            limit: &(RECORDS_LIMIT as u64),
+        })
         .await
+        .map(|p| p.posts)
         .unwrap_or_else(|_| vec![]);
 
     let mut urls = posts
