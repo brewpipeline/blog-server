@@ -165,6 +165,13 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                                 .and_handler(posts::http_handler_unpublished),
                         )
                     })
+                    .scoped("/hidden", |r| {
+                        r.route(
+                            route::first::Route::with_method(&hyper::Method::GET)
+                                .and_path("")
+                                .and_handler(posts::http_handler_hidden),
+                        )
+                    })
                     .route(
                         route::first::Route::with_method(&hyper::Method::GET)
                             .and_path("/search/{search_query:[^/]*}")

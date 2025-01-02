@@ -82,6 +82,35 @@ pub struct PostsRequest<'q, 'a, 't, 'p, 'o, 'l> {
     pub limit: &'l u64,
 }
 
+impl<'q, 'a, 't, 'p, 'o, 'l> PostsRequest<'q, 'a, 't, 'p, 'o, 'l> {
+    pub fn offset_and_limit(offset: &'o u64, limit: &'l u64) -> Self {
+        Self {
+            query: None,
+            author_id: None,
+            tag_id: None,
+            published_type: None,
+            offset,
+            limit,
+        }
+    }
+    pub fn query(mut self, query: Option<&'q String>) -> Self {
+        self.query = query;
+        self
+    }
+    pub fn author_id(mut self, author_id: Option<&'a u64>) -> Self {
+        self.author_id = author_id;
+        self
+    }
+    pub fn tag_id(mut self, tag_id: Option<&'t u64>) -> Self {
+        self.tag_id = tag_id;
+        self
+    }
+    pub fn published_type(mut self, published_type: Option<&'p PublishedType>) -> Self {
+        self.published_type = published_type;
+        self
+    }
+}
+
 pub struct PostsResponse {
     pub total_count: u64,
     pub posts: Vec<Post>,

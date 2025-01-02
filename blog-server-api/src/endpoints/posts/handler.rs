@@ -31,9 +31,25 @@ pub async fn http_handler_unpublished(
     .await
 }
 
+pub async fn http_handler_hidden(
+    (UnpublishedPostsRequestContent {
+        base: posts_request_content,
+        auth_author_future,
+    },): (UnpublishedPostsRequestContent,),
+) -> Result<PostsResponseContentSuccess, PostsResponseContentFailure> {
+    handler(
+        posts_request_content,
+        HandlerType::Hidden { auth_author_future },
+    )
+    .await
+}
+
 enum HandlerType {
     Published,
     Unpublished {
+        auth_author_future: DFuture<Result<Author, auth::Error>>,
+    },
+    Hidden {
         auth_author_future: DFuture<Result<Author, auth::Error>>,
     },
 }
@@ -50,55 +66,43 @@ async fn handler(
 ) -> Result<PostsResponseContentSuccess, PostsResponseContentFailure> {
     let offset = offset.unwrap_or(0).max(0);
     let limit = limit.unwrap_or(50).max(0).min(50);
+    let base_posts_request = PostsRequest::offset_and_limit(&offset, &limit);
 
     let posts_result = match handler_type {
         HandlerType::Published => match filter {
             Some(Filter::SearchQuery(search_query)) => {
                 post_service
-                    .posts(PostsRequest {
-                        query: Some(&search_query),
-                        author_id: None,
-                        tag_id: None,
-                        published_type: Some(&PublishedType::Published),
-                        offset: &offset,
-                        limit: &limit,
-                    })
+                    .posts(
+                        base_posts_request
+                            .published_type(Some(&PublishedType::Published))
+                            .query(Some(&search_query)),
+                    )
                     .await
             }
             Some(Filter::AuthorId(author_id)) => {
                 post_service
-                    .posts(PostsRequest {
-                        query: None,
-                        author_id: Some(&author_id),
-                        tag_id: None,
-                        published_type: Some(&PublishedType::Published),
-                        offset: &offset,
-                        limit: &limit,
-                    })
+                    .posts(
+                        base_posts_request
+                            .published_type(Some(&PublishedType::Published))
+                            .author_id(Some(&author_id)),
+                    )
                     .await
             }
             Some(Filter::TagId(tag_id)) => {
                 post_service
-                    .posts(PostsRequest {
-                        query: None,
-                        author_id: None,
-                        tag_id: Some(&tag_id),
-                        published_type: Some(&PublishedType::Published),
-                        offset: &offset,
-                        limit: &limit,
-                    })
+                    .posts(
+                        base_posts_request
+                            .published_type(Some(&PublishedType::Published))
+                            .tag_id(Some(&tag_id)),
+                    )
                     .await
             }
             None => {
                 post_service
-                    .posts(PostsRequest {
-                        query: None,
-                        author_id: None,
-                        tag_id: None,
-                        published_type: Some(&PublishedType::Published),
-                        offset: &offset,
-                        limit: &limit,
-                    })
+                    .posts(
+                        base_posts_request
+                            .published_type(Some(&PublishedType::Published)),
+                    )
                     .await
             }
         },
@@ -109,14 +113,11 @@ async fn handler(
                     Some(Filter::AuthorId(author_id)) => {
                         if author.base.editor == 1 || author_id == author.id {
                             post_service
-                                .posts(PostsRequest {
-                                    query: None,
-                                    author_id: Some(&author_id),
-                                    tag_id: None,
-                                    published_type: Some(&PublishedType::Unpublished),
-                                    offset: &offset,
-                                    limit: &limit,
-                                })
+                                .posts(
+                                    base_posts_request
+                                        .published_type(Some(&PublishedType::Unpublished))
+                                        .author_id(Some(&author_id)),
+                                )
                                 .await
                         } else {
                             Ok(PostsResponse {
@@ -129,14 +130,10 @@ async fn handler(
                     None => {
                         if author.base.editor == 1 {
                             post_service
-                                .posts(PostsRequest {
-                                    query: None,
-                                    author_id: None,
-                                    tag_id: None,
-                                    published_type: Some(&PublishedType::Unpublished),
-                                    offset: &offset,
-                                    limit: &limit,
-                                })
+                                .posts(
+                                    base_posts_request
+                                        .published_type(Some(&PublishedType::Unpublished)),
+                                )
                                 .await
                         } else {
                             Ok(PostsResponse {
@@ -144,6 +141,32 @@ async fn handler(
                                 posts: vec![],
                             })
                         }
+                    }
+                }
+            } else {
+                Ok(PostsResponse {
+                    total_count: 0,
+                    posts: vec![],
+                })
+            }
+        }
+        HandlerType::Hidden { auth_author_future } => {
+            let is_editor = auth_author_future
+                .await
+                .map(|a| a.base.editor == 1)
+                .unwrap_or_default();
+            if is_editor {
+                match filter {
+                    Some(Filter::SearchQuery(_)) => unimplemented!(),
+                    Some(Filter::AuthorId(_)) => unimplemented!(),
+                    Some(Filter::TagId(_)) => unimplemented!(),
+                    None => {
+                        post_service
+                            .posts(
+                                PostsRequest::offset_and_limit(&offset, &limit)
+                                    .published_type(Some(&PublishedType::Hidden)),
+                            )
+                            .await
                     }
                 }
             } else {
