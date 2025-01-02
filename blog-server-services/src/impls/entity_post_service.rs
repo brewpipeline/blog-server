@@ -22,7 +22,7 @@ impl Into<EPost> for EPostBuilder {
             title: self.0.base.title,
             slug: self.0.base.slug,
             summary: self.0.base.summary,
-            published: self.0.base.published,
+            published_type: self.0.base.published_type,
             created_at: self.0.base.created_at,
             content: self.0.base.content,
             author: self.1.into(),

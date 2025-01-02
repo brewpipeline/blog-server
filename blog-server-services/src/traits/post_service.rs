@@ -1,5 +1,5 @@
-use blog_generic::entities::CommonPost as ECommonPost;
 use blog_generic::entities::Tag as ETag;
+use blog_generic::entities::{CommonPost as ECommonPost, PublishedType};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 
@@ -30,7 +30,7 @@ pub struct BasePost {
     pub title: String,
     pub slug: String,
     pub summary: String,
-    pub published: u8,
+    pub published_type: PublishedType,
     pub created_at: u64,
     pub content: Option<String>,
     pub plain_text_content: Option<String>,
@@ -55,7 +55,7 @@ impl From<(u64, ECommonPost)> for BasePost {
             slug,
             title: post.title,
             summary: post.summary,
-            published: post.published,
+            published_type: post.published_type,
             content,
             plain_text_content,
             image_url: post.image_url,
@@ -73,31 +73,27 @@ pub struct Post {
     pub base: BasePost,
 }
 
+pub struct PostsRequest<'q, 'a, 't, 'p, 'o, 'l> {
+    pub query: Option<&'q String>,
+    pub author_id: Option<&'a u64>,
+    pub tag_id: Option<&'t u64>,
+    pub published_type: Option<&'p PublishedType>,
+    pub offset: &'o u64,
+    pub limit: &'l u64,
+}
+
+pub struct PostsResponse {
+    pub total_count: u64,
+    pub posts: Vec<Post>,
+}
+
 #[async_trait]
 pub trait PostService: Send + Sync {
-    async fn posts_count_by_query(&self, query: &String) -> DResult<u64>;
-    async fn posts_by_query(&self, query: &String, offset: &u64, limit: &u64)
-        -> DResult<Vec<Post>>;
-    async fn posts_count_by_author_id(&self, author_id: &u64) -> DResult<u64>;
-    async fn posts_by_author_id(
+    async fn posts<'q, 'a, 't, 'p, 'o, 'l>(
         &self,
-        author_id: &u64,
-        offset: &u64,
-        limit: &u64,
-    ) -> DResult<Vec<Post>>;
-    async fn posts_count_by_tag_id(&self, tag_id: &u64) -> DResult<u64>;
-    async fn posts_by_tag_id(&self, tag_id: &u64, offset: &u64, limit: &u64) -> DResult<Vec<Post>>;
-    async fn posts_count(&self) -> DResult<u64>;
-    async fn posts(&self, offset: &u64, limit: &u64) -> DResult<Vec<Post>>;
-    async fn unpublished_posts_count(&self) -> DResult<u64>;
-    async fn unpublished_posts(&self, offset: &u64, limit: &u64) -> DResult<Vec<Post>>;
-    async fn unpublished_posts_count_by_author_id(&self, author_id: &u64) -> DResult<u64>;
-    async fn unpublished_posts_by_author_id(
-        &self,
-        author_id: &u64,
-        offset: &u64,
-        limit: &u64,
-    ) -> DResult<Vec<Post>>;
+        request: PostsRequest<'q, 'a, 't, 'p, 'o, 'l>,
+    ) -> DResult<PostsResponse>;
+
     async fn post_by_id(&self, id: &u64) -> DResult<Option<Post>>;
     async fn create_post(&self, post: &BasePost) -> DResult<u64>;
     async fn update_post_by_id(

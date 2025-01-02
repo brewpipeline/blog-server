@@ -1,3 +1,4 @@
+use super::*;
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 
@@ -6,8 +7,7 @@ use validator::{Validate, ValidationError};
 pub struct CommonPost {
     #[validate(length(min = 10, max = 75), non_control_character)]
     pub title: String,
-    #[validate(range(min = 0, max = 1))]
-    pub published: u8,
+    pub published_type: PublishedType,
     #[validate(length(min = 50, max = 255), non_control_character)]
     pub summary: String,
     #[validate(length(min = 50))]
