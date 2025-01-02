@@ -4,8 +4,8 @@ use sitemap_rs::url_set::UrlSet;
 use std::sync::Arc;
 
 use crate::extensions::Resolve;
-use blog_server_services::traits::post_service::*;
 use blog_generic::entities::*;
+use blog_server_services::traits::post_service::*;
 
 use screw_core::request::*;
 use screw_core::response::*;

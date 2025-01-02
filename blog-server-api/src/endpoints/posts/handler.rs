@@ -99,10 +99,7 @@ async fn handler(
             }
             None => {
                 post_service
-                    .posts(
-                        base_posts_request
-                            .publish_type(Some(&PublishType::Published)),
-                    )
+                    .posts(base_posts_request.publish_type(Some(&PublishType::Published)))
                     .await
             }
         },
