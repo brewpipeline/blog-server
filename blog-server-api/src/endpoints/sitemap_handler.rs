@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use crate::extensions::Resolve;
 use blog_server_services::traits::post_service::*;
+use blog_generic::entities::*;
 
 use screw_core::request::*;
 use screw_core::response::*;
@@ -23,7 +24,7 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<Box<dyn PostService>>>>(
             query: None,
             author_id: None,
             tag_id: None,
-            published_type: None,
+            published_type: Some(&PublishedType::Published),
             offset: &0,
             limit: &(RECORDS_LIMIT as u64),
         })
