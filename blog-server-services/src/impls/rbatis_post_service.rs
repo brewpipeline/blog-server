@@ -245,10 +245,10 @@ impl RbatisPostService {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-struct RbatisPost {
-    pub total_count: u64,
+struct PostAndTotalCount {
     #[serde(flatten)]
     pub origin: Post,
+    pub total_count: u64,
 }
 
 #[async_trait]
@@ -332,10 +332,17 @@ impl PostService for RbatisPostService {
             .collect::<Vec<String>>()
             .join(" ");
 
-        let rbatis_posts: Vec<RbatisPost> = self.rb.query_decode(query.as_str(), args).await?;
+        let posts_with_total_count: Vec<PostAndTotalCount> =
+            self.rb.query_decode(query.as_str(), args).await?;
 
-        let total_count = rbatis_posts.first().map(|p| p.total_count).unwrap_or(0);
-        let posts = rbatis_posts.into_iter().map(|p| p.origin).collect();
+        let total_count = posts_with_total_count
+            .first()
+            .map(|p| p.total_count)
+            .unwrap_or(0);
+        let posts = posts_with_total_count
+            .into_iter()
+            .map(|p| p.origin)
+            .collect();
 
         let posts_with_tags = RbatisPostService::saturate_posts_with_tags(&self, posts).await?;
 
