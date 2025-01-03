@@ -26,7 +26,10 @@ pub async fn http_handler_unpublished(
 ) -> Result<PostsResponseContentSuccess, PostsResponseContentFailure> {
     handler(
         posts_request_content,
-        HandlerType::Unpublished { auth_author_future },
+        HandlerType::AuthRequired {
+            inner_type: HandlerTypeAuthRequired::Unpublished,
+            auth_author_future,
+        },
     )
     .await
 }
@@ -39,17 +42,23 @@ pub async fn http_handler_hidden(
 ) -> Result<PostsResponseContentSuccess, PostsResponseContentFailure> {
     handler(
         posts_request_content,
-        HandlerType::Hidden { auth_author_future },
+        HandlerType::AuthRequired {
+            inner_type: HandlerTypeAuthRequired::Hidden,
+            auth_author_future,
+        },
     )
     .await
 }
 
+enum HandlerTypeAuthRequired {
+    Unpublished,
+    Hidden,
+}
+
 enum HandlerType {
     Published,
-    Unpublished {
-        auth_author_future: DFuture<Result<Author, auth::Error>>,
-    },
-    Hidden {
+    AuthRequired {
+        inner_type: HandlerTypeAuthRequired,
         auth_author_future: DFuture<Result<Author, auth::Error>>,
     },
 }
@@ -67,118 +76,38 @@ async fn handler(
     let offset = offset.unwrap_or(0).max(0);
     let limit = limit.unwrap_or(50).max(0).min(50);
 
-    let PostsQueryAnswer { total_count, posts } = match handler_type {
-        HandlerType::Published => match filter {
-            Some(Filter::SearchQuery(search_query)) => {
-                post_service
-                    .posts(
-                        PostsQuery::offset_and_limit(&offset, &limit)
-                            .publish_type(Some(&PublishType::Published))
-                            .search_query(Some(&search_query)),
-                    )
-                    .await
+    let publish_type = match handler_type {
+        HandlerType::Published => PublishType::Published,
+        HandlerType::AuthRequired {
+            inner_type,
+            auth_author_future,
+        } => {
+            let author = auth_author_future.await.map_err(|e| Unauthorized {
+                reason: e.to_string(),
+            })?;
+            if !(filter.author_id == Some(author.id) || author.base.editor == 1) {
+                return Err(Forbidden);
             }
-            Some(Filter::AuthorId(author_id)) => {
-                post_service
-                    .posts(
-                        PostsQuery::offset_and_limit(&offset, &limit)
-                            .publish_type(Some(&PublishType::Published))
-                            .author_id(Some(&author_id)),
-                    )
-                    .await
-            }
-            Some(Filter::TagId(tag_id)) => {
-                post_service
-                    .posts(
-                        PostsQuery::offset_and_limit(&offset, &limit)
-                            .publish_type(Some(&PublishType::Published))
-                            .tag_id(Some(&tag_id)),
-                    )
-                    .await
-            }
-            None => {
-                post_service
-                    .posts(
-                        PostsQuery::offset_and_limit(&offset, &limit)
-                            .publish_type(Some(&PublishType::Published)),
-                    )
-                    .await
-            }
-        },
-        HandlerType::Unpublished { auth_author_future } => {
-            if let Some(author) = auth_author_future.await.ok() {
-                match filter {
-                    Some(Filter::SearchQuery(_)) => unimplemented!(),
-                    Some(Filter::AuthorId(author_id)) => {
-                        if author.base.editor == 1 || author_id == author.id {
-                            post_service
-                                .posts(
-                                    PostsQuery::offset_and_limit(&offset, &limit)
-                                        .publish_type(Some(&PublishType::Unpublished))
-                                        .author_id(Some(&author_id)),
-                                )
-                                .await
-                        } else {
-                            Ok(PostsQueryAnswer {
-                                total_count: 0,
-                                posts: vec![],
-                            })
-                        }
-                    }
-                    Some(Filter::TagId(_)) => unimplemented!(),
-                    None => {
-                        if author.base.editor == 1 {
-                            post_service
-                                .posts(
-                                    PostsQuery::offset_and_limit(&offset, &limit)
-                                        .publish_type(Some(&PublishType::Unpublished)),
-                                )
-                                .await
-                        } else {
-                            Ok(PostsQueryAnswer {
-                                total_count: 0,
-                                posts: vec![],
-                            })
-                        }
-                    }
-                }
-            } else {
-                Ok(PostsQueryAnswer {
-                    total_count: 0,
-                    posts: vec![],
-                })
+            match inner_type {
+                HandlerTypeAuthRequired::Unpublished => PublishType::Unpublished,
+                HandlerTypeAuthRequired::Hidden => PublishType::Hidden,
             }
         }
-        HandlerType::Hidden { auth_author_future } => {
-            let is_editor = auth_author_future
-                .await
-                .map(|a| a.base.editor == 1)
-                .unwrap_or_default();
-            if is_editor {
-                match filter {
-                    Some(Filter::SearchQuery(_)) => unimplemented!(),
-                    Some(Filter::AuthorId(_)) => unimplemented!(),
-                    Some(Filter::TagId(_)) => unimplemented!(),
-                    None => {
-                        post_service
-                            .posts(
-                                PostsQuery::offset_and_limit(&offset, &limit)
-                                    .publish_type(Some(&PublishType::Hidden)),
-                            )
-                            .await
-                    }
-                }
-            } else {
-                Ok(PostsQueryAnswer {
-                    total_count: 0,
-                    posts: vec![],
-                })
-            }
-        }
-    }
-    .map_err(|e| DatabaseError {
-        reason: e.to_string(),
-    })?;
+    };
+
+    let posts_query = PostsQuery::offset_and_limit(&offset, &limit)
+        .publish_type(Some(&publish_type))
+        .search_query(Option::from(&filter.search_query))
+        .author_id(Option::from(&filter.author_id))
+        .tag_id(Option::from(&filter.tag_id));
+
+    let PostsQueryAnswer { total_count, posts } =
+        post_service
+            .posts(posts_query)
+            .await
+            .map_err(|e| DatabaseError {
+                reason: e.to_string(),
+            })?;
 
     let posts_entities = entity_post_service
         .posts_entities(posts)
@@ -205,7 +134,11 @@ pub async fn direct_handler(
     entity_post_service: Arc<Box<dyn EntityPostService>>,
 ) -> Option<PostsContainer> {
     http_handler((PostsRequestContent {
-        filter: None,
+        filter: PostsRequestContentFilter {
+            search_query: None,
+            author_id: None,
+            tag_id: None,
+        },
         offset: Some(offset),
         limit: Some(limit),
         post_service,

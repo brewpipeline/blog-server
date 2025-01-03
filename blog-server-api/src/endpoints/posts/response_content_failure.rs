@@ -3,6 +3,8 @@ use screw_api::response::{ApiResponseContentBase, ApiResponseContentFailure};
 
 pub enum PostsResponseContentFailure {
     DatabaseError { reason: String },
+    Unauthorized { reason: String },
+    Forbidden,
 }
 
 impl ApiResponseContentBase for PostsResponseContentFailure {
@@ -11,6 +13,8 @@ impl ApiResponseContentBase for PostsResponseContentFailure {
             PostsResponseContentFailure::DatabaseError { reason: _ } => {
                 &StatusCode::INTERNAL_SERVER_ERROR
             }
+            PostsResponseContentFailure::Unauthorized { reason: _ } => &StatusCode::UNAUTHORIZED,
+            PostsResponseContentFailure::Forbidden => &StatusCode::FORBIDDEN,
         }
     }
 }
@@ -19,6 +23,8 @@ impl ApiResponseContentFailure for PostsResponseContentFailure {
     fn identifier(&self) -> &'static str {
         match self {
             PostsResponseContentFailure::DatabaseError { reason: _ } => "POSTS_DATABASE_ERROR",
+            PostsResponseContentFailure::Unauthorized { reason: _ } => "POSTS_UNAUTHORIZED",
+            PostsResponseContentFailure::Forbidden => "POSTS_FORBIDDEN",
         }
     }
 
@@ -31,6 +37,14 @@ impl ApiResponseContentFailure for PostsResponseContentFailure {
                     "internal database error".to_string()
                 }
             }
+            PostsResponseContentFailure::Unauthorized { reason } => {
+                if cfg!(debug_assertions) {
+                    format!("unauthorized error: {}", reason)
+                } else {
+                    "unauthorized error".to_string()
+                }
+            }
+            PostsResponseContentFailure::Forbidden => String::from("insufficient rights"),
         })
     }
 }
