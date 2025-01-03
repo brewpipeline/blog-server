@@ -156,30 +156,17 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                     r.scoped("/unpublished", |r| {
                         r.route(
                             route::first::Route::with_method(&hyper::Method::GET)
-                                .and_path("/author/id/{author_id:[^/]*}")
-                                .and_handler(posts::http_handler_unpublished),
-                        )
-                        .route(
-                            route::first::Route::with_method(&hyper::Method::GET)
                                 .and_path("")
                                 .and_handler(posts::http_handler_unpublished),
                         )
                     })
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::GET)
-                            .and_path("/search/{search_query:[^/]*}")
-                            .and_handler(posts::http_handler),
-                    )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::GET)
-                            .and_path("/author/id/{author_id:[^/]*}")
-                            .and_handler(posts::http_handler),
-                    )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::GET)
-                            .and_path("/tag/{tag_id:[^/]*}")
-                            .and_handler(posts::http_handler),
-                    )
+                    .scoped("/hidden", |r| {
+                        r.route(
+                            route::first::Route::with_method(&hyper::Method::GET)
+                                .and_path("")
+                                .and_handler(posts::http_handler_hidden),
+                        )
+                    })
                     .route(
                         route::first::Route::with_method(&hyper::Method::GET)
                             .and_path("")

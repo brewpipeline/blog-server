@@ -4,6 +4,7 @@ use sitemap_rs::url_set::UrlSet;
 use std::sync::Arc;
 
 use crate::extensions::Resolve;
+use blog_generic::entities::*;
 use blog_server_services::traits::post_service::*;
 
 use screw_core::request::*;
@@ -19,8 +20,16 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<Box<dyn PostService>>>>(
     let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
 
     let posts = post_service
-        .posts(&0, &(RECORDS_LIMIT as u64))
+        .posts(PostsQuery {
+            search_query: None,
+            author_id: None,
+            tag_id: None,
+            publish_type: Some(&PublishType::Published),
+            offset: &0,
+            limit: &(RECORDS_LIMIT as u64),
+        })
         .await
+        .map(|p| p.posts)
         .unwrap_or_else(|_| vec![]);
 
     let mut urls = posts

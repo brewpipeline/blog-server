@@ -1,3 +1,4 @@
+use blog_generic::entities::PublishType;
 use blog_generic::events::NewPostPublished;
 use validator::Validate;
 
@@ -37,14 +38,14 @@ pub async fn http_handler(
         .ok_or(PostNotFound)?;
 
     if !(existing_post.base.author_id == author.id || author.base.editor == 1) {
-        return Err(if existing_post.base.published == 1 {
+        return Err(if existing_post.base.publish_type.is_published() {
             EditingForbidden
         } else {
             PostNotFound
         });
     }
 
-    if existing_post.base.published == 1 && author.base.editor == 0 {
+    if existing_post.base.publish_type.is_published() && author.base.editor == 0 {
         return Err(EditingForbidden);
     }
 
@@ -58,14 +59,14 @@ pub async fn http_handler(
         });
     }
 
-    if author.base.editor == 0 && base_post.published != 0 {
+    if author.base.editor == 0 && base_post.publish_type.is_published() {
         return Err(ValidationError {
             reason: "publishing not allowed for you".to_owned(),
         });
     }
 
     let tag_titles: Vec<String> = base_post.tags.to_owned();
-    let is_published_changed = base_post.published != existing_post.base.published;
+    let is_published_changed = base_post.publish_type != existing_post.base.publish_type;
 
     post_service
         .update_post_by_id(
@@ -99,7 +100,8 @@ pub async fn http_handler(
             reason: e.to_string(),
         })?
         .ok_or(PostNotFound)?;
-    let new_published_value = updated_post.base.published;
+
+    let is_visible_published = updated_post.base.publish_type == PublishType::Published;
 
     let updated_post_entity = entity_post_service
         .posts_entities(vec![updated_post])
@@ -109,7 +111,7 @@ pub async fn http_handler(
         })?
         .remove(0);
 
-    if existing_post.base.published == 0 && new_published_value != 0 {
+    if !existing_post.base.publish_type.is_published() && is_visible_published {
         let new_post_published = NewPostPublished {
             blog_user_id: updated_post_entity.author.id,
             post_sub_url: format!(

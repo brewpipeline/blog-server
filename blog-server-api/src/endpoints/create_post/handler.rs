@@ -1,3 +1,4 @@
+use blog_generic::entities::PublishType;
 use blog_generic::events::NewPostPublished;
 use validator::Validate;
 
@@ -33,7 +34,7 @@ pub async fn http_handler(
         });
     }
 
-    if author.base.editor == 0 && base_post.published != 0 {
+    if author.base.editor == 0 && base_post.publish_type.is_published() {
         return Err(ValidationError {
             reason: "publishing not allowed for you".to_owned(),
         });
@@ -78,7 +79,7 @@ pub async fn http_handler(
         })?
         .remove(0);
 
-    if created_post_entity.published != 0 {
+    if created_post_entity.publish_type == PublishType::Published {
         let new_post_published = NewPostPublished {
             blog_user_id: created_post_entity.author.id,
             post_sub_url: format!(

@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use crate::utils::auth;
-use blog_generic::entities::{PostsContainer, TotalOffsetLimitContainer};
+use blog_generic::entities::{PostsContainer, PublishType, TotalOffsetLimitContainer};
 use blog_server_services::traits::author_service::Author;
 use blog_server_services::traits::entity_post_service::EntityPostService;
-use blog_server_services::traits::post_service::PostService;
+use blog_server_services::traits::post_service::{PostService, PostsQuery, PostsQueryAnswer};
 use screw_components::dyn_fn::DFuture;
 
 use super::request_content::{PostsRequestContentFilter as Filter, *};
@@ -26,14 +26,39 @@ pub async fn http_handler_unpublished(
 ) -> Result<PostsResponseContentSuccess, PostsResponseContentFailure> {
     handler(
         posts_request_content,
-        HandlerType::Unpublished { auth_author_future },
+        HandlerType::AuthRequired {
+            inner_type: HandlerTypeAuthRequired::Unpublished,
+            auth_author_future,
+        },
     )
     .await
 }
 
+pub async fn http_handler_hidden(
+    (UnpublishedPostsRequestContent {
+        base: posts_request_content,
+        auth_author_future,
+    },): (UnpublishedPostsRequestContent,),
+) -> Result<PostsResponseContentSuccess, PostsResponseContentFailure> {
+    handler(
+        posts_request_content,
+        HandlerType::AuthRequired {
+            inner_type: HandlerTypeAuthRequired::Hidden,
+            auth_author_future,
+        },
+    )
+    .await
+}
+
+enum HandlerTypeAuthRequired {
+    Unpublished,
+    Hidden,
+}
+
 enum HandlerType {
     Published,
-    Unpublished {
+    AuthRequired {
+        inner_type: HandlerTypeAuthRequired,
         auth_author_future: DFuture<Result<Author, auth::Error>>,
     },
 }
@@ -51,65 +76,38 @@ async fn handler(
     let offset = offset.unwrap_or(0).max(0);
     let limit = limit.unwrap_or(50).max(0).min(50);
 
-    let (posts_result, total_result) = match handler_type {
-        HandlerType::Published => match filter {
-            Some(Filter::SearchQuery(search_query)) => tokio::join!(
-                post_service.posts_by_query(&search_query, &offset, &limit),
-                post_service.posts_count_by_query(&search_query),
-            ),
-            Some(Filter::AuthorId(author_id)) => tokio::join!(
-                post_service.posts_by_author_id(&author_id, &offset, &limit),
-                post_service.posts_count_by_author_id(&author_id),
-            ),
-            Some(Filter::TagId(tag_id)) => tokio::join!(
-                post_service.posts_by_tag_id(&tag_id, &offset, &limit),
-                post_service.posts_count_by_tag_id(&tag_id),
-            ),
-            None => tokio::join!(
-                post_service.posts(&offset, &limit),
-                post_service.posts_count(),
-            ),
-        },
-        HandlerType::Unpublished { auth_author_future } => {
-            if let Some(author) = auth_author_future.await.ok() {
-                match filter {
-                    Some(Filter::SearchQuery(_)) => unimplemented!(),
-                    Some(Filter::AuthorId(author_id)) => {
-                        if author.base.editor == 1 || author_id == author.id {
-                            tokio::join!(
-                                post_service
-                                    .unpublished_posts_by_author_id(&author_id, &offset, &limit),
-                                post_service.unpublished_posts_count_by_author_id(&author_id),
-                            )
-                        } else {
-                            (Ok(vec![]), Ok(0))
-                        }
-                    }
-                    Some(Filter::TagId(_)) => unimplemented!(),
-                    None => {
-                        if author.base.editor == 1 {
-                            tokio::join!(
-                                post_service.unpublished_posts(&offset, &limit),
-                                post_service.unpublished_posts_count(),
-                            )
-                        } else {
-                            (Ok(vec![]), Ok(0))
-                        }
-                    }
-                }
-            } else {
-                (Ok(vec![]), Ok(0))
+    let publish_type = match handler_type {
+        HandlerType::Published => PublishType::Published,
+        HandlerType::AuthRequired {
+            inner_type,
+            auth_author_future,
+        } => {
+            let author = auth_author_future.await.map_err(|e| Unauthorized {
+                reason: e.to_string(),
+            })?;
+            if !(filter.author_id == Some(author.id) || author.base.editor == 1) {
+                return Err(Forbidden);
+            }
+            match inner_type {
+                HandlerTypeAuthRequired::Unpublished => PublishType::Unpublished,
+                HandlerTypeAuthRequired::Hidden => PublishType::Hidden,
             }
         }
     };
 
-    let posts = posts_result.map_err(|e| DatabaseError {
-        reason: e.to_string(),
-    })?;
+    let posts_query = PostsQuery::offset_and_limit(&offset, &limit)
+        .publish_type(Some(&publish_type))
+        .search_query(Option::from(&filter.search_query))
+        .author_id(Option::from(&filter.author_id))
+        .tag_id(Option::from(&filter.tag_id));
 
-    let total = total_result.map_err(|e| DatabaseError {
-        reason: e.to_string(),
-    })?;
+    let PostsQueryAnswer { total_count, posts } =
+        post_service
+            .posts(posts_query)
+            .await
+            .map_err(|e| DatabaseError {
+                reason: e.to_string(),
+            })?;
 
     let posts_entities = entity_post_service
         .posts_entities(posts)
@@ -121,7 +119,7 @@ async fn handler(
     Ok(PostsContainer {
         posts: posts_entities,
         base: TotalOffsetLimitContainer {
-            total,
+            total: total_count,
             offset,
             limit,
         },
@@ -136,7 +134,11 @@ pub async fn direct_handler(
     entity_post_service: Arc<Box<dyn EntityPostService>>,
 ) -> Option<PostsContainer> {
     http_handler((PostsRequestContent {
-        filter: None,
+        filter: PostsRequestContentFilter {
+            search_query: None,
+            author_id: None,
+            tag_id: None,
+        },
         offset: Some(offset),
         limit: Some(limit),
         post_service,
