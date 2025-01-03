@@ -20,8 +20,8 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<Box<dyn PostService>>>>(
     let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
 
     let posts = post_service
-        .posts(PostsRequest {
-            query: None,
+        .posts(PostsQuery {
+            search_query: None,
             author_id: None,
             tag_id: None,
             publish_type: Some(&PublishType::Published),
