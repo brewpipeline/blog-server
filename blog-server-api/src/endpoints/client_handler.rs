@@ -13,19 +13,19 @@ use blog_ui::*;
 
 const INDEX_HTML: &str = include_str!("../../../index.html");
 
-const APP_TAG_PREFIX: &str = "<div id=\"app\">";
+const APP_TAG_PREFIX: &str = "<div id=app>";
 
 const TITLE_TAG: [&str; 2] = ["<title>", "</title>"];
-const DESCRIPTION_TAG: [&str; 2] = ["<meta name=\"description\" content=\"", "\">"];
-const KEYWORDS_TAG: [&str; 2] = ["<meta name=\"keywords\" content=\"", "\">"];
-const ROBOTS_TAG: [&str; 2] = ["<meta name=\"robots\" content=\"", "\">"];
-const OG_TITLE_TAG: [&str; 2] = ["<meta property=\"og:title\" content=\"", "\">"];
-const OG_DESCRIPTION_TAG: [&str; 2] = ["<meta property=\"og:description\" content=\"", "\">"];
-const OG_TYPE_TAG: [&str; 2] = ["<meta property=\"og:type\" content=\"", "\">"];
-const OG_IMAGE_TAG: [&str; 2] = ["<meta property=\"og:image\" content=\"", "\">"];
-const OG_IMAGE_WIDTH_TAG: [&str; 2] = ["<meta property=\"og:image:width\" content=\"", "\">"];
-const OG_IMAGE_HEIGHT_TAG: [&str; 2] = ["<meta property=\"og:image:height\" content=\"", "\">"];
-const OG_SITE_NAME_TAG: [&str; 2] = ["<meta property=\"og:site_name\" content=\"", "\">"];
+const DESCRIPTION_TAG: [&str; 2] = ["<meta name=description", ">"];
+const KEYWORDS_TAG: [&str; 2] = ["<meta name=keywords", ">"];
+const ROBOTS_TAG: [&str; 2] = ["<meta name=robots", ">"];
+const OG_TITLE_TAG: [&str; 2] = ["<meta property=og:title", ">"];
+const OG_DESCRIPTION_TAG: [&str; 2] = ["<meta property=og:description", ">"];
+const OG_TYPE_TAG: [&str; 2] = ["<meta property=og:type", ">"];
+const OG_IMAGE_TAG: [&str; 2] = ["<meta property=og:image", ">"];
+const OG_IMAGE_WIDTH_TAG: [&str; 2] = ["<meta property=og:image:width", ">"];
+const OG_IMAGE_HEIGHT_TAG: [&str; 2] = ["<meta property=og:image:height", ">"];
+const OG_SITE_NAME_TAG: [&str; 2] = ["<meta property=og:site_name", ">"];
 
 const TYPE_TAG_BODY: [&str; 2] = [
     "<script data-page-content=\"type\" type=\"text/plain\">",
@@ -111,22 +111,54 @@ pub async fn client_handler<
     }
 }
 
+fn content_wrap(content: String) -> String {
+    format!(" content=\"{content}\"")
+}
+
 fn update_meta(mut html: String) -> String {
-    update_tag(&mut html, TITLE_TAG, TITLE_TAG_BODY);
-    update_tag(&mut html, DESCRIPTION_TAG, DESCRIPTION_TAG_BODY);
-    update_tag(&mut html, KEYWORDS_TAG, KEYWORDS_TAG_BODY);
-    update_tag(&mut html, ROBOTS_TAG, ROBOTS_TAG_BODY);
-    update_tag(&mut html, OG_TITLE_TAG, SHORT_TITLE_TAG_BODY);
-    update_tag(&mut html, OG_DESCRIPTION_TAG, DESCRIPTION_TAG_BODY);
-    update_tag(&mut html, OG_TYPE_TAG, TYPE_TAG_BODY);
-    update_tag(&mut html, OG_IMAGE_TAG, IMAGE_TAG_BODY);
-    update_tag(&mut html, OG_IMAGE_WIDTH_TAG, IMAGE_WIDTH_TAG_BODY);
-    update_tag(&mut html, OG_IMAGE_HEIGHT_TAG, IMAGE_HEIGHT_TAG_BODY);
-    update_tag(&mut html, OG_SITE_NAME_TAG, SITE_NAME_TAG_BODY);
+    update_tag(&mut html, TITLE_TAG, TITLE_TAG_BODY, |c| c);
+    update_tag(
+        &mut html,
+        DESCRIPTION_TAG,
+        DESCRIPTION_TAG_BODY,
+        content_wrap,
+    );
+    update_tag(&mut html, KEYWORDS_TAG, KEYWORDS_TAG_BODY, content_wrap);
+    update_tag(&mut html, ROBOTS_TAG, ROBOTS_TAG_BODY, content_wrap);
+    update_tag(&mut html, OG_TITLE_TAG, SHORT_TITLE_TAG_BODY, content_wrap);
+    update_tag(
+        &mut html,
+        OG_DESCRIPTION_TAG,
+        DESCRIPTION_TAG_BODY,
+        content_wrap,
+    );
+    update_tag(&mut html, OG_TYPE_TAG, TYPE_TAG_BODY, content_wrap);
+    update_tag(&mut html, OG_IMAGE_TAG, IMAGE_TAG_BODY, content_wrap);
+    update_tag(
+        &mut html,
+        OG_IMAGE_WIDTH_TAG,
+        IMAGE_WIDTH_TAG_BODY,
+        content_wrap,
+    );
+    update_tag(
+        &mut html,
+        OG_IMAGE_HEIGHT_TAG,
+        IMAGE_HEIGHT_TAG_BODY,
+        content_wrap,
+    );
+    update_tag(
+        &mut html,
+        OG_SITE_NAME_TAG,
+        SITE_NAME_TAG_BODY,
+        content_wrap,
+    );
     html
 }
 
-fn update_tag(html: &mut String, main_tag: [&str; 2], body_tag: [&str; 2]) {
+fn update_tag<W>(html: &mut String, main_tag: [&str; 2], body_tag: [&str; 2], wrap_fn: W)
+where
+    W: FnOnce(String) -> String,
+{
     let Some(content) = last_content(&html, body_tag[0], body_tag[1]) else {
         return;
     };
@@ -134,7 +166,7 @@ fn update_tag(html: &mut String, main_tag: [&str; 2], body_tag: [&str; 2]) {
     let tag = {
         let mut tag = String::new();
         tag.push_str(main_tag[0]);
-        tag.push_str(content.as_str());
+        tag.push_str(wrap_fn(content).as_str());
         tag.push_str(main_tag[1]);
         tag
     };
