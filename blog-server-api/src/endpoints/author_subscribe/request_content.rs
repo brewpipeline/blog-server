@@ -8,14 +8,14 @@ use std::sync::Arc;
 
 pub struct AuthorSubscribeRequestContent {
     pub(super) id: String,
-    pub(super) social_service: Arc<Box<dyn SocialService>>,
-    pub(super) author_service: Arc<Box<dyn AuthorService>>,
+    pub(super) social_service: Arc<dyn SocialService>,
+    pub(super) author_service: Arc<dyn AuthorService>,
     pub(super) auth_author_future: DFuture<Result<Author, auth::Error>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for AuthorSubscribeRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>> + Resolve<Arc<Box<dyn SocialService>>>,
+    Extensions: Resolve<Arc<dyn AuthorService>> + Resolve<Arc<dyn SocialService>>,
 {
     type Data = ();
 

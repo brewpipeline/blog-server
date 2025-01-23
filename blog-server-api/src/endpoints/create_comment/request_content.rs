@@ -10,13 +10,13 @@ use std::sync::Arc;
 
 pub struct CreateCommentRequestContent {
     pub(super) new_comment_data: DResult<CommonComment>,
-    pub(super) comment_service: Arc<Box<dyn CommentService>>,
+    pub(super) comment_service: Arc<dyn CommentService>,
     pub(super) auth_author_future: DFuture<Result<Author, auth::Error>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for CreateCommentRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn CommentService>>> + Resolve<Arc<Box<dyn AuthorService>>>,
+    Extensions: Resolve<Arc<dyn CommentService>> + Resolve<Arc<dyn AuthorService>>,
 {
     type Data = CommonComment;
 

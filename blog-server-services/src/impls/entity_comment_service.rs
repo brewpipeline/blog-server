@@ -8,9 +8,9 @@ use blog_generic::entities::Comment as EComment;
 use screw_components::dyn_result::{DError, DResult};
 
 pub fn create_entity_comment_service(
-    author_service: Arc<Box<dyn AuthorService>>,
-) -> Box<dyn EntityCommentServiceTrait> {
-    Box::new(EntityCommentService { author_service })
+    author_service: Arc<dyn AuthorService>,
+) -> Arc<dyn EntityCommentServiceTrait> {
+    Arc::new(EntityCommentService { author_service })
 }
 
 struct ECommentBuilder(Comment, Author);
@@ -32,7 +32,7 @@ impl Into<EComment> for ECommentBuilder {
 }
 
 struct EntityCommentService {
-    author_service: Arc<Box<dyn AuthorService>>,
+    author_service: Arc<dyn AuthorService>,
 }
 
 #[async_trait]

@@ -1,14 +1,15 @@
 use rbatis::rbatis::RBatis;
 use screw_components::dyn_result::DResult;
 use std::collections::HashSet;
+use std::sync::Arc;
 
 use crate::traits::author_service::{
     Author, AuthorService, BaseMinimalAuthor, BaseSecondaryAuthor,
 };
 use crate::utils::time_utils;
 
-pub fn create_rbatis_author_service(rb: RBatis) -> Box<dyn AuthorService> {
-    Box::new(RbatisAuthorService { rb })
+pub fn create_rbatis_author_service(rb: RBatis) -> Arc<dyn AuthorService> {
+    Arc::new(RbatisAuthorService { rb })
 }
 
 impl_select!(Author {select_by_id(id: &u64) -> Option => 

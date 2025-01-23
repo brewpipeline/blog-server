@@ -8,13 +8,13 @@ use crate::{extensions::Resolve, utils::auth};
 
 pub struct UpdateSecondaryAuthorRequestContent {
     pub(super) updated_secondary_author_data: DResult<CommonSecondaryAuthor>,
-    pub(super) author_service: Arc<Box<dyn AuthorService>>,
+    pub(super) author_service: Arc<dyn AuthorService>,
     pub(super) auth_author_future: DFuture<Result<Author, auth::Error>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for UpdateSecondaryAuthorRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>>,
+    Extensions: Resolve<Arc<dyn AuthorService>>,
 {
     type Data = CommonSecondaryAuthor;
 

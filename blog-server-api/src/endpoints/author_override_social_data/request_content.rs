@@ -6,13 +6,13 @@ use screw_components::dyn_fn::DFuture;
 use std::sync::Arc;
 
 pub struct AuthorOverrideSocialDataRequestContent {
-    pub(super) author_service: Arc<Box<dyn AuthorService>>,
+    pub(super) author_service: Arc<dyn AuthorService>,
     pub(super) auth_author_future: DFuture<Result<Author, auth::Error>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for AuthorOverrideSocialDataRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>>,
+    Extensions: Resolve<Arc<dyn AuthorService>>,
 {
     type Data = ();
 

@@ -4,21 +4,21 @@ use screw_components::dyn_result::{DError, DResult};
 use std::sync::Arc;
 
 use crate::traits::author_service::{Author, AuthorService, BaseMinimalAuthor};
-use crate::traits::event_bus_service::EventBusService;
 use crate::traits::social_service::{SocialId, SocialService as SocialServiceTrait};
+use crate::traits::Publish;
 
 pub fn create_social_service(
-    author_service: Arc<Box<dyn AuthorService>>,
-    event_bus_service: Arc<Box<dyn EventBusService>>,
-) -> Box<dyn SocialServiceTrait> {
-    Box::new(SocialService {
+    author_service: Arc<dyn AuthorService>,
+    subscription_state_changed_service: Arc<dyn Publish<SubscriptionStateChanged>>,
+) -> Arc<dyn SocialServiceTrait> {
+    Arc::new(SocialService {
         author_service,
-        event_bus_service,
+        subscription_state_changed_service,
     })
 }
 struct SocialService {
-    author_service: Arc<Box<dyn AuthorService>>,
-    event_bus_service: Arc<Box<dyn EventBusService>>,
+    author_service: Arc<dyn AuthorService>,
+    subscription_state_changed_service: Arc<dyn Publish<SubscriptionStateChanged>>,
 }
 
 #[async_trait]
@@ -31,8 +31,9 @@ impl SocialServiceTrait for SocialService {
                 new_state: *subscribe,
             };
 
-            let event_bus_service = self.event_bus_service.clone();
-            tokio::spawn(async move { event_bus_service.publish(event).await });
+            let subscription_state_changed_service =
+                self.subscription_state_changed_service.clone();
+            tokio::spawn(async move { subscription_state_changed_service.publish(event).await });
         } else {
             Err(DError::from("not supported for current author"))?
         }

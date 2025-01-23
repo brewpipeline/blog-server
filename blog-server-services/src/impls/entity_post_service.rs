@@ -8,9 +8,9 @@ use blog_generic::entities::{Post as EPost, Tag as ETag};
 use screw_components::dyn_result::{DError, DResult};
 
 pub fn create_entity_post_service(
-    author_service: Arc<Box<dyn AuthorService>>,
-) -> Box<dyn EntityPostServiceTrait> {
-    Box::new(EntityPostService { author_service })
+    author_service: Arc<dyn AuthorService>,
+) -> Arc<dyn EntityPostServiceTrait> {
+    Arc::new(EntityPostService { author_service })
 }
 
 struct EPostBuilder(Post, Author);
@@ -42,7 +42,7 @@ impl Into<EPost> for EPostBuilder {
 }
 
 struct EntityPostService {
-    author_service: Arc<Box<dyn AuthorService>>,
+    author_service: Arc<dyn AuthorService>,
 }
 
 #[async_trait]

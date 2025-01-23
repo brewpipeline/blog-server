@@ -5,12 +5,12 @@ use std::sync::Arc;
 
 pub struct TagRequestContent {
     pub(super) id: String,
-    pub(super) post_service: Arc<Box<dyn PostService>>,
+    pub(super) post_service: Arc<dyn PostService>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for TagRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn PostService>>>,
+    Extensions: Resolve<Arc<dyn PostService>>,
 {
     type Data = ();
 

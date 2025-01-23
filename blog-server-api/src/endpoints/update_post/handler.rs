@@ -14,7 +14,7 @@ pub async fn http_handler(
         post_service,
         entity_post_service,
         auth_author_future,
-        event_bus_service,
+        new_post_service,
     },): (UpdatePostRequestContent,),
 ) -> Result<UpdatePostContentSuccess, UpdatePostContentFailure> {
     let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
@@ -119,7 +119,7 @@ pub async fn http_handler(
                 updated_post_entity.slug, updated_post_entity.id
             ),
         };
-        tokio::spawn(async move { event_bus_service.publish(new_post_published).await });
+        tokio::spawn(async move { new_post_service.publish(new_post_published).await });
     }
 
     Ok(updated_post_entity.into())

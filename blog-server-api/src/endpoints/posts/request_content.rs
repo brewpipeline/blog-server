@@ -18,13 +18,13 @@ pub struct PostsRequestContent {
     pub(super) filter: PostsRequestContentFilter,
     pub(super) offset: Option<u64>,
     pub(super) limit: Option<u64>,
-    pub(super) post_service: Arc<Box<dyn PostService>>,
-    pub(super) entity_post_service: Arc<Box<dyn EntityPostService>>,
+    pub(super) post_service: Arc<dyn PostService>,
+    pub(super) entity_post_service: Arc<dyn EntityPostService>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for PostsRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn PostService>>> + Resolve<Arc<Box<dyn EntityPostService>>>,
+    Extensions: Resolve<Arc<dyn PostService>> + Resolve<Arc<dyn EntityPostService>>,
 {
     type Data = ();
 
@@ -69,9 +69,9 @@ pub struct UnpublishedPostsRequestContent {
 
 impl<Extensions> ApiRequestContent<Extensions> for UnpublishedPostsRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn PostService>>>
-        + Resolve<Arc<Box<dyn EntityPostService>>>
-        + Resolve<Arc<Box<dyn AuthorService>>>,
+    Extensions: Resolve<Arc<dyn PostService>>
+        + Resolve<Arc<dyn EntityPostService>>
+        + Resolve<Arc<dyn AuthorService>>,
 {
     type Data = ();
 
