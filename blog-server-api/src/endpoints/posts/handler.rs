@@ -130,8 +130,8 @@ async fn handler(
 pub async fn direct_handler(
     offset: u64,
     limit: u64,
-    post_service: Arc<Box<dyn PostService>>,
-    entity_post_service: Arc<Box<dyn EntityPostService>>,
+    post_service: Arc<dyn PostService>,
+    entity_post_service: Arc<dyn EntityPostService>,
 ) -> Option<PostsContainer> {
     http_handler((PostsRequestContent {
         filter: PostsRequestContentFilter {

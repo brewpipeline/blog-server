@@ -69,9 +69,9 @@ const SITE_NAME_TAG_BODY: [&str; 2] = [
 ];
 
 pub async fn client_handler<
-    Extensions: Resolve<std::sync::Arc<Box<dyn AuthorService>>>
-        + Resolve<std::sync::Arc<Box<dyn PostService>>>
-        + Resolve<std::sync::Arc<Box<dyn EntityPostService>>>,
+    Extensions: Resolve<std::sync::Arc<dyn AuthorService>>
+        + Resolve<std::sync::Arc<dyn PostService>>
+        + Resolve<std::sync::Arc<dyn EntityPostService>>,
 >(
     request: router::RoutedRequest<Request<Extensions>>,
 ) -> Response {
@@ -202,9 +202,9 @@ async fn app_content<Extensions, PP>(
     request: &router::RoutedRequest<Request<Extensions>>,
 ) -> Option<AppContent>
 where
-    Extensions: Resolve<std::sync::Arc<Box<dyn AuthorService>>>
-        + Resolve<std::sync::Arc<Box<dyn PostService>>>
-        + Resolve<std::sync::Arc<Box<dyn EntityPostService>>>,
+    Extensions: Resolve<std::sync::Arc<dyn AuthorService>>
+        + Resolve<std::sync::Arc<dyn PostService>>
+        + Resolve<std::sync::Arc<dyn EntityPostService>>,
     PP: PageProcessor,
 {
     let page_processor = PP::create_for_page(

@@ -6,9 +6,10 @@ use rbs::{to_value, Value};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
-pub fn create_rbatis_post_service(rb: RBatis) -> Box<dyn PostService> {
-    Box::new(RbatisPostService { rb })
+pub fn create_rbatis_post_service(rb: RBatis) -> Arc<dyn PostService> {
+    Arc::new(RbatisPostService { rb })
 }
 
 impl_insert!(BasePost {}, "post");

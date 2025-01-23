@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
 use crate::traits::comment_service::{BaseComment, Comment, CommentService};
 use rbatis::rbatis::RBatis;
 use screw_components::dyn_result::DResult;
 
-pub fn create_rbatis_comment_service(rb: RBatis) -> Box<dyn CommentService> {
-    Box::new(RbatisCommentService { rb })
+pub fn create_rbatis_comment_service(rb: RBatis) -> Arc<dyn CommentService> {
+    Arc::new(RbatisCommentService { rb })
 }
 
 impl_select!(Comment {select_all_by_post_id_with_limit_and_offset(post_id: &u64, limit: &u64, offset: &u64) => 

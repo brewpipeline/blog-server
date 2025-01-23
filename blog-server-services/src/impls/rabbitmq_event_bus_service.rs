@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use amqprs::{
     callbacks::{DefaultChannelCallback, DefaultConnectionCallback},
     channel::{BasicPublishArguments, Channel, QueueBindArguments},
@@ -8,7 +10,7 @@ use amqprs::{
 use blog_generic::events::{NewPostPublished, SubscriptionStateChanged};
 use serde::Serialize;
 
-use crate::traits::event_bus_service::{EventBusService, Publish};
+use crate::traits::Publish;
 
 enum EventBusError {
     SerializationError,
@@ -36,30 +38,19 @@ impl SendParametersDto {
 }
 
 pub async fn create_rabbit_event_bus_service(
-    connection_string: Option<&str>,
-) -> Box<dyn EventBusService> {
-    if let Some(connection) = connection_string {
-        let connection_configuration: Result<OpenConnectionArguments, _> = connection.try_into();
-        let connection_configuration = match connection_configuration {
-            Ok(mut config) => {
-                config.connection_name("blog_producer");
-                config
-            }
-            Err(_) => {
-                println!("Error while connecting to rabbitMQ. Mock service will be created");
-                return Box::new(NotificationServiceMock);
-            }
-        };
-
-        let mut service = RabbitEventBusService::new(connection_configuration);
-        if service.connect().await.is_ok() {
-            return Box::new(service);
-        } else {
-            println!("Error while connecting to rabbitMQ. Mock service will be created");
-        }
+    connection_string: &str,
+) -> Result<
+    Arc<impl Publish<SubscriptionStateChanged> + Publish<NewPostPublished>>,
+    Box<dyn std::error::Error + Send + Sync>,
+> {
+    if connection_string.is_empty() {
+        return Err("connection string is empty".into());
     }
-
-    Box::new(NotificationServiceMock)
+    let mut connection_configuration: OpenConnectionArguments = connection_string.try_into()?;
+    connection_configuration.connection_name("blog_producer");
+    let mut service = RabbitEventBusService::new(connection_configuration);
+    service.connect().await?;
+    Ok(Arc::new(service))
 }
 
 const ROUTING_KEY: &'static str = "blog.events";
@@ -83,8 +74,6 @@ impl RabbitEventBusService {
         }
     }
 }
-
-impl EventBusService for RabbitEventBusService {}
 
 #[async_trait]
 trait Connect {
@@ -187,30 +176,5 @@ async fn internal_publish(
     match channel.basic_publish(props, payload, args).await {
         Ok(_) => Ok(()),
         Err(_) => Err(EventBusError::PublishingError),
-    }
-}
-
-//TODO Mock Service remove after notification service implemented
-struct NotificationServiceMock;
-
-impl EventBusService for NotificationServiceMock {}
-
-#[async_trait]
-impl Publish<SubscriptionStateChanged> for NotificationServiceMock {
-    async fn publish(&self, event: SubscriptionStateChanged) -> () {
-        println!(
-            "event NOT published. Mock eventBus is used: {}, {}",
-            event.blog_user_id, event.user_telegram_id
-        );
-    }
-}
-
-#[async_trait]
-impl Publish<NewPostPublished> for NotificationServiceMock {
-    async fn publish(&self, event: NewPostPublished) -> () {
-        println!(
-            "event NOT published. Mock eventBus is used: {}",
-            event.blog_user_id
-        );
     }
 }

@@ -11,7 +11,7 @@ pub struct AuthorMeRequestContent {
 
 impl<Extensions> ApiRequestContent<Extensions> for AuthorMeRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>>,
+    Extensions: Resolve<Arc<dyn AuthorService>>,
 {
     type Data = ();
 

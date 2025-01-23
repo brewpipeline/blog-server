@@ -55,8 +55,8 @@ pub async fn http_handler(
 
 pub async fn direct_handler(
     id: String,
-    post_service: Arc<Box<dyn PostService>>,
-    entity_post_service: Arc<Box<dyn EntityPostService>>,
+    post_service: Arc<dyn PostService>,
+    entity_post_service: Arc<dyn EntityPostService>,
 ) -> Option<PostContainer> {
     http_handler((PostRequestContent {
         id,

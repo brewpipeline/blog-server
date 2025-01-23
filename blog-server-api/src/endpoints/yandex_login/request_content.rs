@@ -7,12 +7,12 @@ use std::sync::Arc;
 
 pub struct LoginYandexRequestContent {
     pub(super) login_yandex_question: DResult<LoginYandexQuestion>,
-    pub(super) social_service: Arc<Box<dyn SocialService>>,
+    pub(super) social_service: Arc<dyn SocialService>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for LoginYandexRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn SocialService>>>,
+    Extensions: Resolve<Arc<dyn SocialService>>,
 {
     type Data = LoginYandexQuestion;
 

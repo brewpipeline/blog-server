@@ -8,13 +8,13 @@ pub struct CommentsRequestContent {
     pub(super) post_id: String,
     pub(super) offset: Option<u64>,
     pub(super) limit: Option<u64>,
-    pub(super) comment_service: Arc<Box<dyn CommentService>>,
-    pub(super) entity_comment_service: Arc<Box<dyn EntityCommentService>>,
+    pub(super) comment_service: Arc<dyn CommentService>,
+    pub(super) entity_comment_service: Arc<dyn EntityCommentService>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for CommentsRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn CommentService>>> + Resolve<Arc<Box<dyn EntityCommentService>>>,
+    Extensions: Resolve<Arc<dyn CommentService>> + Resolve<Arc<dyn EntityCommentService>>,
 {
     type Data = ();
 

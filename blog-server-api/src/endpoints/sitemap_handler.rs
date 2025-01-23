@@ -14,10 +14,10 @@ use screw_core::routing::*;
 const RECORDS_LIMIT: usize = 50000;
 
 // TODO: split sitemaps / refactor
-pub async fn sitemap_handler<Extensions: Resolve<Arc<Box<dyn PostService>>>>(
+pub async fn sitemap_handler<Extensions: Resolve<Arc<dyn PostService>>>(
     request: router::RoutedRequest<Request<Extensions>>,
 ) -> Response {
-    let post_service: Arc<Box<dyn PostService>> = request.origin.extensions.resolve();
+    let post_service: Arc<dyn PostService> = request.origin.extensions.resolve();
 
     let posts = post_service
         .posts(PostsQuery {
@@ -42,7 +42,9 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<Box<dyn PostService>>>>(
                 id = post.id,
             ))
             .last_modified(DateTime::from_naive_utc_and_offset(
-                NaiveDateTime::from_timestamp_opt(post.base.created_at as i64 / 1000, 0).unwrap(),
+                DateTime::from_timestamp(post.base.created_at as i64 / 1000, 0)
+                    .unwrap()
+                    .naive_utc(),
                 FixedOffset::east_opt(0).unwrap(),
             ))
             .change_frequency(ChangeFrequency::Daily)

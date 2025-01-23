@@ -7,13 +7,13 @@ use std::sync::Arc;
 
 pub struct AuthorBlockRequestContent {
     pub(super) id: String,
-    pub(super) author_service: Arc<Box<dyn AuthorService>>,
+    pub(super) author_service: Arc<dyn AuthorService>,
     pub(super) auth_author_future: DFuture<Result<Author, auth::Error>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for AuthorBlockRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>>,
+    Extensions: Resolve<Arc<dyn AuthorService>>,
 {
     type Data = ();
 

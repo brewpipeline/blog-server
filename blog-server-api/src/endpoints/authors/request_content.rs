@@ -7,12 +7,12 @@ pub struct AuthorsRequestContent {
     pub(super) query: Option<String>,
     pub(super) offset: Option<u64>,
     pub(super) limit: Option<u64>,
-    pub(super) author_service: Arc<Box<dyn AuthorService>>,
+    pub(super) author_service: Arc<dyn AuthorService>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for AuthorsRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn AuthorService>>>,
+    Extensions: Resolve<Arc<dyn AuthorService>>,
 {
     type Data = ();
 

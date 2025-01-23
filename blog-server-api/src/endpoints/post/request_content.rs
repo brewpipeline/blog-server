@@ -10,16 +10,16 @@ use std::sync::Arc;
 
 pub struct PostRequestContent {
     pub(super) id: String,
-    pub(super) post_service: Arc<Box<dyn PostService>>,
-    pub(super) entity_post_service: Arc<Box<dyn EntityPostService>>,
+    pub(super) post_service: Arc<dyn PostService>,
+    pub(super) entity_post_service: Arc<dyn EntityPostService>,
     pub(super) auth_author_future: DFuture<Result<Author, auth::Error>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for PostRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn PostService>>>
-        + Resolve<Arc<Box<dyn EntityPostService>>>
-        + Resolve<Arc<Box<dyn AuthorService>>>,
+    Extensions: Resolve<Arc<dyn PostService>>
+        + Resolve<Arc<dyn EntityPostService>>
+        + Resolve<Arc<dyn AuthorService>>,
 {
     type Data = ();
 

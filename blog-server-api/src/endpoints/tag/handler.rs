@@ -28,7 +28,7 @@ pub async fn http_handler(
 
 pub async fn direct_handler(
     id: String,
-    post_service: Arc<Box<dyn PostService>>,
+    post_service: Arc<dyn PostService>,
 ) -> Option<TagContainer> {
     http_handler((TagRequestContent { id, post_service },))
         .await

@@ -58,7 +58,7 @@ impl Display for Error {
 
 async fn author_by_token_header_value(
     token_header_value: Option<HeaderValue>,
-    author_service: Arc<Box<dyn AuthorService>>,
+    author_service: Arc<dyn AuthorService>,
 ) -> Result<Author, Error> {
     let token_header_value = token_header_value.ok_or(Error::TokenMissing)?;
 
@@ -83,7 +83,7 @@ async fn author_by_token_header_value(
 
 pub fn author(
     http_parts: &Parts,
-    author_service: Arc<Box<dyn AuthorService>>,
+    author_service: Arc<dyn AuthorService>,
 ) -> impl Future<Output = Result<Author, Error>> + Send + 'static {
     let token_header_value = http_parts.headers.get("Token").cloned();
     author_by_token_header_value(token_header_value, author_service)

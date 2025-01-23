@@ -57,7 +57,7 @@ pub async fn http_handler(
 pub async fn direct_handler(
     offset: u64,
     limit: u64,
-    author_service: Arc<Box<dyn AuthorService>>,
+    author_service: Arc<dyn AuthorService>,
 ) -> Option<AuthorsContainer> {
     http_handler((AuthorsRequestContent {
         query: None,

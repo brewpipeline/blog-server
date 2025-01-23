@@ -31,7 +31,7 @@ pub async fn http_handler(
 
 pub async fn direct_handler(
     slug: String,
-    author_service: Arc<Box<dyn AuthorService>>,
+    author_service: Arc<dyn AuthorService>,
 ) -> Option<AuthorContainer> {
     http_handler((AuthorRequestContent {
         slug,

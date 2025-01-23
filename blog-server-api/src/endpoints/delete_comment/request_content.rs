@@ -8,13 +8,13 @@ use crate::{extensions::Resolve, utils::auth};
 
 pub struct DeleteCommentRequestContent {
     pub(super) id: String,
-    pub(super) comment_service: Arc<Box<dyn CommentService>>,
+    pub(super) comment_service: Arc<dyn CommentService>,
     pub(super) auth_author_future: DFuture<Result<Author, auth::Error>>,
 }
 
 impl<Extensions> ApiRequestContent<Extensions> for DeleteCommentRequestContent
 where
-    Extensions: Resolve<Arc<Box<dyn CommentService>>> + Resolve<Arc<Box<dyn AuthorService>>>,
+    Extensions: Resolve<Arc<dyn CommentService>> + Resolve<Arc<dyn AuthorService>>,
 {
     type Data = ();
 

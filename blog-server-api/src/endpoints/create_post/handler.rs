@@ -13,7 +13,7 @@ pub async fn http_handler(
         post_service,
         entity_post_service,
         auth_author_future,
-        event_bus_service,
+        new_post_service,
     },): (CreatePostRequestContent,),
 ) -> Result<CreatePostContentSuccess, CreatePostContentFailure> {
     let author = auth_author_future.await.map_err(|e| Unauthorized {
@@ -87,7 +87,7 @@ pub async fn http_handler(
                 created_post_entity.slug, created_post_entity.id
             ),
         };
-        tokio::spawn(async move { event_bus_service.publish(new_post_published).await });
+        tokio::spawn(async move { new_post_service.publish(new_post_published).await });
     }
 
     Ok(created_post_entity.into())
