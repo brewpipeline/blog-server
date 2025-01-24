@@ -63,6 +63,9 @@ impl Publish<NewPostPublished> for TelegramUpdatesService {
             return;
         };
         for author in authors {
+            if author.base.notification_subscribed == Some(0) {
+                continue;
+            }
             let Some(author_telegram_id) = author.base.telegram_id else {
                 continue;
             };
