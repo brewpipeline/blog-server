@@ -6,7 +6,8 @@ mod rbatis_author_service;
 mod rbatis_comment_service;
 mod rbatis_post_service;
 mod social_service;
-mod telegram_updates_service;
+mod telegram_new_post_published_service;
+mod telegram_user_updates_service;
 
 pub use discord_new_post_published_service::create_discord_new_post_published_service;
 pub use entity_comment_service::create_entity_comment_service;
@@ -16,4 +17,5 @@ pub use rbatis_author_service::create_rbatis_author_service;
 pub use rbatis_comment_service::create_rbatis_comment_service;
 pub use rbatis_post_service::create_rbatis_post_service;
 pub use social_service::create_social_service;
-pub use telegram_updates_service::create_telegram_updates_service;
+pub use telegram_new_post_published_service::create_telegram_new_post_published_service;
+pub use telegram_user_updates_service::create_telegram_user_updates_service;

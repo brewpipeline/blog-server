@@ -1,8 +1,9 @@
 use blog_generic::events::{NewPostPublished, SubscriptionStateChanged};
 use blog_server_services::impls::{
-    create_entity_comment_service, create_entity_post_service, create_rbatis_author_service,
-    create_rbatis_comment_service, create_rbatis_post_service, create_social_service,
-    create_telegram_updates_service,
+    create_discord_new_post_published_service, create_entity_comment_service,
+    create_entity_post_service, create_rbatis_author_service, create_rbatis_comment_service,
+    create_rbatis_post_service, create_social_service, create_telegram_new_post_published_service,
+    create_telegram_user_updates_service,
 };
 use blog_server_services::traits::author_service::AuthorService;
 use blog_server_services::traits::comment_service::CommentService;
@@ -10,8 +11,10 @@ use blog_server_services::traits::entity_comment_service::EntityCommentService;
 use blog_server_services::traits::entity_post_service::EntityPostService;
 use blog_server_services::traits::post_service::PostService;
 use blog_server_services::traits::social_service::SocialService;
-use blog_server_services::traits::Publish;
+use blog_server_services::traits::{Publish, PublishCollection};
+use config::Config;
 use rbatis::rbatis::RBatis;
+use serde::Deserialize;
 use std::sync::Arc;
 
 pub trait Resolve<T>: Send + Sync {
@@ -92,6 +95,7 @@ impl Resolve<Arc<dyn Publish<SubscriptionStateChanged>>> for ExtensionsProvider 
 }
 
 pub fn make_extensions<U>(
+    config: Config,
     rbatis: RBatis,
     updates_service: Option<Arc<U>>,
 ) -> impl ExtensionsProviderType
@@ -107,15 +111,15 @@ where
             new_post_published_service = updates_service.clone();
             subscription_state_changed_service = updates_service.clone();
         }
-        None => match create_telegram_updates_service(
-            crate::TELEGRAM_BOT_TOKEN,
-            crate::SITE_URL,
+        None => match create_telegram_user_updates_service(
+            crate::TELEGRAM_BOT_TOKEN.to_string(),
+            crate::SITE_URL.to_string(),
             author_service.clone(),
         ) {
-            Ok(telegram_updates_service) => {
+            Ok(telegram_user_updates_service) => {
                 println!("Alternative Telegram updates service used");
-                new_post_published_service = telegram_updates_service.clone();
-                subscription_state_changed_service = telegram_updates_service.clone();
+                new_post_published_service = telegram_user_updates_service.clone();
+                subscription_state_changed_service = telegram_user_updates_service.clone();
             }
             Err(err) => {
                 println!("Failed to create an alternative Telegram updates service: {err}");
@@ -125,6 +129,58 @@ where
             }
         },
     }
+
+    let new_post_published_service: Arc<dyn Publish<NewPostPublished>> = {
+        let telegram_chat_ids: Vec<i64> = config
+            .get("telegram_chat_ids")
+            .expect("Failed to retrieve 'telegram_chat_ids' from config");
+
+        let telegram_services: Vec<Arc<dyn Publish<NewPostPublished>>> = telegram_chat_ids
+            .into_iter()
+            .map(|id| {
+                create_telegram_new_post_published_service(
+                    crate::TELEGRAM_BOT_TOKEN.to_string(),
+                    crate::SITE_URL.to_string(),
+                    id,
+                )
+                .expect("Failed to create Telegram NewPostPublished service")
+                    as Arc<dyn Publish<NewPostPublished>>
+            })
+            .collect();
+
+        #[derive(Deserialize)]
+        struct DiscordWebhook {
+            webhook_id: String,
+            webhook_token: String,
+            username: String,
+            avatar_url: String,
+        }
+        let discord_webhooks: Vec<DiscordWebhook> = config
+            .get("discord_webhooks")
+            .expect("Failed to retrieve 'discord_webhooks' from config");
+
+        let discord_services: Vec<Arc<dyn Publish<NewPostPublished>>> = discord_webhooks
+            .into_iter()
+            .map(|w| {
+                create_discord_new_post_published_service(
+                    w.webhook_id,
+                    w.webhook_token,
+                    w.username,
+                    w.avatar_url,
+                    crate::SITE_URL.to_string(),
+                )
+                .expect("Failed to create Discord NewPostPublished service")
+                    as Arc<dyn Publish<NewPostPublished>>
+            })
+            .collect();
+
+        Arc::new(PublishCollection::new(
+            std::iter::once(new_post_published_service)
+                .chain(telegram_services.into_iter())
+                .chain(discord_services.into_iter())
+                .collect(),
+        ))
+    };
 
     ExtensionsProvider {
         author_service: author_service.clone(),

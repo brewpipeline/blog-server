@@ -10,36 +10,25 @@ pub trait Publish<E>: Send + Sync {
     async fn publish(&self, event: E) -> ();
 }
 
-/*
-#[async_trait]
-impl<E> Publish<E> for std::sync::Arc<E>
+pub struct PublishCollection<E>(
+    Vec<std::sync::Arc<dyn Publish<E>>>,
+    std::marker::PhantomData<E>,
+)
 where
-    E: Send + Sync,
-{
-    async fn publish(&self, event: E) {
-        self.publish(event).await
-    }
-}
-
-pub struct PublishCollection<P, E>(Vec<P>, std::marker::PhantomData<E>)
-where
-    P: Publish<E>,
     E: Clone + Send + Sync;
 
-impl<P, E> PublishCollection<P, E>
+impl<E> PublishCollection<E>
 where
-    P: Publish<E>,
     E: Clone + Send + Sync,
 {
-    pub fn new(collection: Vec<P>) -> Self {
+    pub fn new(collection: Vec<std::sync::Arc<dyn Publish<E>>>) -> Self {
         Self(collection, std::marker::PhantomData)
     }
 }
 
 #[async_trait]
-impl<P, E> Publish<E> for PublishCollection<P, E>
+impl<E> Publish<E> for PublishCollection<E>
 where
-    P: Publish<E>,
     E: Clone + Send + Sync,
 {
     async fn publish(&self, event: E) {
@@ -48,4 +37,3 @@ where
         }
     }
 }
-*/
