@@ -34,8 +34,8 @@ async fn main() -> screw_components::dyn_result::DResult<()> {
     let server_service = screw_core::server::ServerService::with_responder_factory(
         screw_core::responder_factory::ResponderFactory::with_router(router::make_router())
             .and_extensions(extensions::make_extensions(
-                rbatis,
                 config,
+                rbatis,
                 rabbit_event_bus_service,
             )),
     );

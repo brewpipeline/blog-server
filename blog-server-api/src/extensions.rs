@@ -95,8 +95,8 @@ impl Resolve<Arc<dyn Publish<SubscriptionStateChanged>>> for ExtensionsProvider 
 }
 
 pub fn make_extensions<U>(
-    rbatis: RBatis,
     config: Config,
+    rbatis: RBatis,
     updates_service: Option<Arc<U>>,
 ) -> impl ExtensionsProviderType
 where
