@@ -1,0 +1,16 @@
+#telegram_chat_ids:
+#  - -123456789
+#  - 987654321
+telegram_chat_ids: []
+
+#discord_webhooks:
+#  - webhook_id: "123456789012345678"
+#    webhook_token: "abcdef1234567890abcdef1234567890"
+#    username: "New Post Bot"
+#    avatar_url: "https://example.com/avatar.png"
+#
+#  - webhook_id: "234567890123456789"
+#    webhook_token: "12345abcdef12345abcdef12345abcdef"
+#    username: "Another Bot"
+#    avatar_url: "https://example.com/another_avatar.png"
+discord_webhooks: []

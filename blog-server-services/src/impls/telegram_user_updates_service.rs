@@ -1,12 +1,12 @@
 use blog_generic::events::{NewPostPublished, SubscriptionStateChanged};
-use serde_json::json;
 use std::sync::Arc;
 
 use crate::traits::{author_service::AuthorService, Publish};
+use crate::utils::telegram_send_message_request::TelegramSendMessageRequest;
 
-pub fn create_telegram_updates_service(
-    bot_token: &'static str,
-    site_url: &'static str,
+pub fn create_telegram_user_updates_service(
+    bot_token: String,
+    site_url: String,
     author_service: Arc<dyn AuthorService>,
 ) -> Result<
     Arc<impl Publish<SubscriptionStateChanged> + Publish<NewPostPublished>>,
@@ -15,49 +15,35 @@ pub fn create_telegram_updates_service(
     if bot_token.is_empty() {
         return Err("bot token is empty".into());
     }
-    Ok(Arc::new(TelegramUpdatesService {
-        bot_token,
+    Ok(Arc::new(TelegramUserUpdatesService {
+        telegram_send_message_request: TelegramSendMessageRequest { bot_token },
         site_url,
         author_service,
     }))
 }
 
-struct TelegramUpdatesService {
-    bot_token: &'static str,
-    site_url: &'static str,
+struct TelegramUserUpdatesService {
+    telegram_send_message_request: TelegramSendMessageRequest,
+    site_url: String,
     author_service: Arc<dyn AuthorService>,
 }
 
-impl TelegramUpdatesService {
-    async fn send(&self, chat_id: &u64, text: &str) {
-        let _ = reqwest::Client::new()
-            .post(format!(
-                "https://api.telegram.org/bot{TOKEN}/sendMessage",
-                TOKEN = self.bot_token
-            ))
-            .json(&json!({
-                "chat_id": chat_id,
-                "text":  text,
-            }))
-            .send()
-            .await;
-    }
-}
-
 #[async_trait]
-impl Publish<SubscriptionStateChanged> for TelegramUpdatesService {
+impl Publish<SubscriptionStateChanged> for TelegramUserUpdatesService {
     async fn publish(&self, event: SubscriptionStateChanged) {
         let message = if event.new_state == 1 {
             "Вы подписались на уведомления"
         } else {
             "Вы отписались от уведомлений"
         };
-        self.send(&event.user_telegram_id, message).await
+        self.telegram_send_message_request
+            .send(&(event.user_telegram_id as i64), message)
+            .await
     }
 }
 
 #[async_trait]
-impl Publish<NewPostPublished> for TelegramUpdatesService {
+impl Publish<NewPostPublished> for TelegramUserUpdatesService {
     async fn publish(&self, event: NewPostPublished) {
         let Ok(authors) = self.author_service.authors(&0, &u64::MAX).await else {
             return;
@@ -69,15 +55,16 @@ impl Publish<NewPostPublished> for TelegramUpdatesService {
             let Some(author_telegram_id) = author.base.telegram_id else {
                 continue;
             };
-            self.send(
-                &author_telegram_id,
-                &format!(
-                    "{SITE_URL}{PATH}",
-                    SITE_URL = self.site_url,
-                    PATH = event.post_sub_url
-                ),
-            )
-            .await;
+            self.telegram_send_message_request
+                .send(
+                    &(author_telegram_id as i64),
+                    &format!(
+                        "{SITE_URL}{PATH}",
+                        SITE_URL = self.site_url,
+                        PATH = event.post_sub_url
+                    ),
+                )
+                .await;
         }
     }
 }
