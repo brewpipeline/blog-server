@@ -47,7 +47,7 @@ impl SocialServiceTrait for SocialService {
         social_id: &SocialId,
         base_minimal_author: &BaseMinimalAuthor,
     ) -> DResult<Author> {
-        let (social_author_id, is_new_author) = if let Some(author) = match &social_id {
+        let (social_author_id, _is_new_author) = if let Some(author) = match &social_id {
             SocialId::TelegramId(telegram_id) => {
                 self.author_service
                     .author_by_telegram_id(&telegram_id)
@@ -91,10 +91,6 @@ impl SocialServiceTrait for SocialService {
             .author_by_id(&social_author_id)
             .await?
             .ok_or::<DError>("insert error".into())?;
-
-        if is_new_author {
-            let _ = self.set_subscribe_for_author(&social_author, &1).await;
-        }
 
         Ok(social_author)
     }
