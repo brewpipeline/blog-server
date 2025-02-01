@@ -45,11 +45,11 @@ impl Publish<SubscriptionStateChanged> for TelegramUserUpdatesService {
 #[async_trait]
 impl Publish<NewPostPublished> for TelegramUserUpdatesService {
     async fn publish(&self, event: NewPostPublished) {
-        let Ok(authors) = self.author_service.authors(&0, &u64::MAX).await else {
+        let Ok(authors) = self.author_service.authors(&0, &(i64::MAX as u64)).await else {
             return;
         };
         for author in authors {
-            if author.base.notification_subscribed == Some(0) {
+            if author.base.notification_subscribed.unwrap_or_default() == 0 {
                 continue;
             }
             let Some(author_telegram_id) = author.base.telegram_id else {
