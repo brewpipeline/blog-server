@@ -1,23 +1,26 @@
 use super::*;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "validator")]
 use validator::{Validate, ValidationError};
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Validate)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "validator", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct CommonPost {
-    #[validate(length(min = 10, max = 75), non_control_character)]
+    #[cfg_attr(feature = "validator", validate(length(min = 10, max = 75), non_control_character))]
     pub title: String,
     pub publish_type: PublishType,
-    #[validate(length(min = 50, max = 255), non_control_character)]
+    #[cfg_attr(feature = "validator", validate(length(min = 50, max = 255), non_control_character))]
     pub summary: String,
-    #[validate(length(min = 50))]
+    #[cfg_attr(feature = "validator", validate(length(min = 50)))]
     pub content: Option<String>,
-    #[validate(custom(function = "validate_tags"))]
+    #[cfg_attr(feature = "validator", validate(custom(function = "validate_tags")))]
     pub tags: Vec<String>,
-    #[validate(length(max = 150), url, non_control_character)]
+    #[cfg_attr(feature = "validator", validate(length(max = 150), url, non_control_character))]
     pub image_url: Option<String>,
 }
 
+#[cfg(feature = "validator")]
 fn validate_tags(tags: &Vec<String>) -> Result<(), ValidationError> {
     for tag in tags {
         let chars_count = tag.chars().count();
