@@ -67,6 +67,7 @@ impl From<(u64, ECommonPost)> for BasePost {
 #[serde(rename_all = "snake_case")]
 pub struct Post {
     pub id: u64,
+    pub recommended: u8,
     #[serde(default)]
     pub tags: Vec<Tag>,
     #[serde(flatten)]

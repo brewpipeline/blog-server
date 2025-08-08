@@ -130,6 +130,7 @@ impl Post {
             post.slug, \
             post.summary, \
             post.publish_type, \
+            post.recommended, \
             post.created_at, \
             post.content, \
             post.plain_text_content, \
