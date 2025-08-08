@@ -151,6 +151,21 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                             .and_path("")
                             .and_handler(create_post::http_handler),
                     )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::GET)
+                            .and_path("/{id:[^/]*}/recommendation")
+                            .and_handler(post_recommendation::http_handler),
+                    )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::PATCH)
+                            .and_path("/{id:[^/]*}/pool/add")
+                            .and_handler(post_pool::http_handler_add),
+                    )
+                    .route(
+                        route::first::Route::with_method(&hyper::Method::PATCH)
+                            .and_path("/{id:[^/]*}/pool/remove")
+                            .and_handler(post_pool::http_handler_remove),
+                    )
                 })
                 .scoped("/posts", |r| {
                     r.scoped("/unpublished", |r| {
