@@ -4,7 +4,8 @@ A modular blog platform written in Rust.  The project exposes a HTTP API for pos
 comments and author management while broadcasting events to Telegram and Discord.
 The server is built on top of the [Screw](https://github.com/Tikitko/screw) ecosystem,
 [Hyper](https://hyper.rs/) for the HTTP layer and [Rbatis](https://rbatis.github.io/rbatis.io)
-for database access with PostgreSQL.
+for database access with PostgreSQL. The web front-end lives in the
+[blog-ui](https://github.com/brewpipeline/blog-ui) repository.
 
 ## Workspace Layout
 
@@ -13,17 +14,15 @@ This repository is a Cargo workspace made up of several crates:
 | Crate | Description |
 | ----- | ----------- |
 | `blog-server-api` | HTTP entry point, request routing and middleware setup. |
-| `blog-server-services` | Service layer with implementations for posts,
-comments, authors and social integrations. |
-| `blog-generic` | Shared domain entities, events and utilities used by other
-crates. |
+| `blog-server-services` | Service layer with implementations for posts, comments, authors and social integrations. |
+| `blog-generic` | Shared domain entities, events and utilities used by other crates. |
 
 ## Features
 
 * CRUD operations for posts and comments.
 * Author profiles with subscription management and optional social data.
 * JSON based API with automatic request/response handling.
-* Optional server‑side rendering through the `blog-ui` crate (`--features ssr`).
+* Optional server‑side rendering through the [`blog-ui`](https://github.com/brewpipeline/blog-ui) crate (`--features ssr`).
 * Optional login via Yandex or Telegram (`--features yandex` or `--features telegram`).
 * Event broadcasting through RabbitMQ, Telegram bots and Discord webhooks.
 * Configuration driven notifications via `config.yaml`.
@@ -33,7 +32,7 @@ crates. |
 * [Rust](https://www.rust-lang.org/) toolchain (1.70 or later recommended)
 * PostgreSQL database
 * Optional: RabbitMQ for the event bus
-* Optional: `blog-ui` repository when using server‑side rendering
+* Optional: [`blog-ui`](https://github.com/brewpipeline/blog-ui) repository when using server‑side rendering
 
 ## Configuration
 
