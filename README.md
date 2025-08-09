@@ -1,4 +1,4 @@
-# Blog Server
+# blog-server
 
 A modular blog platform written in Rust.  The project exposes a HTTP API for posts,
 comments and author management while broadcasting events to Telegram and Discord.
