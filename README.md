@@ -7,6 +7,14 @@ The server is built on top of the [Screw](https://github.com/Tikitko/screw) ecos
 for database access with PostgreSQL. The web front-end lives in the
 [blog-ui](https://github.com/brewpipeline/blog-ui) repository.
 
+## UI Repository
+
+The user-facing website is developed separately in the
+[`blog-ui`](https://github.com/brewpipeline/blog-ui) repository. It provides
+the front-end that consumes this API and offers server-side rendering support
+when the `ssr` feature is enabled. Check that repository for instructions on
+building and running the web interface.
+
 ## Workspace Layout
 
 This repository is a Cargo workspace made up of several crates:
