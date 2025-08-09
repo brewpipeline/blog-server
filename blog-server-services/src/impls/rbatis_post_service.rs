@@ -263,7 +263,7 @@ impl PostService for RbatisPostService {
             {
                 let mut select_parts = vec!["post.*"];
                 if let Some(_) = query.search_query {
-                    select_parts.push("ts_rank_cd(textsearch, query) AS rank");
+                    select_parts.push("ts_rank_cd(textsearch, query, 32) AS rank");
                 }
                 select_parts.push("COUNT(*) OVER() AS total_count");
                 Some(format!("SELECT {}", select_parts.join(", ")))
@@ -271,9 +271,23 @@ impl PostService for RbatisPostService {
             {
                 let mut from_parts = vec!["post"];
                 if let Some(search_query) = query.search_query {
-                    from_parts.push("plainto_tsquery('russian', LOWER(?)) query");
-                    args.push(to_value!(search_query));
-                    from_parts.push("to_tsvector('russian', LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content)) textsearch");
+                    let ts_query: String = search_query
+                        .to_lowercase()
+                        .split_whitespace()
+                        .filter(|p| !p.is_empty())
+                        .map(|p| format!("{}:*", p))
+                        .collect::<Vec<String>>()
+                        .join(" & ");
+
+                    if !ts_query.is_empty() {
+                        from_parts.push("to_tsquery('russian', ?) query");
+                        args.push(to_value!(ts_query));
+                        from_parts.push(
+                            "(setweight(to_tsvector('russian', coalesce(post.title, '')), 'A') ||
+                              setweight(to_tsvector('russian', coalesce(post.summary, '')), 'B') ||
+                              setweight(to_tsvector('russian', coalesce(post.plain_text_content, '')), 'C')) textsearch",
+                        );
+                    }
                 }
                 Some(format!("FROM {}", from_parts.join(", ")))
             },
