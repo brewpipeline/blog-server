@@ -10,6 +10,7 @@ pub mod comments;
 pub mod create_comment;
 pub mod create_post;
 pub mod delete_comment;
+pub mod delete_image;
 pub mod delete_post;
 pub mod login;
 pub mod post;
@@ -24,6 +25,7 @@ pub mod telegram_login;
 pub mod update_minimal_author;
 pub mod update_post;
 pub mod update_secondary_author;
+pub mod upload_image;
 #[cfg(feature = "yandex")]
 pub mod yandex_login;
 
