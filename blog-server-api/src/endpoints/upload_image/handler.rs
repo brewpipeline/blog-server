@@ -5,7 +5,6 @@ use futures_util::stream::once;
 use hyper::{body::Bytes, header, Body, StatusCode};
 use image::ImageFormat;
 use multer::Multipart;
-use rand::Rng;
 use screw_core::request::Request;
 use screw_core::response::Response;
 use screw_core::routing::router;
@@ -18,7 +17,6 @@ pub async fn http_handler<Extensions>(
 where
     Extensions: Resolve<Arc<dyn AuthorService>> + Send + Sync + 'static,
 {
-    let author_service: Arc<dyn AuthorService> = routed_request.origin.extensions.resolve();
     let (http_parts, http_body) = routed_request.origin.http.into_parts();
     let bytes = hyper::body::to_bytes(http_body)
         .await
@@ -29,7 +27,8 @@ where
         .get(header::CONTENT_TYPE)
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
-    let author = auth::author(&http_parts, author_service).await;
+
+    let author = auth::author(&http_parts, routed_request.origin.extensions.resolve()).await;
 
     let result = async {
         let author: Author = author.map_err(|e| UploadImageError::Unauthorized(e.to_string()))?;
@@ -64,9 +63,10 @@ where
             .next()
             .ok_or_else(|| UploadImageError::InvalidData("invalid filename".to_string()))?
             .to_lowercase();
-        if extension != "jpg" && extension != "jpeg" && extension != "png" {
+
+        if !vec!["jpg", "jpeg", "png", "webp"].contains(&extension.as_str()) {
             return Err(UploadImageError::InvalidData(
-                "only jpg and png images are allowed".to_string(),
+                "only jpg, jpeg, png and webp images are allowed".to_string(),
             ));
         }
 
@@ -78,10 +78,10 @@ where
         let format = image::guess_format(&data)
             .map_err(|_| UploadImageError::InvalidData("unsupported image format".to_string()))?;
         match format {
-            ImageFormat::Jpeg | ImageFormat::Png => {}
+            ImageFormat::Jpeg | ImageFormat::Png | ImageFormat::WebP => {}
             _ => {
                 return Err(UploadImageError::InvalidData(
-                    "only jpg and png images are allowed".to_string(),
+                    "only jpg, jpeg, png and webp images are allowed".to_string(),
                 ));
             }
         }
@@ -90,12 +90,7 @@ where
             .await
             .map_err(|e| UploadImageError::IoError(e.to_string()))?;
 
-        let salt = format!(
-            "{}_{}",
-            Utc::now().timestamp_millis(),
-            rand::thread_rng().gen::<u32>()
-        );
-        let filename = format!("{}_{}", salt, original_filename);
+        let filename = format!("{}_{}", Utc::now().timestamp_millis(), original_filename);
         let path = format!("images/{}", filename);
         fs::write(&path, &data)
             .await
@@ -105,19 +100,18 @@ where
     }
     .await;
 
-    match result {
-        Ok(path) => Response {
-            http: hyper::Response::builder()
-                .status(StatusCode::OK)
-                .body(Body::from(path))
-                .unwrap(),
-        },
-        Err(e) => Response {
-            http: hyper::Response::builder()
-                .status(e.status_code())
-                .body(Body::from(e.message()))
-                .unwrap(),
-        },
+    Response {
+        http: hyper::Response::builder()
+            .status(match &result {
+                Ok(_) => StatusCode::OK,
+                Err(e) => e.status_code(),
+            })
+            .header(header::CONTENT_TYPE, "text/plain")
+            .body(match result {
+                Ok(path) => Body::from(path),
+                Err(e) => Body::from(e.message()),
+            })
+            .unwrap(),
     }
 }
 

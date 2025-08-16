@@ -62,5 +62,4 @@ config = "0.15.6"
 base64 = "0.21.0"
 multer = "2.1.0"
 futures-util = "0.3"
-image = { version = "0.24", default-features = false, features = ["jpeg", "png"] }
-rand = "0.8"
+image = { version = "0.24", default-features = false, features = ["jpeg", "png", "webp"] }
