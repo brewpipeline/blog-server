@@ -13,8 +13,8 @@ pub mod delete_comment;
 pub mod delete_post;
 pub mod login;
 pub mod post;
-pub mod post_update_recommended;
 pub mod post_recommendation;
+pub mod post_update_recommended;
 pub mod posts;
 #[cfg(feature = "ssr")]
 mod sitemap_handler;

@@ -11,7 +11,9 @@ pub enum PostUpdateRecommendedResponseContentFailure {
 impl ApiResponseContentBase for PostUpdateRecommendedResponseContentFailure {
     fn status_code(&self) -> &'static StatusCode {
         match self {
-            PostUpdateRecommendedResponseContentFailure::Unauthorized { reason: _ } => &StatusCode::UNAUTHORIZED,
+            PostUpdateRecommendedResponseContentFailure::Unauthorized { reason: _ } => {
+                &StatusCode::UNAUTHORIZED
+            }
             PostUpdateRecommendedResponseContentFailure::Forbidden => &StatusCode::FORBIDDEN,
             PostUpdateRecommendedResponseContentFailure::DatabaseError { reason: _ } => {
                 &StatusCode::INTERNAL_SERVER_ERROR
@@ -26,8 +28,12 @@ impl ApiResponseContentBase for PostUpdateRecommendedResponseContentFailure {
 impl ApiResponseContentFailure for PostUpdateRecommendedResponseContentFailure {
     fn identifier(&self) -> &'static str {
         match self {
-            PostUpdateRecommendedResponseContentFailure::Unauthorized { reason: _ } => "POST_UPDATE_RECOMMENDED_UNAUTHORIZED",
-            PostUpdateRecommendedResponseContentFailure::Forbidden => "POST_UPDATE_RECOMMENDED_FORBIDDEN",
+            PostUpdateRecommendedResponseContentFailure::Unauthorized { reason: _ } => {
+                "POST_UPDATE_RECOMMENDED_UNAUTHORIZED"
+            }
+            PostUpdateRecommendedResponseContentFailure::Forbidden => {
+                "POST_UPDATE_RECOMMENDED_FORBIDDEN"
+            }
             PostUpdateRecommendedResponseContentFailure::DatabaseError { reason: _ } => {
                 "POST_UPDATE_RECOMMENDED_DATABASE_ERROR"
             }
@@ -46,7 +52,9 @@ impl ApiResponseContentFailure for PostUpdateRecommendedResponseContentFailure {
                     "unauthorized error".to_string()
                 }
             }
-            PostUpdateRecommendedResponseContentFailure::Forbidden => String::from("insufficient rights"),
+            PostUpdateRecommendedResponseContentFailure::Forbidden => {
+                String::from("insufficient rights")
+            }
             PostUpdateRecommendedResponseContentFailure::DatabaseError { reason } => {
                 if cfg!(debug_assertions) {
                     format!("database error: {}", reason)
