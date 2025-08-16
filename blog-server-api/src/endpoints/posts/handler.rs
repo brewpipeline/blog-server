@@ -207,6 +207,13 @@ mod tests {
             unimplemented!()
         }
 
+        async fn random_recommended_post(&self, _post_id: &u64) -> DResult<Option<Post>> {
+            unimplemented!()
+        }
+        async fn set_post_recommended_by_id(&self, _id: &u64, _recommended: &u8) -> DResult<()> {
+            unimplemented!()
+        }
+
         async fn create_tags(&self, _tag_titles: Vec<String>) -> DResult<Vec<blog_server_services::traits::post_service::Tag>> {
             unimplemented!()
         }

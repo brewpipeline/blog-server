@@ -124,17 +124,7 @@ impl Post {
     #[py_sql(
         "
         SELECT \
-            post.id, \
-            post.author_id, \
-            post.title, \
-            post.slug, \
-            post.summary, \
-            post.publish_type, \
-            post.recommended, \
-            post.created_at, \
-            post.content, \
-            post.plain_text_content, \
-            post.image_url \
+            post.* \
         FROM post \
         JOIN post_tag ON post.id = post_tag.post_id \
         WHERE \
