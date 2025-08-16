@@ -134,14 +134,8 @@ pub trait PostService: Send + Sync {
     ) -> DResult<()>;
     async fn delete_post_by_id(&self, id: &u64) -> DResult<()>;
 
-    async fn random_recommended_post(&self, post_id: &u64) -> DResult<Option<Post>> {
-        let _ = post_id;
-        Ok(None)
-    }
-    async fn set_post_recommended_by_id(&self, id: &u64, recommended: &u8) -> DResult<()> {
-        let (_id, _recommended) = (id, recommended);
-        Ok(())
-    }
+    async fn random_recommended_post(&self, post_id: &u64) -> DResult<Option<Post>>;
+    async fn set_post_recommended_by_id(&self, id: &u64, recommended: &u8) -> DResult<()>;
 
     async fn tag_by_id(&self, id: &u64) -> DResult<Option<Tag>>;
     async fn create_tags(&self, tag_titles: Vec<String>) -> DResult<Vec<Tag>>;
