@@ -7,16 +7,25 @@ use validator::{Validate, ValidationError};
 #[cfg_attr(feature = "validator", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct CommonPost {
-    #[cfg_attr(feature = "validator", validate(length(min = 10, max = 75), non_control_character))]
+    #[cfg_attr(
+        feature = "validator",
+        validate(length(min = 10, max = 75), non_control_character)
+    )]
     pub title: String,
     pub publish_type: PublishType,
-    #[cfg_attr(feature = "validator", validate(length(min = 50, max = 255), non_control_character))]
+    #[cfg_attr(
+        feature = "validator",
+        validate(length(min = 50, max = 255), non_control_character)
+    )]
     pub summary: String,
     #[cfg_attr(feature = "validator", validate(length(min = 50)))]
     pub content: Option<String>,
     #[cfg_attr(feature = "validator", validate(custom(function = "validate_tags")))]
     pub tags: Vec<String>,
-    #[cfg_attr(feature = "validator", validate(length(max = 150), url, non_control_character))]
+    #[cfg_attr(
+        feature = "validator",
+        validate(length(max = 150), url, non_control_character)
+    )]
     pub image_url: Option<String>,
 }
 

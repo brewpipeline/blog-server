@@ -43,6 +43,7 @@ pub struct Post {
     pub slug: String,
     pub summary: String,
     pub publish_type: PublishType,
+    pub recommended: bool,
     pub created_at: u64,
     pub content: Option<String>,
     pub author: Author,

@@ -83,7 +83,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn authors_by_ids(&self, _ids: &std::collections::HashSet<u64>) -> DResult<Vec<Author>> {
+        async fn authors_by_ids(
+            &self,
+            _ids: &std::collections::HashSet<u64>,
+        ) -> DResult<Vec<Author>> {
             unimplemented!()
         }
 
@@ -188,29 +191,53 @@ mod tests {
 
     #[tokio::test]
     async fn empty_slug_returns_error() {
-        let service = Arc::new(MockAuthorService { behavior: MockBehavior::Success(None) });
-        let result = http_handler((AuthorRequestContent { slug: String::new(), author_service: service },)).await;
+        let service = Arc::new(MockAuthorService {
+            behavior: MockBehavior::Success(None),
+        });
+        let result = http_handler((AuthorRequestContent {
+            slug: String::new(),
+            author_service: service,
+        },))
+        .await;
         assert!(matches!(result, Err(SlugEmpty)));
     }
 
     #[tokio::test]
     async fn not_found_returns_error() {
-        let service = Arc::new(MockAuthorService { behavior: MockBehavior::Success(None) });
-        let result = http_handler((AuthorRequestContent { slug: "missing".into(), author_service: service },)).await;
+        let service = Arc::new(MockAuthorService {
+            behavior: MockBehavior::Success(None),
+        });
+        let result = http_handler((AuthorRequestContent {
+            slug: "missing".into(),
+            author_service: service,
+        },))
+        .await;
         assert!(matches!(result, Err(NotFound)));
     }
 
     #[tokio::test]
     async fn db_error_propagates() {
-        let service = Arc::new(MockAuthorService { behavior: MockBehavior::Error });
-        let result = http_handler((AuthorRequestContent { slug: "john".into(), author_service: service },)).await;
+        let service = Arc::new(MockAuthorService {
+            behavior: MockBehavior::Error,
+        });
+        let result = http_handler((AuthorRequestContent {
+            slug: "john".into(),
+            author_service: service,
+        },))
+        .await;
         assert!(matches!(result, Err(DatabaseError { .. })));
     }
 
     #[tokio::test]
     async fn success_returns_author() {
-        let service = Arc::new(MockAuthorService { behavior: MockBehavior::Success(Some(sample_author())) });
-        let result = http_handler((AuthorRequestContent { slug: "john".into(), author_service: service },)).await;
+        let service = Arc::new(MockAuthorService {
+            behavior: MockBehavior::Success(Some(sample_author())),
+        });
+        let result = http_handler((AuthorRequestContent {
+            slug: "john".into(),
+            author_service: service,
+        },))
+        .await;
         assert!(matches!(result, Ok(_)));
     }
 }

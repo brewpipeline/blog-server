@@ -82,7 +82,7 @@ mod tests {
     use super::*;
     use async_trait::async_trait;
     use blog_server_services::traits::author_service::{
-        Author, BaseAuthor, BaseMinimalAuthor, BaseSecondaryAuthor, AuthorService,
+        Author, AuthorService, BaseAuthor, BaseMinimalAuthor, BaseSecondaryAuthor,
     };
     use screw_components::dyn_result::DResult;
     use std::sync::Arc;
@@ -141,10 +141,7 @@ mod tests {
             unimplemented!()
         }
 
-        async fn author_by_telegram_id(
-            &self,
-            _telegram_id: &u64,
-        ) -> DResult<Option<Author>> {
+        async fn author_by_telegram_id(&self, _telegram_id: &u64) -> DResult<Option<Author>> {
             unimplemented!()
         }
 
@@ -235,33 +232,51 @@ mod tests {
     #[tokio::test]
     async fn empty_slug_returns_error() {
         reset_storage().await;
-        let service = Arc::new(MockAuthorService { behavior: MockBehavior::Success(None) });
+        let service = Arc::new(MockAuthorService {
+            behavior: MockBehavior::Success(None),
+        });
         let result = http_handler((LoginRequestContent {
-            login_question: Ok(LoginQuestion { slug: String::new(), password: String::new() }),
+            login_question: Ok(LoginQuestion {
+                slug: String::new(),
+                password: String::new(),
+            }),
             author_service: service,
-        },)).await;
+        },))
+        .await;
         assert!(matches!(result, Err(SlugEmpty)));
     }
 
     #[tokio::test]
     async fn not_found_returns_error() {
         reset_storage().await;
-        let service = Arc::new(MockAuthorService { behavior: MockBehavior::Success(None) });
+        let service = Arc::new(MockAuthorService {
+            behavior: MockBehavior::Success(None),
+        });
         let result = http_handler((LoginRequestContent {
-            login_question: Ok(LoginQuestion { slug: "missing".into(), password: "pwd".into() }),
+            login_question: Ok(LoginQuestion {
+                slug: "missing".into(),
+                password: "pwd".into(),
+            }),
             author_service: service,
-        },)).await;
+        },))
+        .await;
         assert!(matches!(result, Err(NotFound)));
     }
 
     #[tokio::test]
     async fn db_error_propagates() {
         reset_storage().await;
-        let service = Arc::new(MockAuthorService { behavior: MockBehavior::Error });
+        let service = Arc::new(MockAuthorService {
+            behavior: MockBehavior::Error,
+        });
         let result = http_handler((LoginRequestContent {
-            login_question: Ok(LoginQuestion { slug: "john".into(), password: "pwd".into() }),
+            login_question: Ok(LoginQuestion {
+                slug: "john".into(),
+                password: "pwd".into(),
+            }),
             author_service: service,
-        },)).await;
+        },))
+        .await;
         assert!(matches!(result, Err(DatabaseError { .. })));
     }
 
@@ -273,9 +288,13 @@ mod tests {
             behavior: MockBehavior::Success(Some(sample_author(Some(hash)))),
         });
         let result = http_handler((LoginRequestContent {
-            login_question: Ok(LoginQuestion { slug: "john".into(), password: "wrong".into() }),
+            login_question: Ok(LoginQuestion {
+                slug: "john".into(),
+                password: "wrong".into(),
+            }),
             author_service: service,
-        },)).await;
+        },))
+        .await;
         assert!(matches!(result, Err(WrongPassword)));
     }
 
@@ -288,9 +307,13 @@ mod tests {
             behavior: MockBehavior::Success(Some(sample_author(Some(hash.clone())))),
         });
         let result = http_handler((LoginRequestContent {
-            login_question: Ok(LoginQuestion { slug: "john".into(), password: "secret".into() }),
+            login_question: Ok(LoginQuestion {
+                slug: "john".into(),
+                password: "secret".into(),
+            }),
             author_service: service,
-        },)).await;
+        },))
+        .await;
         assert!(matches!(result, Ok(_)));
     }
 }

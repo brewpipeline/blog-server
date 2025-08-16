@@ -8,11 +8,20 @@ use validator::{Validate, ValidationError};
 pub struct CommonMinimalAuthor {
     #[cfg_attr(feature = "validator", validate(custom(function = "validate_slug")))]
     pub slug: String,
-    #[cfg_attr(feature = "validator", validate(length(min = 2, max = 50), non_control_character))]
+    #[cfg_attr(
+        feature = "validator",
+        validate(length(min = 2, max = 50), non_control_character)
+    )]
     pub first_name: Option<String>,
-    #[cfg_attr(feature = "validator", validate(length(min = 2, max = 50), non_control_character))]
+    #[cfg_attr(
+        feature = "validator",
+        validate(length(min = 2, max = 50), non_control_character)
+    )]
     pub last_name: Option<String>,
-    #[cfg_attr(feature = "validator", validate(length(max = 255), url, non_control_character))]
+    #[cfg_attr(
+        feature = "validator",
+        validate(length(max = 255), url, non_control_character)
+    )]
     pub image_url: Option<String>,
 }
 

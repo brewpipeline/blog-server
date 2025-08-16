@@ -121,6 +121,42 @@ impl Post {
         impled!()
     }
 
+    #[py_sql(
+        "
+        SELECT \
+            post.* \
+        FROM post \
+        JOIN post_tag ON post.id = post_tag.post_id \
+        WHERE \
+            post.recommended = 1 \
+            AND post.publish_type = 1 \
+            AND post.id <> #{post_id} \
+            AND post_tag.tag_id IN (
+                SELECT tag_id FROM post_tag WHERE post_id = #{post_id}
+            ) \
+        ORDER BY random() \
+        LIMIT 1 \
+    "
+    )]
+    async fn random_recommended_post(rb: &RBatis, post_id: &u64) -> rbatis::Result<Option<Post>> {
+        impled!()
+    }
+
+    #[py_sql(
+        "
+        UPDATE post \
+        SET recommended = #{recommended} \
+        WHERE id = #{id} \
+    "
+    )]
+    async fn set_recommended_by_id(
+        rb: &RBatis,
+        id: &u64,
+        recommended: &u8,
+    ) -> rbatis::Result<ExecResult> {
+        impled!()
+    }
+
     fn apply_tags(&mut self, tags: Vec<Tag>) {
         self.tags = tags;
     }
@@ -383,6 +419,16 @@ impl PostService for RbatisPostService {
         PostTag::delete_by_post_id(&mut tx, id).await?;
         RbatisPostService::delete_post_by_id(&mut tx, id).await?;
         tx.commit().await?;
+        Ok(())
+    }
+
+    async fn random_recommended_post(&self, post_id: &u64) -> DResult<Option<Post>> {
+        let post_option = Post::random_recommended_post(&self.rb, post_id).await?;
+        RbatisPostService::saturate_with_tags(&self, post_option).await
+    }
+
+    async fn set_post_recommended_by_id(&self, id: &u64, recommended: &u8) -> DResult<()> {
+        Post::set_recommended_by_id(&self.rb, id, recommended).await?;
         Ok(())
     }
 

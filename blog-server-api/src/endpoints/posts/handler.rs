@@ -153,12 +153,14 @@ pub async fn direct_handler(
 mod tests {
     use super::*;
     use async_trait::async_trait;
-    use blog_server_services::traits::{
-        author_service::{Author as SAuthor, AuthorService, BaseAuthor, BaseMinimalAuthor, BaseSecondaryAuthor},
-        entity_post_service::EntityPostService,
-        post_service::{PostService, Post},
-    };
     use blog_generic::entities::Post as EPost;
+    use blog_server_services::traits::{
+        author_service::{
+            Author as SAuthor, AuthorService, BaseAuthor, BaseMinimalAuthor, BaseSecondaryAuthor,
+        },
+        entity_post_service::EntityPostService,
+        post_service::{Post, PostService},
+    };
     use screw_components::dyn_result::DResult;
 
     enum PostBehavior {
@@ -177,7 +179,10 @@ mod tests {
             _request: PostsQuery<'q, 'a, 't, 'p, 'o, 'l>,
         ) -> DResult<PostsQueryAnswer> {
             match self.behavior {
-                PostBehavior::Success(total) => Ok(PostsQueryAnswer { total_count: total, posts: vec![] }),
+                PostBehavior::Success(total) => Ok(PostsQueryAnswer {
+                    total_count: total,
+                    posts: vec![],
+                }),
                 PostBehavior::Error => Err("db error".into()),
             }
         }
@@ -186,7 +191,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn create_post(&self, _post: &blog_server_services::traits::post_service::BasePost) -> DResult<u64> {
+        async fn create_post(
+            &self,
+            _post: &blog_server_services::traits::post_service::BasePost,
+        ) -> DResult<u64> {
             unimplemented!()
         }
 
@@ -203,15 +211,32 @@ mod tests {
             unimplemented!()
         }
 
-        async fn tag_by_id(&self, _id: &u64) -> DResult<Option<blog_server_services::traits::post_service::Tag>> {
+        async fn tag_by_id(
+            &self,
+            _id: &u64,
+        ) -> DResult<Option<blog_server_services::traits::post_service::Tag>> {
             unimplemented!()
         }
 
-        async fn create_tags(&self, _tag_titles: Vec<String>) -> DResult<Vec<blog_server_services::traits::post_service::Tag>> {
+        async fn random_recommended_post(&self, _post_id: &u64) -> DResult<Option<Post>> {
+            unimplemented!()
+        }
+        async fn set_post_recommended_by_id(&self, _id: &u64, _recommended: &u8) -> DResult<()> {
             unimplemented!()
         }
 
-        async fn merge_post_tags(&self, _post_id: &u64, _tags: Vec<blog_server_services::traits::post_service::Tag>) -> DResult<()> {
+        async fn create_tags(
+            &self,
+            _tag_titles: Vec<String>,
+        ) -> DResult<Vec<blog_server_services::traits::post_service::Tag>> {
+            unimplemented!()
+        }
+
+        async fn merge_post_tags(
+            &self,
+            _post_id: &u64,
+            _tags: Vec<blog_server_services::traits::post_service::Tag>,
+        ) -> DResult<()> {
             unimplemented!()
         }
     }
@@ -278,8 +303,12 @@ mod tests {
 
     #[tokio::test]
     async fn unauthorized_error_when_token_invalid() {
-        let post_service = Arc::new(MockPostService { behavior: PostBehavior::Success(0) });
-        let entity_post_service = Arc::new(MockEntityPostService { behavior: EntityBehavior::Success(vec![]) });
+        let post_service = Arc::new(MockPostService {
+            behavior: PostBehavior::Success(0),
+        });
+        let entity_post_service = Arc::new(MockEntityPostService {
+            behavior: EntityBehavior::Success(vec![]),
+        });
         let request = UnpublishedPostsRequestContent {
             base: empty_request(post_service, entity_post_service),
             auth_author_future: Box::pin(async { Err(auth::Error::TokenMissing) }),
@@ -290,11 +319,19 @@ mod tests {
 
     #[tokio::test]
     async fn forbidden_when_author_mismatch() {
-        let post_service = Arc::new(MockPostService { behavior: PostBehavior::Success(0) });
-        let entity_post_service = Arc::new(MockEntityPostService { behavior: EntityBehavior::Success(vec![]) });
+        let post_service = Arc::new(MockPostService {
+            behavior: PostBehavior::Success(0),
+        });
+        let entity_post_service = Arc::new(MockEntityPostService {
+            behavior: EntityBehavior::Success(vec![]),
+        });
         let request = UnpublishedPostsRequestContent {
             base: PostsRequestContent {
-                filter: Filter { search_query: None, author_id: Some(2), tag_id: None },
+                filter: Filter {
+                    search_query: None,
+                    author_id: Some(2),
+                    tag_id: None,
+                },
                 offset: None,
                 limit: None,
                 post_service,
@@ -308,24 +345,36 @@ mod tests {
 
     #[tokio::test]
     async fn database_error_from_post_service() {
-        let post_service = Arc::new(MockPostService { behavior: PostBehavior::Error });
-        let entity_post_service = Arc::new(MockEntityPostService { behavior: EntityBehavior::Success(vec![]) });
+        let post_service = Arc::new(MockPostService {
+            behavior: PostBehavior::Error,
+        });
+        let entity_post_service = Arc::new(MockEntityPostService {
+            behavior: EntityBehavior::Success(vec![]),
+        });
         let result = http_handler((empty_request(post_service, entity_post_service),)).await;
         assert!(matches!(result, Err(DatabaseError { .. })));
     }
 
     #[tokio::test]
     async fn database_error_from_entity_service() {
-        let post_service = Arc::new(MockPostService { behavior: PostBehavior::Success(0) });
-        let entity_post_service = Arc::new(MockEntityPostService { behavior: EntityBehavior::Error });
+        let post_service = Arc::new(MockPostService {
+            behavior: PostBehavior::Success(0),
+        });
+        let entity_post_service = Arc::new(MockEntityPostService {
+            behavior: EntityBehavior::Error,
+        });
         let result = http_handler((empty_request(post_service, entity_post_service),)).await;
         assert!(matches!(result, Err(DatabaseError { .. })));
     }
 
     #[tokio::test]
     async fn success_returns_posts() {
-        let post_service = Arc::new(MockPostService { behavior: PostBehavior::Success(0) });
-        let entity_post_service = Arc::new(MockEntityPostService { behavior: EntityBehavior::Success(vec![]) });
+        let post_service = Arc::new(MockPostService {
+            behavior: PostBehavior::Success(0),
+        });
+        let entity_post_service = Arc::new(MockEntityPostService {
+            behavior: EntityBehavior::Success(vec![]),
+        });
         let result = http_handler((empty_request(post_service, entity_post_service),)).await;
         assert!(matches!(result, Ok(_)));
     }
