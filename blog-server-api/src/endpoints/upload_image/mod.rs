@@ -1,7 +1,6 @@
 mod handler;
-mod request_content;
-mod response_content_failure;
-mod response_content_success;
+mod middleware;
+mod types;
 
 pub use handler::http_handler;
-
+pub use middleware::UploadImageMiddlewareConverter;

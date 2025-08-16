@@ -65,10 +65,16 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
     let telegram_handler = telegram_login::http_handler;
 
     router::first::Router::with_fallback_handler(fallback_handler).and_routes(|r| {
-        r.route(
-            route::first::Route::with_method(&hyper::Method::POST)
-                .and_path("/api/image")
-                .and_handler(upload_image::http_handler),
+        r.scoped_middleware(
+            "/api/image",
+            upload_image::UploadImageMiddlewareConverter::default(),
+            |r| {
+                r.route(
+                    route::first::Route::with_method(&hyper::Method::POST)
+                        .and_path("")
+                        .and_handler(upload_image::http_handler),
+                )
+            },
         )
         .scoped_middleware(
             "/api",
@@ -76,14 +82,7 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                 pretty_printed: cfg!(debug_assertions),
             },
             |r| {
-                r.scoped("/image", |r| {
-                    r.route(
-                        route::first::Route::with_method(&hyper::Method::DELETE)
-                            .and_path("/{filename:[^/]*}")
-                            .and_handler(delete_image::http_handler),
-                    )
-                })
-                .scoped("/author", |r| {
+                r.scoped("/author", |r| {
                     r.route(
                         route::first::Route::with_method(&hyper::Method::GET)
                             .and_path("/me")

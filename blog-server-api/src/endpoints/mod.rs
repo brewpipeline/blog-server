@@ -10,7 +10,6 @@ pub mod comments;
 pub mod create_comment;
 pub mod create_post;
 pub mod delete_comment;
-pub mod delete_image;
 pub mod delete_post;
 pub mod login;
 pub mod post;
