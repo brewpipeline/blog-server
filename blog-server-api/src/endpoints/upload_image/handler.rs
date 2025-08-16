@@ -1,10 +1,11 @@
-use super::types::UploadImageError;
 use crate::{extensions::Resolve, utils::auth};
 use blog_server_services::traits::author_service::{Author, AuthorService};
+use chrono::Utc;
 use futures_util::stream::once;
 use hyper::{body::Bytes, header, Body, StatusCode};
 use image::ImageFormat;
 use multer::Multipart;
+use rand::Rng;
 use screw_core::request::Request;
 use screw_core::response::Response;
 use screw_core::routing::router;
@@ -53,12 +54,12 @@ where
             .map_err(|e| UploadImageError::InvalidData(e.to_string()))?
             .ok_or_else(|| UploadImageError::InvalidData("file field is required".to_string()))?;
 
-        let filename = field
+        let original_filename = field
             .file_name()
             .map(|s| s.to_string())
             .ok_or_else(|| UploadImageError::InvalidData("filename is required".to_string()))?;
 
-        let extension = filename
+        let extension = original_filename
             .rsplit('.')
             .next()
             .ok_or_else(|| UploadImageError::InvalidData("invalid filename".to_string()))?
@@ -89,20 +90,26 @@ where
             .await
             .map_err(|e| UploadImageError::IoError(e.to_string()))?;
 
+        let salt = format!(
+            "{}_{}",
+            Utc::now().timestamp_millis(),
+            rand::thread_rng().gen::<u32>()
+        );
+        let filename = format!("{}_{}", salt, original_filename);
         let path = format!("images/{}", filename);
         fs::write(&path, &data)
             .await
             .map_err(|e| UploadImageError::IoError(e.to_string()))?;
 
-        Ok::<(), UploadImageError>(())
+        Ok::<String, UploadImageError>(path)
     }
     .await;
 
     match result {
-        Ok(_) => Response {
+        Ok(path) => Response {
             http: hyper::Response::builder()
                 .status(StatusCode::OK)
-                .body(Body::empty())
+                .body(Body::from(path))
                 .unwrap(),
         },
         Err(e) => Response {
@@ -111,5 +118,44 @@ where
                 .body(Body::from(e.message()))
                 .unwrap(),
         },
+    }
+}
+
+enum UploadImageError {
+    Unauthorized(String),
+    Forbidden,
+    InvalidData(String),
+    IoError(String),
+}
+
+impl UploadImageError {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            UploadImageError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
+            UploadImageError::Forbidden => StatusCode::FORBIDDEN,
+            UploadImageError::InvalidData(_) => StatusCode::BAD_REQUEST,
+            UploadImageError::IoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+
+    fn message(&self) -> String {
+        match self {
+            UploadImageError::Unauthorized(reason) => {
+                if cfg!(debug_assertions) {
+                    format!("unauthorized error: {}", reason)
+                } else {
+                    "unauthorized error".to_string()
+                }
+            }
+            UploadImageError::Forbidden => "insufficient rights".to_string(),
+            UploadImageError::InvalidData(reason) => format!("invalid data: {}", reason),
+            UploadImageError::IoError(reason) => {
+                if cfg!(debug_assertions) {
+                    format!("io error: {}", reason)
+                } else {
+                    "io error".to_string()
+                }
+            }
+        }
     }
 }
