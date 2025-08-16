@@ -1,12 +1,4 @@
-use blog_server_services::traits::author_service::Author;
-use crate::utils::auth;
 use hyper::StatusCode;
-
-pub struct UploadImageRequest {
-    pub bytes: Vec<u8>,
-    pub content_type: Option<String>,
-    pub author: Result<Author, auth::Error>,
-}
 
 pub enum UploadImageError {
     Unauthorized(String),
