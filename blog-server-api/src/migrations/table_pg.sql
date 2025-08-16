@@ -238,8 +238,16 @@ END $$
 
 DO $$ BEGIN
   IF EXISTS(select * from information_schema.columns where table_name = 'post' and column_name = 'published') THEN
-ALTER TABLE post RENAME COLUMN published TO publish_type;
+  ALTER TABLE post RENAME COLUMN published TO publish_type;
 END IF;
+END $$
+
+;
+
+DO $$ BEGIN
+  IF NOT EXISTS(select * from information_schema.columns where table_name = 'post' and column_name = 'recommended') THEN
+    ALTER TABLE post ADD COLUMN recommended SMALLINT NOT NULL DEFAULT 0;
+  END IF;
 END $$
 
 ;

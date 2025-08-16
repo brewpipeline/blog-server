@@ -67,6 +67,7 @@ impl From<(u64, ECommonPost)> for BasePost {
 #[serde(rename_all = "snake_case")]
 pub struct Post {
     pub id: u64,
+    pub recommended: u8,
     #[serde(default)]
     pub tags: Vec<Tag>,
     #[serde(flatten)]
@@ -132,6 +133,9 @@ pub trait PostService: Send + Sync {
         update_created_at: &bool,
     ) -> DResult<()>;
     async fn delete_post_by_id(&self, id: &u64) -> DResult<()>;
+
+    async fn random_recommended_post(&self, post_id: &u64) -> DResult<Option<Post>>;
+    async fn set_post_recommended_by_id(&self, id: &u64, recommended: &u8) -> DResult<()>;
 
     async fn tag_by_id(&self, id: &u64) -> DResult<Option<Tag>>;
     async fn create_tags(&self, tag_titles: Vec<String>) -> DResult<Vec<Tag>>;
