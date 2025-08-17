@@ -1,6 +1,7 @@
 mod author;
 mod author_container;
 mod authors_container;
+mod chat;
 mod comment;
 mod comments_container;
 mod common_comment;
@@ -14,11 +15,11 @@ mod posts_container;
 mod tag;
 mod tag_container;
 mod total_offset_limit_container;
-mod chat;
 
 pub use author::*;
 pub use author_container::*;
 pub use authors_container::*;
+pub use chat::*;
 pub use comment::*;
 pub use comments_container::*;
 pub use common_comment::*;
@@ -32,4 +33,3 @@ pub use posts_container::*;
 pub use tag::*;
 pub use tag_container::*;
 pub use total_offset_limit_container::*;
-pub use chat::*;

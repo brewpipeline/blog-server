@@ -13,7 +13,6 @@ pub struct ChatRequestContent {
     pub(super) question: DResult<ChatQuestion>,
     pub(super) post_service: Arc<dyn PostService>,
     pub(super) entity_post_service: Arc<dyn EntityPostService>,
-    pub(super) author_service: Arc<dyn AuthorService>,
     pub(super) session_key: String,
 }
 
@@ -44,7 +43,6 @@ where
             question: origin_content.data_result,
             post_service: origin_content.extensions.resolve(),
             entity_post_service: origin_content.extensions.resolve(),
-            author_service: origin_content.extensions.resolve(),
             session_key: format!("{}|{}|{}", ip, ua, lang),
         }
     }

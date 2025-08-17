@@ -4,6 +4,7 @@ pub mod author_me;
 pub mod author_override_social_data;
 pub mod author_subscribe;
 pub mod authors;
+pub mod chat;
 #[cfg(feature = "ssr")]
 mod client_handler;
 pub mod comments;
@@ -11,7 +12,6 @@ pub mod create_comment;
 pub mod create_post;
 pub mod delete_comment;
 pub mod delete_post;
-pub mod chat;
 pub mod login;
 pub mod post;
 pub mod post_recommendation;

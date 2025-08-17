@@ -6,6 +6,7 @@ use once_cell::sync::Lazy;
 use reqwest::Client;
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::u64;
 use tokio::sync::Mutex;
 
 use super::request_content::ChatRequestContent;
@@ -21,59 +22,29 @@ pub async fn http_handler(
         question,
         post_service,
         entity_post_service,
-        author_service,
         session_key,
     },): (ChatRequestContent,),
 ) -> Result<ChatResponseContentSuccess, ChatResponseContentFailure> {
     let question = question.map_err(|e| ParamsDecodeError {
         reason: e.to_string(),
     })?;
-    let session_key = session_key;
 
-    let posts_total = post_service
-        .posts(PostsQuery::offset_and_limit(&0, &0).publish_type(Some(&PublishType::Published)))
+    let posts_list = post_service
+        .posts(
+            PostsQuery::offset_and_limit(&0, &(i64::MAX as u64))
+                .publish_type(Some(&PublishType::Published)),
+        )
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
         })?
-        .total_count;
-    let posts_list = if posts_total > 0 {
-        post_service
-            .posts(
-                PostsQuery::offset_and_limit(&0, &posts_total)
-                    .publish_type(Some(&PublishType::Published)),
-            )
-            .await
-            .map_err(|e| DatabaseError {
-                reason: e.to_string(),
-            })?
-            .posts
-    } else {
-        vec![]
-    };
+        .posts;
     let posts_entities = entity_post_service
         .posts_entities(posts_list)
         .await
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
         })?;
-
-    let authors_total = author_service
-        .authors_count()
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
-    let authors = if authors_total > 0 {
-        author_service
-            .authors(&0, &authors_total)
-            .await
-            .map_err(|e| DatabaseError {
-                reason: e.to_string(),
-            })?
-    } else {
-        vec![]
-    };
 
     let posts_context = posts_entities
         .into_iter()
@@ -88,36 +59,38 @@ pub async fn http_handler(
             } else {
                 author_name
             };
-            let tags = p.joined_tags_string(", ");
-            let tags_display = if tags.is_empty() {
-                String::new()
-            } else {
-                format!(" [tags: {}]", tags)
-            };
-            format!(
-                "Post: {} by {}{} - {}",
-                p.title, author_display, tags_display, p.summary
-            )
-        })
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    let authors_context = authors
-        .into_iter()
-        .map(|a| {
-            format!(
-                "Author {} - {} {}",
-                a.base.slug,
-                a.base.first_name.unwrap_or_default(),
-                a.base.last_name.unwrap_or_default()
-            )
+            let post_content = vec![
+                Some(format!("[title: {}]", p.title)),
+                Some(format!("[author: {}]", author_display)),
+                {
+                    let tags = p.joined_tags_string(", ");
+                    if tags.is_empty() {
+                        Option::None
+                    } else {
+                        Some(format!("[tags: {}]", tags))
+                    }
+                },
+                Some(format!("[summary: {}]", p.summary)),
+                Some(format!("[created_at: {}]", p.created_at)),
+                Some(format!("[id: {}]", p.id)),
+                Some(format!("[slug: {}]", p.slug)),
+            ]
+            .into_iter()
+            .filter_map(|x| x)
+            .collect::<Vec<String>>()
+            .join(" ");
+            format!("Post: {}", post_content)
         })
         .collect::<Vec<_>>()
         .join("\n");
 
     let system_message = json!({
         "role": "system",
-        "content": "You strictly answer only about the provided blog posts and authors. If asked anything else, respond with 'I can only answer questions about the blog'. Keep answers under 50 words.",
+        "content": r#"
+            You strictly answer only about the provided blog posts. 
+            If suggesting another post, use the format: 'link:/{slug}/{id}'. 
+            Keep answers under 100 words.
+        "#,
     });
 
     let messages = {
@@ -125,14 +98,14 @@ pub async fn http_handler(
         let session = sessions
             .entry(session_key.clone())
             .or_insert((0u8, Vec::new()));
-        if session.0 >= 5 {
+        if session.0 >= 10 {
             return Err(SessionLimitReached);
         }
         session.0 += 1;
         if session.1.is_empty() {
             session.1.push(json!({
                 "role": "user",
-                "content": format!("Posts:\n{}\n\nAuthors:\n{}", posts_context, authors_context),
+                "content": format!("Posts:\n{}", posts_context),
             }));
         }
         let mut msgs = vec![system_message];
@@ -164,7 +137,8 @@ pub async fn http_handler(
     let answer = value["choices"][0]["message"]["content"]
         .as_str()
         .unwrap_or("Couldn't get an answer")
-        .to_string();
+        .to_string()
+        .replace("link:", crate::SITE_URL);
 
     {
         let mut sessions = SESSION_DATA.lock().await;
