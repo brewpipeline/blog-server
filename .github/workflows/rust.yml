@@ -23,6 +23,7 @@ jobs:
       PG_URL: ""
       RABBIT_URL: ""
       TELEGRAM_BOT_TOKEN: ""
+      OPENAI_API_KEY: ""
 
       TELEGRAM_BOT_LOGIN: ""
       TITLE: ""

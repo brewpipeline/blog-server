@@ -16,6 +16,7 @@ const SERVER_ADDRESS: &'static str = env!("SERVER_ADDRESS"); // 127.0.0.1:3000
 const PG_URL: &'static str = env!("PG_URL"); // postgres://postgres:postgres@localhost:5432/blog
 const RABBIT_URL: &'static str = env!("RABBIT_URL"); // amqp://guest:guest@localhost:5672/
 const TELEGRAM_BOT_TOKEN: &'static str = env!("TELEGRAM_BOT_TOKEN"); // XXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXX
+const OPENAI_API_KEY: &'static str = env!("OPENAI_API_KEY"); // OpenAI API key
 
 #[tokio::main]
 async fn main() -> screw_components::dyn_result::DResult<()> {
