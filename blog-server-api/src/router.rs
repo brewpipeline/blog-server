@@ -212,8 +212,8 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                 })
                 .route(
                     route::first::Route::with_method(&hyper::Method::POST)
-                        .and_path("/chat")
-                        .and_handler(chat::http_handler),
+                        .and_path("/chatgpt")
+                        .and_handler(chatgpt::http_handler),
                 )
                 .route(
                     route::first::Route::with_method(&hyper::Method::POST)

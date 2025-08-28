@@ -4,7 +4,7 @@ pub mod author_me;
 pub mod author_override_social_data;
 pub mod author_subscribe;
 pub mod authors;
-pub mod chat;
+pub mod chatgpt;
 #[cfg(feature = "ssr")]
 mod client_handler;
 pub mod comments;
