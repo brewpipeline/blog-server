@@ -64,6 +64,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
     #[cfg(feature = "telegram")]
     let telegram_handler = telegram_login::http_handler;
 
+    #[cfg(not(feature = "chatgpt"))]
+    let chatgpt_handler = api_not_found_fallback_handler;
+    #[cfg(feature = "chatgpt")]
+    let chatgpt_handler = chatgpt::http_handler;
+
     router::first::Router::with_fallback_handler(fallback_handler).and_routes(|r| {
         r.scoped_middleware(
             "/api",
@@ -213,7 +218,7 @@ pub fn make_router<Extensions: ExtensionsProviderType>(
                 .route(
                     route::first::Route::with_method(&hyper::Method::POST)
                         .and_path("/chatgpt")
-                        .and_handler(chatgpt::http_handler),
+                        .and_handler(chatgpt_handler),
                 )
                 .route(
                     route::first::Route::with_method(&hyper::Method::POST)
