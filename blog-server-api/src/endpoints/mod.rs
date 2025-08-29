@@ -4,6 +4,8 @@ pub mod author_me;
 pub mod author_override_social_data;
 pub mod author_subscribe;
 pub mod authors;
+#[cfg(feature = "chatgpt")]
+pub mod chatgpt;
 #[cfg(feature = "ssr")]
 mod client_handler;
 pub mod comments;
@@ -13,6 +15,8 @@ pub mod delete_comment;
 pub mod delete_post;
 pub mod login;
 pub mod post;
+pub mod post_recommendation;
+pub mod post_update_recommended;
 pub mod posts;
 #[cfg(feature = "ssr")]
 mod sitemap_handler;
