@@ -1,4 +1,4 @@
-name: Rust
+name: Tests
 
 on:
   push:
@@ -12,7 +12,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  tests:
 
     runs-on: ubuntu-latest
 
@@ -32,8 +32,7 @@ jobs:
       ACCORDION_JSON: ""
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Build
-      run: cargo build --verbose --all-features
+    - uses: actions/checkout@v4
     - name: Run tests
       run: cargo test --verbose --all-features
+

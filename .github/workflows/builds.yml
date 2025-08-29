@@ -1,0 +1,59 @@
+name: Builds
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-matrix:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        features:
+          - ""
+          - "chatgpt"
+          - "yandex"
+          - "telegram"
+          - "yandex,telegram"
+          - "ssr,chatgpt"
+          - "ssr,yandex"
+          - "ssr,telegram"
+          - "ssr,yandex,telegram"
+
+    env:
+      SITE_URL: ""
+      JWT_SECRET: ""
+      SERVER_ADDRESS: ""
+      PG_URL: ""
+      RABBIT_URL: ""
+      TELEGRAM_BOT_TOKEN: ""
+      OPENAI_API_KEY: ""
+
+      TELEGRAM_BOT_LOGIN: ""
+      TITLE: ""
+      DESCRIPTION: ""
+      KEYWORDS: ""
+      ACCORDION_JSON: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+      - name: Build blog-server-api (no features)
+        if: matrix.features == ''
+        run: |
+          cargo build -p blog-server-api --no-default-features --verbose
+      - name: "Build blog-server-api (features: ${{ matrix.features }})"
+        if: matrix.features != ''
+        run: |
+          cargo build -p blog-server-api --no-default-features --features "${{ matrix.features }}" --verbose
+
