@@ -7,7 +7,7 @@ edition = "2021"
 ssr = ["blog-ui", "sitemap-rs"]
 yandex = ["reqwest", "blog-ui?/yandex"]
 telegram = ["sha2", "hmac", "hex", "blog-ui?/telegram"]
-chatgpt = ["reqwest", "uuid", "blog-ui?/chatgpt"]
+chatgpt = ["uuid", "blog-ui?/chatgpt", "async-openai"]
 
 [dependencies.screw-components]
 git = "https://github.com/Tikitko/screw.git"
@@ -61,3 +61,4 @@ hmac = { version = "0.12.1", optional = true }
 hex = { version = "0.4.3", optional = true }
 config = "0.15.6"
 uuid = { version = "1.18.0", features = ["std", "v4"], optional = true }
+async-openai = { version = "0.23", optional = true }
