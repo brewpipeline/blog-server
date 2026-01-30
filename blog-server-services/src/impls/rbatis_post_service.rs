@@ -2,7 +2,7 @@ use crate::traits::post_service::{BasePost, Post, PostService, PostsQuery, Posts
 use crate::utils::{string_filter, transliteration};
 use rbatis::executor::RBatisTxExecutorGuard;
 use rbatis::{rbatis::RBatis, rbdc::db::ExecResult};
-use rbs::{Value, to_value};
+use rbs::{Value, value};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -308,7 +308,7 @@ impl PostService for RbatisPostService {
                 let mut from_parts = vec!["post"];
                 if let Some(search_query) = query.search_query {
                     from_parts.push("plainto_tsquery('russian', LOWER(?)) query");
-                    args.push(to_value!(search_query));
+                    args.push(value!(search_query));
                     from_parts.push("to_tsvector('russian', LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content)) textsearch");
                 }
                 Some(format!("FROM {}", from_parts.join(", ")))
@@ -331,15 +331,15 @@ impl PostService for RbatisPostService {
                 }
                 if let Some(author_id) = query.author_id {
                     where_parts.push("author_id = ?");
-                    args.push(to_value!(author_id));
+                    args.push(value!(author_id));
                 }
                 if let Some(tag_id) = query.tag_id {
                     where_parts.push("post_tag.tag_id = ?");
-                    args.push(to_value!(tag_id));
+                    args.push(value!(tag_id));
                 }
                 if let Some(publish_type) = query.publish_type {
                     where_parts.push("publish_type = ?");
-                    args.push(to_value!(publish_type));
+                    args.push(value!(publish_type));
                 }
                 if where_parts.is_empty() {
                     None
@@ -356,11 +356,11 @@ impl PostService for RbatisPostService {
                 Some(format!("ORDER BY {}", order_by_parts.join(", ")))
             },
             {
-                args.push(to_value!(query.limit));
+                args.push(value!(query.limit));
                 Some("LIMIT ?".to_string())
             },
             {
-                args.push(to_value!(query.offset));
+                args.push(value!(query.offset));
                 Some("OFFSET ?".to_string())
             }
         ]
