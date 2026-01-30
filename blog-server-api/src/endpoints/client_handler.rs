@@ -106,7 +106,7 @@ pub async fn client_handler<
         http: hyper::Response::builder()
             .status(status)
             .header("Content-Type", "text/html")
-            .body(hyper::Body::from(page))
+            .body(screw_core::body::full(page))
             .unwrap(),
     }
 }

@@ -1,9 +1,9 @@
 use blog_generic::{entities::CommonPost, events::NewPostPublished};
 use blog_server_services::traits::{
+    Publish,
     author_service::{Author, AuthorService},
     entity_post_service::EntityPostService,
     post_service::PostService,
-    Publish,
 };
 use screw_api::request::ApiRequestContent;
 use screw_components::{dyn_fn::DFuture, dyn_result::DResult};

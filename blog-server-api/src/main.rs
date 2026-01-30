@@ -50,17 +50,24 @@ async fn main() -> screw_components::dyn_result::DResult<()> {
     loop {
         let (stream, remote_addr) = listener.accept().await?;
         let session_service = server_service.make_session_service(remote_addr);
-        tokio::task::spawn(async move {
-            if let Err(err) = hyper::server::conn::http1::Builder::new()
-                .serve_connection(
-                    hyper_util::rt::TokioIo::new(stream),
-                    session_service,
-                )
-                .await
-            {
-                eprintln!("Error serving connection: {err}");
-            }
-        });
+        tokio::task::spawn(serve_connection(stream, session_service));
+    }
+}
+
+async fn serve_connection(
+    stream: tokio::net::TcpStream,
+    session_service: impl hyper::service::Service<
+        hyper::Request<hyper::body::Incoming>,
+        Response = hyper::Response<screw_core::body::ResponseBody>,
+        Error = std::convert::Infallible,
+    > + Send,
+) {
+    let builder = hyper::server::conn::http1::Builder::new();
+    if let Err(err) = builder
+        .serve_connection(hyper_util::rt::TokioIo::new(stream), session_service)
+        .await
+    {
+        eprintln!("Error serving connection: {err}");
     }
 }
 

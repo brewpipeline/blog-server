@@ -1,7 +1,7 @@
 use blog_generic::events::{NewPostPublished, SubscriptionStateChanged};
 use std::sync::Arc;
 
-use crate::traits::{author_service::AuthorService, Publish};
+use crate::traits::{Publish, author_service::AuthorService};
 use crate::utils::telegram_send_message_request::TelegramSendMessageRequest;
 
 pub fn create_telegram_user_updates_service(

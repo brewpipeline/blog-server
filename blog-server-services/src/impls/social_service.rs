@@ -3,9 +3,9 @@ use rbatis::rbdc::rt::tokio;
 use screw_components::dyn_result::{DError, DResult};
 use std::sync::Arc;
 
+use crate::traits::Publish;
 use crate::traits::author_service::{Author, AuthorService, BaseMinimalAuthor};
 use crate::traits::social_service::{SocialId, SocialService as SocialServiceTrait};
-use crate::traits::Publish;
 
 pub fn create_social_service(
     author_service: Arc<dyn AuthorService>,

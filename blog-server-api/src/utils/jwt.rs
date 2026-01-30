@@ -1,6 +1,6 @@
 use jsonwebtoken::{
-    decode as jwt_decode, encode as jwt_encode, errors::Result, DecodingKey, EncodingKey, Header,
-    Validation,
+    DecodingKey, EncodingKey, Header, Validation, decode as jwt_decode, encode as jwt_encode,
+    errors::Result,
 };
 use serde::{Deserialize, Serialize};
 

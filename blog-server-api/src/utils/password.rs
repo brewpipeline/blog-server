@@ -1,8 +1,8 @@
 use argon2::{
-    password_hash::{
-        rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, Result, SaltString,
-    },
     Argon2,
+    password_hash::{
+        PasswordHash, PasswordHasher, PasswordVerifier, Result, SaltString, rand_core::OsRng,
+    },
 };
 
 pub fn hash(password: &String) -> Result<String> {

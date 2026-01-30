@@ -70,4 +70,4 @@ hmac = { version = "0.12.1", optional = true }
 hex = { version = "0.4.3", optional = true }
 config = "0.15.6"
 uuid = { version = "1.18.0", features = ["std", "v4"], optional = true }
-async-openai = { version = "0.32.4", optional = true }
+async-openai = { version = "0.32.4", features = ["chat-completion"], optional = true }
