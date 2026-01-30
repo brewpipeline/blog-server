@@ -1,7 +1,6 @@
 [workspace]
 resolver = "2"
 members = [
-    "blog-generic",
     "blog-server-api",
     "blog-server-services"
 ]

@@ -1,6 +1,7 @@
 use jsonwebtoken::{
-    decode as jwt_decode, encode as jwt_encode, errors::Result, DecodingKey, EncodingKey, Header,
-    Validation,
+    DecodingKey, EncodingKey, Header, Validation,
+    dangerous::insecure_decode as jwt_insecure_decode, decode as jwt_decode, encode as jwt_encode,
+    errors::Result,
 };
 use serde::{Deserialize, Serialize};
 
@@ -26,12 +27,5 @@ pub fn decode<C: for<'de> Deserialize<'de>>(token: &str, additional_secret: &Str
 }
 
 pub fn insecure_decode<C: for<'de> Deserialize<'de>>(token: &str) -> Result<C> {
-    Ok(
-        jwt_decode::<C>(token, &DecodingKey::from_secret("".as_bytes()), &{
-            let mut validation = Validation::default();
-            validation.insecure_disable_signature_validation();
-            validation
-        })?
-        .claims,
-    )
+    Ok(jwt_insecure_decode::<C>(token)?.claims)
 }

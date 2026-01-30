@@ -62,7 +62,7 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<dyn PostService>>>(
     Response {
         http: hyper::Response::builder()
             .header("Content-Type", "application/xml")
-            .body(hyper::Body::from(buf))
+            .body(screw_core::body::full(buf))
             .unwrap(),
     }
 }

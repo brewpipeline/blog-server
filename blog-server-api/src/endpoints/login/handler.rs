@@ -301,7 +301,7 @@ mod tests {
     #[tokio::test]
     async fn success_returns_token() {
         reset_storage().await;
-        std::env::set_var("JWT_SECRET", "secret");
+        unsafe { std::env::set_var("JWT_SECRET", "secret") };
         let hash = password::hash(&"secret".to_string()).unwrap();
         let service = Arc::new(MockAuthorService {
             behavior: MockBehavior::Success(Some(sample_author(Some(hash.clone())))),

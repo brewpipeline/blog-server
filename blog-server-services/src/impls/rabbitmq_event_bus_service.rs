@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use amqprs::{
+    BasicProperties, FieldTable,
     callbacks::{DefaultChannelCallback, DefaultConnectionCallback},
     channel::{BasicPublishArguments, Channel, QueueBindArguments},
     connection::{Connection, OpenConnectionArguments},
     error::Error,
-    BasicProperties, FieldTable,
 };
 use blog_generic::events::{NewPostPublished, SubscriptionStateChanged};
 use serde::Serialize;

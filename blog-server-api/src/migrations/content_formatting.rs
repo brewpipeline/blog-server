@@ -4,7 +4,7 @@ pub async fn exec(rb: &rbatis::RBatis) -> Result<(), Box<dyn std::error::Error>>
     let is_content_migrated: bool = rb
         .query_decode::<u64>(
             "select count(1) as count from migration where key=?",
-            vec![rbs::to_value!(KEY)],
+            vec![rbs::value!(KEY)],
         )
         .await?
         > 0;
@@ -24,9 +24,9 @@ pub async fn exec(rb: &rbatis::RBatis) -> Result<(), Box<dyn std::error::Error>>
             rb.query(
                 "update post set content=?, plain_text_content=? where id=?",
                 vec![
-                    rbs::to_value!(content),
-                    rbs::to_value!(plain_text_content),
-                    rbs::to_value!(post.id),
+                    rbs::value!(content),
+                    rbs::value!(plain_text_content),
+                    rbs::value!(post.id),
                 ],
             )
             .await?;
@@ -34,8 +34,8 @@ pub async fn exec(rb: &rbatis::RBatis) -> Result<(), Box<dyn std::error::Error>>
         rb.query(
             "insert into migration (key, created_at) values (?, to_timestamp(?))",
             vec![
-                rbs::to_value!(KEY),
-                rbs::to_value!(blog_server_services::utils::time_utils::now_as_secs()),
+                rbs::value!(KEY),
+                rbs::value!(blog_server_services::utils::time_utils::now_as_secs()),
             ],
         )
         .await?;

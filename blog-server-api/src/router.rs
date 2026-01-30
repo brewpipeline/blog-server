@@ -14,7 +14,7 @@ async fn not_found_fallback_handler<Extensions>(
     Response {
         http: hyper::Response::builder()
             .status(hyper::StatusCode::NOT_FOUND)
-            .body(hyper::Body::empty())
+            .body(screw_core::body::empty())
             .unwrap(),
     }
 }
@@ -42,8 +42,8 @@ async fn api_not_found_fallback_handler<Extensions>(
     ApiResponse::failure(NotFoundResponseContentFailure)
 }
 
-pub fn make_router<Extensions: ExtensionsProviderType>(
-) -> router::second::Router<Request<Extensions>, Response> {
+pub fn make_router<Extensions: ExtensionsProviderType>()
+-> router::second::Router<Request<Extensions>, Response> {
     #[cfg(not(feature = "ssr"))]
     let fallback_handler = not_found_fallback_handler;
     #[cfg(feature = "ssr")]
