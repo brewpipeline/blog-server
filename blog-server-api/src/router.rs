@@ -14,7 +14,7 @@ async fn not_found_fallback_handler<Extensions>(
     Response {
         http: hyper::Response::builder()
             .status(hyper::StatusCode::NOT_FOUND)
-            .body(hyper::Body::empty())
+            .body(screw_core::body::empty())
             .unwrap(),
     }
 }

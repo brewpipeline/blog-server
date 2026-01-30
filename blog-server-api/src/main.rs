@@ -42,11 +42,26 @@ async fn main() -> screw_components::dyn_result::DResult<()> {
             )),
     );
 
-    let addr = SERVER_ADDRESS.parse()?;
+    let addr: std::net::SocketAddr = SERVER_ADDRESS.parse()?;
     println!("Listening on http://{}", addr);
-    hyper::Server::bind(&addr).serve(server_service).await?;
 
-    Ok(())
+    let server_service = std::sync::Arc::new(server_service);
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    loop {
+        let (stream, remote_addr) = listener.accept().await?;
+        let session_service = server_service.make_session_service(remote_addr);
+        tokio::task::spawn(async move {
+            if let Err(err) = hyper::server::conn::http1::Builder::new()
+                .serve_connection(
+                    hyper_util::rt::TokioIo::new(stream),
+                    session_service,
+                )
+                .await
+            {
+                eprintln!("Error serving connection: {err}");
+            }
+        });
+    }
 }
 
 pub async fn init_config() -> config::Config {
