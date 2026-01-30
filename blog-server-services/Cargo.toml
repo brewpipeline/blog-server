@@ -12,7 +12,6 @@ package = "screw-components"
 [dependencies.blog-generic]
 git = "https://github.com/brewpipeline/blog-generic.git"
 tag = "0.0.2"
-features = ["validator"]
 
 [dependencies]
 rbs = { version = "4.5.2" }
