@@ -9,7 +9,7 @@ tag = "0.0.2"
 #path = "../../screw/screw-components"
 package = "screw-components"
 
-[dependencies.generic-ui]
+[dependencies.blog-generic]
 git = "https://github.com/brewpipeline/blog-generic.git"
 tag = "0.0.2"
 features = ["validator"]

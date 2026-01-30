@@ -41,7 +41,7 @@ default-features = false
 features = ["server"]
 optional = true
 
-[dependencies.generic-ui]
+[dependencies.blog-generic]
 git = "https://github.com/brewpipeline/blog-generic.git"
 tag = "0.0.2"
 features = ["validator"]
