@@ -133,12 +133,18 @@ impl Post {
             AND post.id <> #{post_id} \
             AND post_tag.tag_id IN (
                 SELECT tag_id FROM post_tag WHERE post_id = #{post_id}
-            ) \
+            )
+            if lang != '':
+                AND (post.lang = #{lang} OR post.lang IS NULL)
         ORDER BY random() \
         LIMIT 1 \
     "
     )]
-    async fn random_recommended_post(rb: &RBatis, post_id: &u64) -> rbatis::Result<Option<Post>> {
+    async fn random_recommended_post(
+        rb: &RBatis,
+        post_id: &u64,
+        lang: &str,
+    ) -> rbatis::Result<Option<Post>> {
         impled!()
     }
 
@@ -169,10 +175,10 @@ struct RbatisPostService {
 impl RbatisPostService {
     #[py_sql(
         "
-        INSERT INTO post 
-        (author_id,title,slug,summary,publish_type,created_at,content,plain_text_content,image_url)
-        VALUES 
-        (#{post.author_id},#{post.title},#{post.slug},#{post.summary},#{post.publish_type},to_timestamp(#{post.created_at}),#{post.content},#{post.plain_text_content},#{post.image_url})
+        INSERT INTO post
+        (author_id,title,slug,summary,publish_type,created_at,content,plain_text_content,image_url,lang)
+        VALUES
+        (#{post.author_id},#{post.title},#{post.slug},#{post.summary},#{post.publish_type},to_timestamp(#{post.created_at}),#{post.content},#{post.plain_text_content},#{post.image_url},#{post.lang})
         RETURNING id
     "
     )]
@@ -192,7 +198,8 @@ impl RbatisPostService {
                 created_at = to_timestamp(#{post_data.created_at}),
             content = #{post_data.content}, \
             plain_text_content = #{post_data.plain_text_content}, \
-            image_url = #{post_data.image_url} \
+            image_url = #{post_data.image_url}, \
+            lang = #{post_data.lang} \
         WHERE id = #{post_id} \
         RETURNING id
     "
@@ -341,6 +348,10 @@ impl PostService for RbatisPostService {
                     where_parts.push("publish_type = ?");
                     args.push(value!(publish_type));
                 }
+                if let Some(lang) = BasePost::current_lang() {
+                    where_parts.push("(post.lang = ? OR post.lang IS NULL)");
+                    args.push(value!(lang));
+                }
                 if where_parts.is_empty() {
                     None
                 } else {
@@ -423,7 +434,8 @@ impl PostService for RbatisPostService {
     }
 
     async fn random_recommended_post(&self, post_id: &u64) -> DResult<Option<Post>> {
-        let post_option = Post::random_recommended_post(&self.rb, post_id).await?;
+        let lang = BasePost::current_lang().unwrap_or_default();
+        let post_option = Post::random_recommended_post(&self.rb, post_id, &lang).await?;
         RbatisPostService::saturate_with_tags(&self, post_option).await
     }
 

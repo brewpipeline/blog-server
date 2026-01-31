@@ -4,10 +4,13 @@ version = "0.0.2"
 edition = "2024"
 
 [features]
+default = ["lang_ru"]
 ssr = ["blog-ui", "sitemap-rs"]
 yandex = ["reqwest", "blog-ui?/yandex"]
 telegram = ["sha2", "hmac", "hex", "blog-ui?/telegram"]
 chatgpt = ["uuid", "blog-ui?/chatgpt", "async-openai"]
+lang_ru = ["blog-ui?/lang_ru", "blog-server-services/lang_ru"]
+lang_en = ["blog-ui?/lang_en", "blog-server-services/lang_en"]
 
 [dependencies.screw-components]
 git = "https://github.com/Tikitko/screw.git"

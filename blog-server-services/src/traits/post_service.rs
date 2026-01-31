@@ -1,3 +1,6 @@
+#[cfg(all(feature = "lang_ru", feature = "lang_en"))]
+compile_error!("Features `lang_ru` and `lang_en` are mutually exclusive");
+
 use blog_generic::entities::Tag as ETag;
 use blog_generic::entities::{CommonPost as ECommonPost, PublishType};
 use screw_components::dyn_result::DResult;
@@ -35,6 +38,22 @@ pub struct BasePost {
     pub content: Option<String>,
     pub plain_text_content: Option<String>,
     pub image_url: Option<String>,
+    pub lang: Option<String>,
+}
+
+impl BasePost {
+    pub fn current_lang() -> Option<String> {
+        #[cfg(feature = "lang_ru")]
+        {
+            return Some("ru".to_string());
+        }
+        #[cfg(feature = "lang_en")]
+        {
+            return Some("en".to_string());
+        }
+        #[allow(unreachable_code)]
+        None
+    }
 }
 
 impl From<(u64, ECommonPost)> for BasePost {
@@ -59,6 +78,7 @@ impl From<(u64, ECommonPost)> for BasePost {
             content,
             plain_text_content,
             image_url: post.image_url,
+            lang: Self::current_lang(),
         }
     }
 }
