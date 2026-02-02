@@ -1,6 +1,6 @@
 [package]
 name = "blog-server-api"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2024"
 
 [features]
@@ -39,7 +39,7 @@ package = "screw-ws"
 
 [dependencies.blog-ui]
 git = "https://github.com/Tikitko/blog-ui.git"
-tag = "0.0.3"
+tag = "0.0.4"
 #path = "../../blog-ui"
 default-features = false
 features = ["server"]
@@ -47,7 +47,7 @@ optional = true
 
 [dependencies.blog-generic]
 git = "https://github.com/brewpipeline/blog-generic.git"
-tag = "0.0.2"
+tag = "0.0.4"
 features = ["validator"]
 
 [dependencies]

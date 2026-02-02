@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use crate::traits::author_service::{Author, AuthorService};
 use crate::traits::entity_post_service::EntityPostService as EntityPostServiceTrait;
-use crate::traits::post_service::Post;
-use blog_generic::entities::{Post as EPost, Tag as ETag};
+use crate::traits::post_service::{BasePost, Post};
+use blog_generic::entities::{Post as EPost, PublishType, Tag as ETag};
 use screw_components::dyn_result::{DError, DResult};
 
 pub fn create_entity_post_service(
@@ -17,6 +17,13 @@ struct EPostBuilder(Post, Author);
 
 impl Into<EPost> for EPostBuilder {
     fn into(self) -> EPost {
+        let noindex = self.0.base.publish_type != PublishType::Published
+            || self
+                .0
+                .base
+                .lang
+                .as_deref()
+                .is_some_and(|l| BasePost::current_lang().is_some_and(|cl| l != cl));
         EPost {
             id: self.0.id,
             title: self.0.base.title,
@@ -38,6 +45,7 @@ impl Into<EPost> for EPostBuilder {
                 })
                 .collect(),
             image_url: self.0.base.image_url,
+            noindex,
         }
     }
 }
