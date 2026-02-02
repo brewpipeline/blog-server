@@ -251,3 +251,11 @@ DO $$ BEGIN
 END $$
 
 ;
+
+DO $$ BEGIN
+  IF NOT EXISTS(select * from information_schema.columns where table_name = 'post' and column_name = 'lang') THEN
+    ALTER TABLE post ADD COLUMN lang VARCHAR(10);
+  END IF;
+END $$
+
+;

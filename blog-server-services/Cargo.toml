@@ -1,6 +1,6 @@
 [package]
 name = "blog-server-services"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2024"
 
 [dependencies.screw-components]
@@ -12,6 +12,11 @@ package = "screw-components"
 [dependencies.blog-generic]
 git = "https://github.com/brewpipeline/blog-generic.git"
 tag = "0.0.2"
+
+[features]
+default = []
+lang_ru = []
+lang_en = []
 
 [dependencies]
 rbs = { version = "4.5.2" }

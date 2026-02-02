@@ -19,14 +19,16 @@ jobs:
       matrix:
         features:
           - ""
+          - "lang_ru"
+          - "lang_en"
           - "chatgpt"
           - "yandex"
           - "telegram"
           - "yandex,telegram"
-          - "ssr,chatgpt"
-          - "ssr,yandex"
-          - "ssr,telegram"
-          - "ssr,yandex,telegram"
+          - "lang_ru,ssr,chatgpt"
+          - "lang_ru,ssr,yandex"
+          - "lang_ru,ssr,telegram"
+          - "lang_ru,ssr,yandex,telegram"
     env:
       SITE_URL: ""
       JWT_SECRET: ""
