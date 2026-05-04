@@ -48,7 +48,7 @@ ARG YANDEX_CLIENT_ID
 
 ENV API_URL=https://$DOMAIN/api \
     SERVER_ADDRESS="127.0.0.1:3000" \
-    SITE_URL=https://$DOMAIN
+    SITE_URL=https://$DOMAIN \
     TITLE=$TITLE \
     DESCRIPTION=$DESCRIPTION \
     KEYWORDS=$KEYWORDS \
@@ -77,7 +77,7 @@ COPY --from=ui-builder /app/blog-ui/dist ./dist
 
 COPY <<EOF /etc/nginx/conf.d/default.conf
 server {
-    listen 8080;
+    listen 80;
 
     root /app/dist;
 
