@@ -23,9 +23,9 @@ ENV API_URL=$API_URL \
     YANDEX_CLIENT_ID=$YANDEX_CLIENT_ID
 
 WORKDIR /app
-COPY .git .git
-COPY .gitmodules .gitmodules
-RUN git submodule update --init blog-ui
+COPY blog-server-api/Cargo.toml blog-server-api/Cargo.toml
+RUN BLOG_UI_TAG=$(grep '^tag = ' blog-server-api/Cargo.toml | sed 's/tag = "\(.*\)"/\1/') && \
+    git clone --depth 1 --branch "$BLOG_UI_TAG" https://github.com/Tikitko/blog-ui.git /app/blog-ui
 
 WORKDIR /app/blog-ui
 RUN trunk build --release -- --no-default-features --features "hydration,$FEATURES"
@@ -55,6 +55,8 @@ WORKDIR /app
 COPY . .
 COPY --from=ui-builder /app/blog-ui /app/blog-ui
 COPY --from=ui-builder /app/blog-ui/dist/index.html ./index.html
+
+RUN printf '\n[patch."https://github.com/Tikitko/blog-ui.git"]\nblog-ui = { path = "blog-ui" }\n' >> Cargo.toml
 
 RUN find /app -maxdepth 2 -name "Cargo.toml"
 RUN cargo build -p blog-server-api --release --no-default-features --features "ssr,$FEATURES"
