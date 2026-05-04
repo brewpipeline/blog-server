@@ -110,8 +110,10 @@ EOF
 
 COPY <<'EOF' /app/start.sh
 #!/bin/sh
+nginx -t
 ./blog-server-api &
-exec nginx -g "daemon off;"
+nginx -g "daemon off;"
+tail -f /var/log/nginx/error.log
 EOF
 
 RUN chmod +x /app/start.sh
