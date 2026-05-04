@@ -108,7 +108,7 @@ server {
 }
 EOF
 
-RUN cat /etc/nginx/nginx.conf && echo "---" && for f in /etc/nginx/conf.d/*; do echo "=== $f ==="; cat "$f"; done
+RUN cat /etc/nginx/nginx.conf && echo "---" && for f in /etc/nginx/conf.d/*; do echo "=== $f ==="; cat "$f"; done && echo "---" && for f in /etc/nginx/sites-enabled/*; do echo "=== $f ==="; cat "$f"; done
 
 COPY <<'EOF' /app/start.sh
 #!/bin/sh
