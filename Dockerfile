@@ -1,4 +1,4 @@
-FROM rust:1.82-slim AS ui-builder
+FROM rust:1.95-slim AS ui-builder
 
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 RUN rustup target add wasm32-unknown-unknown
@@ -25,7 +25,7 @@ WORKDIR /app/blog-ui
 COPY blog-ui .
 RUN trunk build --release -- --no-default-features --features "hydration,$FEATURES"
 
-FROM rust:1.82-slim AS server-builder
+FROM rust:1.95-slim AS server-builder
 
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 
