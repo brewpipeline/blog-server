@@ -66,6 +66,7 @@ RUN cargo build -p blog-server-api --release --no-default-features --features "s
 FROM debian:trixie-slim
 
 RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx gettext-base && rm -rf /var/lib/apt/lists/*
+RUN rm -f /etc/nginx/sites-enabled/default
 
 ARG DOMAIN
 ENV SERVER_ADDRESS="127.0.0.1:3000" \
