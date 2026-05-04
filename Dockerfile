@@ -48,17 +48,27 @@ ENV API_URL=$API_URL \
 
 WORKDIR /app
 COPY . .
+COPY --from=ui-builder /app/blog-ui/dist/index.html ./index.html
 
+RUN find /app -maxdepth 2 -name "Cargo.toml"
 RUN cargo build -p blog-server-api --release --no-default-features --features "ssr,$FEATURES"
 
 FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y ca-certificates libssl3 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx gettext-base && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY --from=server-builder /app/target/release/blog-server-api .
 COPY --from=server-builder /app/config.yaml .
 COPY --from=server-builder /app/index.html .
 COPY --from=ui-builder /app/blog-ui/dist ./dist
+COPY nginx.conf.template /etc/nginx/nginx.conf.template
 
-CMD ["./blog-server-api"]
+RUN rm /etc/nginx/sites-enabled/default
+
+RUN printf '#!/bin/sh\n\
+envsubst "${PORT}" < /etc/nginx/nginx.conf.template > /etc/nginx/sites-enabled/default\n\
+./blog-server-api &\n\
+exec nginx -g "daemon off;"\n' > /app/start.sh && chmod +x /app/start.sh
+
+CMD ["/app/start.sh"]
