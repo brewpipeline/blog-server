@@ -46,9 +46,7 @@ ARG ACCORDION_JSON
 ARG TELEGRAM_BOT_LOGIN
 ARG YANDEX_CLIENT_ID
 
-ENV API_URL=https://$DOMAIN/api \
-    SERVER_ADDRESS="127.0.0.1:3000" \
-    SITE_URL=https://$DOMAIN \
+ENV API_URL="https://$DOMAIN/api" \
     TITLE=$TITLE \
     DESCRIPTION=$DESCRIPTION \
     KEYWORDS=$KEYWORDS \
@@ -68,6 +66,10 @@ RUN cargo build -p blog-server-api --release --no-default-features --features "s
 FROM debian:trixie-slim
 
 RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx && rm -rf /var/lib/apt/lists/*
+
+ARG DOMAIN
+ENV SERVER_ADDRESS="0.0.0.0:3000" \
+    SITE_URL="https://$DOMAIN"
 
 WORKDIR /app
 COPY --from=server-builder /app/target/release/blog-server-api .
