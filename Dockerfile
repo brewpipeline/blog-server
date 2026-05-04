@@ -30,7 +30,7 @@ RUN BLOG_UI_TAG=$(sed -n '/\[dependencies\.blog-ui\]/,/^\[/p' blog-server-api/Ca
     git clone --depth 1 --branch "$BLOG_UI_TAG" https://github.com/Tikitko/blog-ui.git /app/blog-ui
 
 WORKDIR /app/blog-ui
-RUN trunk build --release -- --no-default-features --features "hydration,$FEATURES"
+RUN trunk build --release --no-default-features --features "hydration,$FEATURES"
 
 FROM rust:1.95-slim AS server-builder
 
