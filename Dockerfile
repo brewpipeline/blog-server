@@ -107,8 +107,7 @@ EOF
 
 COPY <<'EOF' /app/start.sh
 #!/bin/sh
-set -e
-: "${PORT:=8080}"
+set -eu
 export PORT
 envsubst '${PORT}' \
     < /etc/nginx/conf.d/default.conf.template \
