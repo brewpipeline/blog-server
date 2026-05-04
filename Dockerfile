@@ -80,7 +80,7 @@ COPY --from=ui-builder /app/blog-ui/dist ./dist
 
 RUN rm -f /etc/nginx/sites-enabled/default
 
-COPY <<EOF /etc/nginx/sites-enabled/default
+COPY <<EOF /etc/nginx/conf.d/default.conf
 server {
     listen 80;
 
@@ -107,8 +107,6 @@ server {
     }
 }
 EOF
-
-RUN cat /etc/nginx/sites-enabled/default
 
 COPY <<'EOF' /app/start.sh
 #!/bin/sh
