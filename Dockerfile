@@ -78,6 +78,8 @@ COPY --from=server-builder /app/config.yaml .
 COPY --from=server-builder /app/index.html .
 COPY --from=ui-builder /app/blog-ui/dist ./dist
 
+RUN rm -f /etc/nginx/sites-enabled/default
+
 COPY <<EOF /etc/nginx/sites-enabled/default
 server {
     listen 80;
