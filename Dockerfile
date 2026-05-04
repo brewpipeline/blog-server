@@ -68,7 +68,7 @@ FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx gettext-base && rm -rf /var/lib/apt/lists/*
 
 ARG DOMAIN
-ENV SERVER_ADDRESS="0.0.0.0:3000" \
+ENV SERVER_ADDRESS="127.0.0.1:3000" \
     SITE_URL="https://$DOMAIN"
 
 WORKDIR /app
@@ -90,7 +90,7 @@ server {
     }
 
     location @serverproxy {
-        proxy_pass http://0.0.0.0:3000;
+        proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_cache_bypass $http_upgrade;
         proxy_set_header Upgrade $http_upgrade;
@@ -112,8 +112,6 @@ export PORT
 envsubst '${PORT}' \
     < /etc/nginx/conf.d/default.conf.template \
     > /etc/nginx/conf.d/default.conf
-echo "=== /etc/nginx/conf.d/default.conf ==="
-cat /etc/nginx/conf.d/default.conf
 nginx -t
 ./blog-server-api &
 SERVER_PID=$!
