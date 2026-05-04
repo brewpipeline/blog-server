@@ -65,7 +65,7 @@ RUN cargo build -p blog-server-api --release --no-default-features --features "s
 
 FROM debian:trixie-slim
 
-RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx gettext-base && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx && rm -rf /var/lib/apt/lists/*
 RUN rm -f /etc/nginx/sites-enabled/default \
           /etc/nginx/sites-available/default \
           /etc/nginx/conf.d/default.conf \
@@ -81,9 +81,9 @@ COPY --from=server-builder /app/config.yaml .
 COPY --from=server-builder /app/index.html .
 COPY --from=ui-builder /app/blog-ui/dist ./dist
 
-COPY <<'EOF' /etc/nginx/conf.d/default.conf.template
+COPY <<'EOF' /etc/nginx/conf.d/default.conf
 server {
-    listen 0.0.0.0:${PORT};
+    listen 0.0.0.0:80;
 
     root /app/dist;
 
@@ -112,14 +112,7 @@ EOF
 COPY <<'EOF' /app/start.sh
 #!/bin/sh
 set -eu
-echo "PORT=$PORT"
 ls -la /etc/nginx/sites-enabled/ /etc/nginx/conf.d/ || true
-export PORT
-envsubst '${PORT}' \
-    < /etc/nginx/conf.d/default.conf.template \
-    > /etc/nginx/conf.d/default.conf
-echo "=== rendered /etc/nginx/conf.d/default.conf ==="
-cat /etc/nginx/conf.d/default.conf
 nginx -t
 ./blog-server-api &
 SERVER_PID=$!
