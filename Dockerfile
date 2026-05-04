@@ -1,9 +1,8 @@
 FROM rust:1.95-slim AS ui-builder
 
-RUN apt-get update && apt-get install -y pkg-config libssl-dev curl git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y pkg-config libssl-dev git && rm -rf /var/lib/apt/lists/*
 RUN rustup target add wasm32-unknown-unknown
-RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-releases.sh | bash && \
-    cargo binstall --no-confirm trunk
+RUN cargo install --locked trunk
 
 ARG FEATURES="telegram,chatgpt,lang_ru"
 ARG API_URL
