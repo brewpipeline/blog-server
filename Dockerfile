@@ -68,7 +68,8 @@ FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx && rm -rf /var/lib/apt/lists/*
 
 ARG DOMAIN
-ENV SERVER_ADDRESS="127.0.0.1:3000" \
+ARG SERVER_ADDRESS="127.0.0.1:3000"
+ENV SERVER_ADDRESS=$SERVER_ADDRESS \
     SITE_URL=https://$DOMAIN
 
 WORKDIR /app
