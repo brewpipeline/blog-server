@@ -78,8 +78,6 @@ COPY --from=server-builder /app/config.yaml .
 COPY --from=server-builder /app/index.html .
 COPY --from=ui-builder /app/blog-ui/dist ./dist
 
-RUN rm -f /etc/nginx/sites-enabled/default
-
 COPY <<EOF /etc/nginx/conf.d/default.conf
 server {
     listen 80;
@@ -108,13 +106,13 @@ server {
 }
 EOF
 
-RUN cat /etc/nginx/nginx.conf && echo "---" && for f in /etc/nginx/conf.d/*; do echo "=== $f ==="; cat "$f"; done && echo "---" && for f in /etc/nginx/sites-enabled/*; do echo "=== $f ==="; cat "$f"; done
+RUN cat /etc/nginx/nginx.conf && echo "---" && for f in /etc/nginx/conf.d/*; do echo "=== $f ==="; cat "$f"; done
 
 COPY <<'EOF' /app/start.sh
 #!/bin/sh
 set -e
 nginx -t
-./blog-server-api &
+./blog-server-api 2>&1 &
 exec nginx -g "daemon off;"
 EOF
 
