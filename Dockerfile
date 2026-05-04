@@ -108,6 +108,8 @@ server {
 }
 EOF
 
+RUN cat /etc/nginx/nginx.conf && echo "---" && for f in /etc/nginx/conf.d/*; do echo "=== $f ==="; cat "$f"; done
+
 COPY <<'EOF' /app/start.sh
 #!/bin/sh
 set -e
