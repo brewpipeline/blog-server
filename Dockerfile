@@ -1,8 +1,9 @@
 FROM rust:1.95-slim AS ui-builder
 
-RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y pkg-config libssl-dev curl git && rm -rf /var/lib/apt/lists/*
 RUN rustup target add wasm32-unknown-unknown
-RUN cargo install --locked trunk
+RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-releases.sh | bash
+RUN cargo binstall --no-confirm trunk
 
 ARG FEATURES="telegram,chatgpt,lang_ru"
 ARG API_URL
@@ -21,8 +22,12 @@ ENV API_URL=$API_URL \
     TELEGRAM_BOT_LOGIN=$TELEGRAM_BOT_LOGIN \
     YANDEX_CLIENT_ID=$YANDEX_CLIENT_ID
 
+WORKDIR /app
+COPY .git .git
+COPY .gitmodules .gitmodules
+RUN git submodule update --init blog-ui
+
 WORKDIR /app/blog-ui
-COPY blog-ui .
 RUN trunk build --release -- --no-default-features --features "hydration,$FEATURES"
 
 FROM rust:1.95-slim AS server-builder
@@ -48,6 +53,7 @@ ENV API_URL=$API_URL \
 
 WORKDIR /app
 COPY . .
+COPY --from=ui-builder /app/blog-ui /app/blog-ui
 COPY --from=ui-builder /app/blog-ui/dist/index.html ./index.html
 
 RUN find /app -maxdepth 2 -name "Cargo.toml"
