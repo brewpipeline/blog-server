@@ -34,7 +34,7 @@ RUN trunk build --release --no-default-features --features "hydration,$FEATURES"
 
 FROM rust:1.95-slim AS server-builder
 
-RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y pkg-config libssl-dev git && rm -rf /var/lib/apt/lists/*
 
 ARG FEATURES="telegram,chatgpt,lang_ru"
 ARG API_URL
@@ -60,7 +60,6 @@ COPY --from=ui-builder /app/blog-ui/dist/index.html ./index.html
 
 RUN printf '\n[patch."https://github.com/Tikitko/blog-ui.git"]\nblog-ui = { path = "blog-ui" }\n' >> Cargo.toml
 
-RUN find /app -maxdepth 2 -name "Cargo.toml"
 RUN cargo build -p blog-server-api --release --no-default-features --features "ssr,$FEATURES"
 
 FROM debian:bookworm-slim
