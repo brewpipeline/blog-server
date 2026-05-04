@@ -1,0 +1,10 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+buildArgs = { FEATURES = "${{FEATURES}}", API_URL = "${{API_URL}}", TITLE = "${{TITLE}}", DESCRIPTION = "${{DESCRIPTION}}", KEYWORDS = "${{KEYWORDS}}", ACCORDION_JSON = "${{ACCORDION_JSON}}", TELEGRAM_BOT_LOGIN = "${{TELEGRAM_BOT_LOGIN}}", YANDEX_CLIENT_ID = "${{YANDEX_CLIENT_ID}}" }
+
+[deploy]
+healthcheckPath = "/api/posts"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10

@@ -10,14 +10,23 @@ mod utils;
 #[macro_use]
 extern crate async_trait;
 
-const SITE_URL: &'static str = env!("SITE_URL"); // http://127.0.0.1:3000
-const JWT_SECRET: &'static str = env!("JWT_SECRET"); // 123
-const SERVER_ADDRESS: &'static str = env!("SERVER_ADDRESS"); // 127.0.0.1:3000
-const PG_URL: &'static str = env!("PG_URL"); // postgres://postgres:postgres@localhost:5432/blog
-const RABBIT_URL: &'static str = env!("RABBIT_URL"); // amqp://guest:guest@localhost:5672/
-const TELEGRAM_BOT_TOKEN: &'static str = env!("TELEGRAM_BOT_TOKEN"); // XXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXX
+use once_cell::sync::Lazy;
+
+pub(crate) static JWT_SECRET: Lazy<String> =
+    Lazy::new(|| std::env::var("JWT_SECRET").expect("JWT_SECRET not set"));
+pub(crate) static SITE_URL: Lazy<String> =
+    Lazy::new(|| std::env::var("SITE_URL").expect("SITE_URL not set"));
+pub(crate) static PG_URL: Lazy<String> =
+    Lazy::new(|| std::env::var("PG_URL").expect("PG_URL not set"));
+pub(crate) static RABBIT_URL: Lazy<String> =
+    Lazy::new(|| std::env::var("RABBIT_URL").expect("RABBIT_URL not set"));
+pub(crate) static TELEGRAM_BOT_TOKEN: Lazy<String> =
+    Lazy::new(|| std::env::var("TELEGRAM_BOT_TOKEN").expect("TELEGRAM_BOT_TOKEN not set"));
+pub(crate) static SERVER_ADDRESS: Lazy<String> =
+    Lazy::new(|| std::env::var("SERVER_ADDRESS").expect("SERVER_ADDRESS not set"));
 #[cfg(feature = "chatgpt")]
-const OPENAI_API_KEY: &'static str = env!("OPENAI_API_KEY"); // OpenAI API key
+pub(crate) static OPENAI_API_KEY: Lazy<String> =
+    Lazy::new(|| std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set"));
 
 #[tokio::main]
 async fn main() -> screw_components::dyn_result::DResult<()> {
@@ -25,7 +34,7 @@ async fn main() -> screw_components::dyn_result::DResult<()> {
     let rbatis = init_db().await;
 
     let rabbit_event_bus_service =
-        match blog_server_services::impls::create_rabbit_event_bus_service(RABBIT_URL).await {
+        match blog_server_services::impls::create_rabbit_event_bus_service(&*RABBIT_URL).await {
             Ok(rabbit_event_bus_service) => Some(rabbit_event_bus_service),
             Err(err) => {
                 println!("Error while connecting to rabbitMQ: {err}");
@@ -80,7 +89,7 @@ pub async fn init_config() -> config::Config {
 
 pub async fn init_db() -> rbatis::RBatis {
     let rb = rbatis::RBatis::new();
-    rb.init(rbdc_pg::driver::PgDriver {}, PG_URL)
+    rb.init(rbdc_pg::driver::PgDriver {}, &*PG_URL)
         .expect("DB init failed");
     migrations::exec(&rb).await.expect("DB migration failed");
     rb

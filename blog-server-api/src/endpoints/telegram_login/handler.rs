@@ -43,7 +43,7 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    let secret_key = sha256(crate::TELEGRAM_BOT_TOKEN);
+    let secret_key = sha256(crate::TELEGRAM_BOT_TOKEN.as_str());
     let check_string = {
         let mut parts = vec![format!("id={}", id)];
 

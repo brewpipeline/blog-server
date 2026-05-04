@@ -1,0 +1,3 @@
+[submodule "blog-ui"]
+	path = blog-ui
+	url = https://github.com/Tikitko/blog-ui.git
