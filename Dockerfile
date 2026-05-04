@@ -65,7 +65,7 @@ RUN cargo build -p blog-server-api --release --no-default-features --features "s
 
 FROM debian:trixie-slim
 
-RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx gettext-base && rm -rf /var/lib/apt/lists/*
 
 ARG DOMAIN
 ENV SERVER_ADDRESS="0.0.0.0:3000" \
@@ -77,30 +77,30 @@ COPY --from=server-builder /app/config.yaml .
 COPY --from=server-builder /app/index.html .
 COPY --from=ui-builder /app/blog-ui/dist ./dist
 
-COPY <<EOF /etc/nginx/conf.d/default.conf
+COPY <<'EOF' /etc/nginx/conf.d/default.conf.template
 server {
-    listen 80;
+    listen 0.0.0.0:${PORT};
 
     root /app/dist;
 
     underscores_in_headers on;
 
     location / {
-        try_files \$uri @serverproxy;
+        try_files $uri @serverproxy;
     }
 
     location @serverproxy {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
-        proxy_cache_bypass \$http_upgrade;
-        proxy_set_header Upgrade \$http_upgrade;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header X-Forwarded-Host \$host;
-        proxy_set_header X-Forwarded-Port \$server_port;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
     }
 }
 EOF
@@ -108,8 +108,17 @@ EOF
 COPY <<'EOF' /app/start.sh
 #!/bin/sh
 set -e
+: "${PORT:=8080}"
+export PORT
+envsubst '${PORT}' \
+    < /etc/nginx/conf.d/default.conf.template \
+    > /etc/nginx/conf.d/default.conf
+echo "=== /etc/nginx/conf.d/default.conf ==="
+cat /etc/nginx/conf.d/default.conf
 nginx -t
 ./blog-server-api &
+SERVER_PID=$!
+( wait "$SERVER_PID"; echo "blog-server-api exited" >&2; kill 1 ) &
 exec nginx -g "daemon off;"
 EOF
 
