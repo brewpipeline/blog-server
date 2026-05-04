@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM rust:1.95-slim AS ui-builder
 
 RUN apt-get update && apt-get install -y pkg-config libssl-dev curl git && rm -rf /var/lib/apt/lists/*
@@ -8,7 +9,7 @@ RUN curl -L --proto '=https' --tlsv1.2 -sSf \
     cargo binstall --no-confirm trunk
 
 ARG FEATURES="telegram,chatgpt,lang_ru"
-ARG API_URL
+ARG DOMAIN
 ARG TITLE
 ARG DESCRIPTION
 ARG KEYWORDS
@@ -16,7 +17,7 @@ ARG ACCORDION_JSON
 ARG TELEGRAM_BOT_LOGIN
 ARG YANDEX_CLIENT_ID
 
-ENV API_URL=$API_URL \
+ENV API_URL=https://$DOMAIN/api \
     TITLE=$TITLE \
     DESCRIPTION=$DESCRIPTION \
     KEYWORDS=$KEYWORDS \
@@ -37,7 +38,7 @@ FROM rust:1.95-slim AS server-builder
 RUN apt-get update && apt-get install -y pkg-config libssl-dev git && rm -rf /var/lib/apt/lists/*
 
 ARG FEATURES="telegram,chatgpt,lang_ru"
-ARG API_URL
+ARG DOMAIN
 ARG TITLE
 ARG DESCRIPTION
 ARG KEYWORDS
@@ -45,7 +46,7 @@ ARG ACCORDION_JSON
 ARG TELEGRAM_BOT_LOGIN
 ARG YANDEX_CLIENT_ID
 
-ENV API_URL=$API_URL \
+ENV API_URL=https://$DOMAIN/api \
     TITLE=$TITLE \
     DESCRIPTION=$DESCRIPTION \
     KEYWORDS=$KEYWORDS \
@@ -64,17 +65,52 @@ RUN cargo build -p blog-server-api --release --no-default-features --features "s
 
 FROM debian:trixie-slim
 
-RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx gettext-base && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx && rm -rf /var/lib/apt/lists/*
+
+ARG DOMAIN
+ENV SERVER_ADDRESS="127.0.0.1:3000" \
+    SITE_URL=https://$DOMAIN
 
 WORKDIR /app
 COPY --from=server-builder /app/target/release/blog-server-api .
 COPY --from=server-builder /app/config.yaml .
 COPY --from=server-builder /app/index.html .
 COPY --from=ui-builder /app/blog-ui/dist ./dist
-COPY nginx.conf.template /etc/nginx/nginx.conf.template
 
-RUN rm /etc/nginx/sites-enabled/default
+COPY <<EOF /etc/nginx/sites-enabled/default
+server {
+    listen 80;
 
-RUN printf '#!/bin/sh\nenvsubst '"'"'${PORT}'"'"' < /etc/nginx/nginx.conf.template > /etc/nginx/sites-enabled/default\n./blog-server-api &\nexec nginx -g "daemon off;"\n' > /app/start.sh && chmod +x /app/start.sh
+    root /app/dist;
+
+    underscores_in_headers on;
+
+    location / {
+        try_files \$uri @serverproxy;
+    }
+
+    location @serverproxy {
+        proxy_pass http://${SERVER_ADDRESS};
+        proxy_http_version 1.1;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Port \$server_port;
+    }
+}
+EOF
+
+COPY <<'EOF' /app/start.sh
+#!/bin/sh
+./blog-server-api &
+exec nginx -g "daemon off;"
+EOF
+
+RUN chmod +x /app/start.sh
 
 CMD ["/app/start.sh"]
