@@ -90,7 +90,7 @@ server {
     }
 
     location @serverproxy {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://0.0.0.0:3000;
         proxy_http_version 1.1;
         proxy_cache_bypass $http_upgrade;
         proxy_set_header Upgrade $http_upgrade;
