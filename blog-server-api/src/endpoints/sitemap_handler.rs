@@ -37,7 +37,7 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<dyn PostService>>>(
         .map(|post| {
             Url::builder(format!(
                 "{site_url}/post/{slug}/{id}",
-                site_url = crate::SITE_URL,
+                site_url = &*crate::SITE_URL,
                 slug = post.base.slug,
                 id = post.id,
             ))
