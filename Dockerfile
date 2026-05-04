@@ -62,7 +62,7 @@ RUN printf '\n[patch."https://github.com/Tikitko/blog-ui.git"]\nblog-ui = { path
 
 RUN cargo build -p blog-server-api --release --no-default-features --features "ssr,$FEATURES"
 
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx gettext-base && rm -rf /var/lib/apt/lists/*
 
@@ -75,9 +75,6 @@ COPY nginx.conf.template /etc/nginx/nginx.conf.template
 
 RUN rm /etc/nginx/sites-enabled/default
 
-RUN printf '#!/bin/sh\n\
-envsubst "${PORT}" < /etc/nginx/nginx.conf.template > /etc/nginx/sites-enabled/default\n\
-./blog-server-api &\n\
-exec nginx -g "daemon off;"\n' > /app/start.sh && chmod +x /app/start.sh
+RUN printf '#!/bin/sh\nenvsubst '"'"'${PORT}'"'"' < /etc/nginx/nginx.conf.template > /etc/nginx/sites-enabled/default\n./blog-server-api &\nexec nginx -g "daemon off;"\n' > /app/start.sh && chmod +x /app/start.sh
 
 CMD ["/app/start.sh"]
