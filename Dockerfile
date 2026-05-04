@@ -83,7 +83,7 @@ COPY --from=ui-builder /app/blog-ui/dist ./dist
 
 COPY <<'EOF' /etc/nginx/conf.d/default.conf
 server {
-    listen 0.0.0.0:80;
+    listen 0.0.0.0:8080;
 
     root /app/dist;
 
