@@ -108,6 +108,8 @@ server {
 }
 EOF
 
+RUN cat /etc/nginx/sites-enabled/default
+
 COPY <<'EOF' /app/start.sh
 #!/bin/sh
 ./blog-server-api &
