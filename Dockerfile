@@ -1,8 +1,11 @@
 FROM rust:1.95-slim AS ui-builder
 
-RUN apt-get update && apt-get install -y pkg-config libssl-dev git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y pkg-config libssl-dev curl git && rm -rf /var/lib/apt/lists/*
 RUN rustup target add wasm32-unknown-unknown
-RUN cargo install --locked trunk
+RUN curl -L --proto '=https' --tlsv1.2 -sSf \
+    https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz \
+    | tar -xzf - -C /usr/local/bin && \
+    cargo binstall --no-confirm trunk
 
 ARG FEATURES="telegram,chatgpt,lang_ru"
 ARG API_URL
@@ -23,7 +26,7 @@ ENV API_URL=$API_URL \
 
 WORKDIR /app
 COPY blog-server-api/Cargo.toml blog-server-api/Cargo.toml
-RUN BLOG_UI_TAG=$(grep '^tag = ' blog-server-api/Cargo.toml | sed 's/tag = "\(.*\)"/\1/') && \
+RUN BLOG_UI_TAG=$(sed -n '/\[dependencies\.blog-ui\]/,/^\[/p' blog-server-api/Cargo.toml | grep '^tag = ' | sed 's/tag = "\(.*\)"/\1/') && \
     git clone --depth 1 --branch "$BLOG_UI_TAG" https://github.com/Tikitko/blog-ui.git /app/blog-ui
 
 WORKDIR /app/blog-ui
