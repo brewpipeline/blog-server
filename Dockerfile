@@ -72,7 +72,7 @@ RUN rm -f /etc/nginx/sites-enabled/default \
           /var/www/html/index.nginx-debian.html
 
 ARG DOMAIN
-ARG IMAGES_PROCESSOR_ADDRESS
+ARG IMAGES_PROCESSOR_ADDRESS=images-processor-service.railway.internal:8080
 ENV SERVER_ADDRESS="127.0.0.1:3000" \
     SITE_URL=https://$DOMAIN \
     IMAGES_PROCESSOR_ADDRESS=$IMAGES_PROCESSOR_ADDRESS
@@ -96,9 +96,7 @@ server {
     }
 
     location /images/external/ {
-        resolver ${NAMESERVER} valid=10s ipv6=on;
-        set $images_upstream "${IMAGES_PROCESSOR_ADDRESS}";
-        proxy_pass http://$images_upstream/;
+        proxy_pass http://${IMAGES_PROCESSOR_ADDRESS}/;
         proxy_http_version 1.1;
         proxy_cache_bypass $http_upgrade;
         proxy_set_header Upgrade $http_upgrade;
@@ -131,9 +129,8 @@ COPY <<'EOF' /app/start.sh
 #!/bin/sh
 set -eu
 echo "PORT=$PORT"
-NAMESERVER=$(awk '/^nameserver/ {print $2; exit}' /etc/resolv.conf)
-export PORT IMAGES_PROCESSOR_ADDRESS NAMESERVER
-envsubst '${PORT} ${IMAGES_PROCESSOR_ADDRESS} ${NAMESERVER}' \
+export PORT IMAGES_PROCESSOR_ADDRESS
+envsubst '${PORT} ${IMAGES_PROCESSOR_ADDRESS}' \
     < /etc/nginx/conf.d/default.conf.template \
     > /etc/nginx/conf.d/default.conf
 nginx -t
