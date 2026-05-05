@@ -91,12 +91,16 @@ server {
 
     underscores_in_headers on;
 
+    resolver ${RESOLVER} valid=10s;
+
     location / {
         try_files $uri @serverproxy;
     }
 
     location /images/external/ {
-        proxy_pass http://${IMAGES_PROCESSOR_ADDRESS}/;
+        set $images_upstream "${IMAGES_PROCESSOR_ADDRESS}";
+        rewrite ^/images/external/(.*)$ /$1 break;
+        proxy_pass http://$images_upstream;
         proxy_http_version 1.1;
         proxy_cache_bypass $http_upgrade;
         proxy_set_header Upgrade $http_upgrade;
@@ -129,8 +133,11 @@ COPY <<'EOF' /app/start.sh
 #!/bin/sh
 set -eu
 echo "PORT=$PORT"
-export PORT IMAGES_PROCESSOR_ADDRESS
-envsubst '${PORT} ${IMAGES_PROCESSOR_ADDRESS}' \
+RESOLVER=$(awk '/^nameserver/ {print $2; exit}' /etc/resolv.conf)
+case "$RESOLVER" in *:*) RESOLVER="[$RESOLVER]" ;; esac
+echo "RESOLVER=$RESOLVER"
+export PORT IMAGES_PROCESSOR_ADDRESS RESOLVER
+envsubst '${PORT} ${IMAGES_PROCESSOR_ADDRESS} ${RESOLVER}' \
     < /etc/nginx/conf.d/default.conf.template \
     > /etc/nginx/conf.d/default.conf
 nginx -t
