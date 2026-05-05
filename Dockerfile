@@ -46,7 +46,7 @@ ARG ACCORDION_JSON
 ARG TELEGRAM_BOT_LOGIN
 ARG YANDEX_CLIENT_ID
 
-ENV API_URL="https://$DOMAIN/api" \
+ENV API_URL=https://$DOMAIN/api \
     TITLE=$TITLE \
     DESCRIPTION=$DESCRIPTION \
     KEYWORDS=$KEYWORDS \
@@ -65,7 +65,7 @@ RUN cargo build -p blog-server-api --release --no-default-features --features "s
 
 FROM debian:trixie-slim
 
-RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx gettext-base && rm -rf /var/lib/apt/lists/*
 RUN rm -f /etc/nginx/sites-enabled/default \
           /etc/nginx/sites-available/default \
           /etc/nginx/conf.d/default.conf \
@@ -73,7 +73,7 @@ RUN rm -f /etc/nginx/sites-enabled/default \
 
 ARG DOMAIN
 ENV SERVER_ADDRESS="127.0.0.1:3000" \
-    SITE_URL="https://$DOMAIN"
+    SITE_URL=https://$DOMAIN
 
 WORKDIR /app
 COPY --from=server-builder /app/target/release/blog-server-api .
@@ -81,9 +81,9 @@ COPY --from=server-builder /app/config.yaml .
 COPY --from=server-builder /app/index.html .
 COPY --from=ui-builder /app/blog-ui/dist ./dist
 
-COPY <<'EOF' /etc/nginx/conf.d/default.conf
+COPY <<'EOF' /etc/nginx/conf.d/default.conf.template
 server {
-    listen 0.0.0.0:8080;
+    listen 0.0.0.0:${PORT};
 
     root /app/dist;
 
@@ -112,7 +112,11 @@ EOF
 COPY <<'EOF' /app/start.sh
 #!/bin/sh
 set -eu
-ls -la /etc/nginx/sites-enabled/ /etc/nginx/conf.d/ || true
+echo "PORT=$PORT"
+export PORT
+envsubst '${PORT}' \
+    < /etc/nginx/conf.d/default.conf.template \
+    > /etc/nginx/conf.d/default.conf
 nginx -t
 ./blog-server-api &
 SERVER_PID=$!
