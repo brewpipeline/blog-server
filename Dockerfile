@@ -94,7 +94,7 @@ server {
     }
 
     location /images/external/ {
-        proxy_pass http://images-processor-service.railway.internal:8080/;
+        proxy_pass http://images-processor-service.railway.internal/;
         proxy_http_version 1.1;
         proxy_cache_bypass $http_upgrade;
         proxy_set_header Upgrade $http_upgrade;
