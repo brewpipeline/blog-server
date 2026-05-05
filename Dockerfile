@@ -72,7 +72,7 @@ RUN rm -f /etc/nginx/sites-enabled/default \
           /var/www/html/index.nginx-debian.html
 
 ARG DOMAIN
-ARG IMAGES_PROCESSOR_ADDRESS=images-processor-service.railway.internal:8080
+ARG IMAGES_PROCESSOR_ADDRESS
 ENV SERVER_ADDRESS="127.0.0.1:3000" \
     SITE_URL=https://$DOMAIN \
     IMAGES_PROCESSOR_ADDRESS=$IMAGES_PROCESSOR_ADDRESS
