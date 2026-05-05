@@ -132,6 +132,10 @@ COPY <<'EOF' /app/start.sh
 set -eu
 echo "PORT=$PORT"
 NAMESERVER=$(awk '/^nameserver/ {print $2; exit}' /etc/resolv.conf)
+case "$NAMESERVER" in
+    *:*) NAMESERVER="[$NAMESERVER]" ;;
+esac
+echo "NAMESERVER=$NAMESERVER"
 export PORT IMAGES_PROCESSOR_ADDRESS NAMESERVER
 envsubst '${PORT} ${IMAGES_PROCESSOR_ADDRESS} ${NAMESERVER}' \
     < /etc/nginx/conf.d/default.conf.template \
