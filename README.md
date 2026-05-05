@@ -1,5 +1,7 @@
 # blog-server
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/ft_i14?referralCode=ajW30i&utm_medium=integration&utm_source=template&utm_campaign=generic)
+
 A modular blog platform written in Rust.  The project exposes a HTTP API for posts,
 comments and author management while broadcasting events to Telegram and Discord.
 The server is built on top of the [Screw](https://github.com/Tikitko/screw) ecosystem,
