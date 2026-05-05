@@ -70,6 +70,8 @@ RUN rm -f /etc/nginx/sites-enabled/default \
           /etc/nginx/sites-available/default \
           /etc/nginx/conf.d/default.conf \
           /var/www/html/index.nginx-debian.html
+RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
+    ln -sf /dev/stderr /var/log/nginx/error.log
 
 ARG DOMAIN
 ENV SERVER_ADDRESS="127.0.0.1:3000" \
@@ -95,6 +97,9 @@ server {
 
     location /images/external/ {
         proxy_pass http://images-processor-service.railway.internal:8080/;
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 10s;
         proxy_http_version 1.1;
         proxy_cache_bypass $http_upgrade;
         proxy_set_header Upgrade $http_upgrade;
