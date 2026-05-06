@@ -112,7 +112,7 @@ server {
 }
 
 server {
-    listen 0.0.0.0:${PORT};
+    listen 0.0.0.0:${PORT} default_server;
     server_name ${DOMAIN};
 
     root /app/dist;
