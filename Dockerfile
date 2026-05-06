@@ -170,7 +170,6 @@ envsubst '${PORT} ${IMAGES_PROCESSOR_ADDRESS} ${RESOLVER}' \
     < /etc/nginx/conf.d/default.conf.template \
     > /etc/nginx/conf.d/default.conf
 nginx -t
-cat /etc/nginx/conf.d/default.conf
 ./blog-server-api &
 SERVER_PID=$!
 ( wait "$SERVER_PID"; echo "blog-server-api exited" >&2; kill 1 ) &
