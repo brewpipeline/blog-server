@@ -93,6 +93,7 @@ ARG DOMAIN
 ARG IMAGES_PROCESSOR_ADDRESS
 ENV SERVER_ADDRESS="127.0.0.1:3000" \
     SITE_URL=https://$DOMAIN \
+    DOMAIN=$DOMAIN \
     IMAGES_PROCESSOR_ADDRESS=$IMAGES_PROCESSOR_ADDRESS
 
 WORKDIR /app
@@ -100,14 +101,28 @@ COPY --from=server-builder /app/target/release/blog-server-api .
 COPY --from=server-builder /app/config.yaml .
 COPY --from=server-builder /app/index.html .
 COPY --from=ui-builder /app/blog-ui/dist ./dist
+RUN rm -f /app/dist/index.html
 
 COPY <<'EOF' /etc/nginx/conf.d/default.conf.template
 server {
     listen 0.0.0.0:${PORT};
+    server_name www.${DOMAIN};
+
+    return 301 $scheme://${DOMAIN}$request_uri;
+}
+
+server {
+    listen 0.0.0.0:${PORT};
+    server_name ${DOMAIN};
 
     root /app/dist;
 
     underscores_in_headers on;
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
     resolver ${RESOLVER} valid=10s;
 
@@ -154,8 +169,8 @@ echo "PORT=$PORT"
 RESOLVER=$(awk '/^nameserver/ {print $2; exit}' /etc/resolv.conf)
 case "$RESOLVER" in *:*) RESOLVER="[$RESOLVER]" ;; esac
 echo "RESOLVER=$RESOLVER"
-export PORT IMAGES_PROCESSOR_ADDRESS RESOLVER
-envsubst '${PORT} ${IMAGES_PROCESSOR_ADDRESS} ${RESOLVER}' \
+export PORT IMAGES_PROCESSOR_ADDRESS RESOLVER DOMAIN
+envsubst '${PORT} ${IMAGES_PROCESSOR_ADDRESS} ${RESOLVER} ${DOMAIN}' \
     < /etc/nginx/conf.d/default.conf.template \
     > /etc/nginx/conf.d/default.conf
 nginx -t
