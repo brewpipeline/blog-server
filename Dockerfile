@@ -17,6 +17,7 @@ ARG ACCORDION_JSON
 ARG TELEGRAM_BOT_LOGIN
 ARG YANDEX_CLIENT_ID
 ARG LOGO_URL=""
+ARG THEME=""
 ARG COLOR_PRIMARY_BG=""
 ARG COLOR_BODY_BG=""
 ARG COLOR_SECOND_BG=""
@@ -48,6 +49,7 @@ RUN set -e; \
       [ -n "${COLOR_BODY:-}" ]       && sed -i "s/--bs-body-color:#f2f2f2;/--bs-body-color:${COLOR_BODY}/g; s/--bs-body-color: #f2f2f2;/--bs-body-color: ${COLOR_BODY}/g" "$css" || true; \
     done; \
     [ -n "${COLOR_PRIMARY_BG:-}" ] && sed -i "s/content=\"#242424\"/content=\"${COLOR_PRIMARY_BG}\"/g" dist/index.html || true; \
+    [ -n "${THEME:-}" ] && sed -i "s/data-bs-theme=\"dark\"/data-bs-theme=\"${THEME}\"/g" dist/index.html || true; \
     [ -n "${LOGO_URL:-}" ] && curl -fsSL "${LOGO_URL}" -o dist/logo.svg || true
 
 FROM rust:1.95-slim AS server-builder
