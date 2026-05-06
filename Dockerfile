@@ -106,14 +106,10 @@ RUN rm -f /app/dist/index.html
 COPY <<'EOF' /etc/nginx/conf.d/default.conf.template
 server {
     listen 0.0.0.0:${PORT};
-    server_name www.${DOMAIN};
 
-    return 301 $scheme://${DOMAIN}$request_uri;
-}
-
-server {
-    listen 0.0.0.0:${PORT} default_server;
-    server_name ${DOMAIN};
+    if ($host ~ ^www\.(.+)$) {
+        return 301 $scheme://$1$request_uri;
+    }
 
     root /app/dist;
 
@@ -169,8 +165,8 @@ echo "PORT=$PORT"
 RESOLVER=$(awk '/^nameserver/ {print $2; exit}' /etc/resolv.conf)
 case "$RESOLVER" in *:*) RESOLVER="[$RESOLVER]" ;; esac
 echo "RESOLVER=$RESOLVER"
-export PORT IMAGES_PROCESSOR_ADDRESS RESOLVER DOMAIN
-envsubst '${PORT} ${IMAGES_PROCESSOR_ADDRESS} ${RESOLVER} ${DOMAIN}' \
+export PORT IMAGES_PROCESSOR_ADDRESS RESOLVER
+envsubst '${PORT} ${IMAGES_PROCESSOR_ADDRESS} ${RESOLVER}' \
     < /etc/nginx/conf.d/default.conf.template \
     > /etc/nginx/conf.d/default.conf
 nginx -t
