@@ -16,6 +16,13 @@ ARG KEYWORDS
 ARG ACCORDION_JSON
 ARG TELEGRAM_BOT_LOGIN
 ARG YANDEX_CLIENT_ID
+ARG LOGO_URL=""
+ARG THEME=""
+ARG COLOR_PRIMARY_BG=""
+ARG COLOR_BODY_BG=""
+ARG COLOR_SECOND_BG=""
+ARG COLOR_LIGHT=""
+ARG COLOR_BODY=""
 
 ENV API_URL=https://$DOMAIN/api \
     TITLE=$TITLE \
@@ -31,6 +38,17 @@ RUN BLOG_UI_TAG=$(sed -n '/\[dependencies\.blog-ui\]/,/^\[/p' blog-server-api/Ca
     git clone --depth 1 --branch "$BLOG_UI_TAG" https://github.com/Tikitko/blog-ui.git /app/blog-ui
 
 WORKDIR /app/blog-ui
+
+RUN set -e; \
+    [ -n "${COLOR_PRIMARY_BG:-}" ] && sed -i "s/--bs-primary-bg-subtle:[^;]*;/--bs-primary-bg-subtle:${COLOR_PRIMARY_BG};/g" index.css || true; \
+    [ -n "${COLOR_BODY_BG:-}" ]    && sed -i "s/--bs-body-bg:[^;]*;/--bs-body-bg:${COLOR_BODY_BG};/g" index.css || true; \
+    [ -n "${COLOR_SECOND_BG:-}" ]  && sed -i "s/--bs-second-bg:[^;]*;/--bs-second-bg:${COLOR_SECOND_BG};/g" index.css || true; \
+    [ -n "${COLOR_LIGHT:-}" ]      && sed -i "s/--bs-light-color:[^;]*;/--bs-light-color:${COLOR_LIGHT};/g" index.css || true; \
+    [ -n "${COLOR_BODY:-}" ]       && sed -i "s/--bs-body-color:[^;]*;/--bs-body-color:${COLOR_BODY};/g" index.css || true; \
+    [ -n "${COLOR_PRIMARY_BG:-}" ] && sed -i "s/content=\"#[^\"]*\"/content=\"${COLOR_PRIMARY_BG}\"/g" index.html || true; \
+    [ -n "${THEME:-}" ]            && sed -i "s/data-bs-theme=\"dark\"/data-bs-theme=\"${THEME}\"/g" index.html || true; \
+    [ -n "${LOGO_URL:-}" ]         && curl -fsSL "${LOGO_URL}" -o logo.svg || true
+
 RUN trunk build --release --no-default-features --features "hydration,$FEATURES"
 
 FROM rust:1.95-slim AS server-builder
