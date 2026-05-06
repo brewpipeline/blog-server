@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM rust:1.95-slim AS ui-builder
 
-RUN apt-get update && apt-get install -y pkg-config libssl-dev openssl curl git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y pkg-config libssl-dev curl git && rm -rf /var/lib/apt/lists/*
 RUN rustup target add wasm32-unknown-unknown
 RUN curl -L --proto '=https' --tlsv1.2 -sSf \
     https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz \
@@ -38,27 +38,18 @@ RUN BLOG_UI_TAG=$(sed -n '/\[dependencies\.blog-ui\]/,/^\[/p' blog-server-api/Ca
     git clone --depth 1 --branch "$BLOG_UI_TAG" https://github.com/Tikitko/blog-ui.git /app/blog-ui
 
 WORKDIR /app/blog-ui
-RUN trunk build --release --no-default-features --features "hydration,$FEATURES"
 
 RUN set -e; \
-    for css in dist/index-*.css; do \
-      [ -n "${COLOR_PRIMARY_BG:-}" ] && sed -i "s/--bs-primary-bg-subtle:[^;]*;/--bs-primary-bg-subtle:${COLOR_PRIMARY_BG};/g" "$css" || true; \
-      [ -n "${COLOR_BODY_BG:-}" ]    && sed -i "s/--bs-body-bg:[^;]*;/--bs-body-bg:${COLOR_BODY_BG};/g" "$css" || true; \
-      [ -n "${COLOR_SECOND_BG:-}" ]  && sed -i "s/--bs-second-bg:[^;]*;/--bs-second-bg:${COLOR_SECOND_BG};/g" "$css" || true; \
-      [ -n "${COLOR_LIGHT:-}" ]      && sed -i "s/--bs-light-color:[^;]*;/--bs-light-color:${COLOR_LIGHT};/g" "$css" || true; \
-      [ -n "${COLOR_BODY:-}" ]       && sed -i "s/--bs-body-color:[^;]*;/--bs-body-color:${COLOR_BODY};/g" "$css" || true; \
-      OLD_FILE=$(basename "$css"); \
-      NEW_HEX=$(openssl dgst -sha256 "$css" | awk '{print substr($NF,1,16)}'); \
-      NEW_FILE="index-${NEW_HEX}.css"; \
-      mv "$css" "dist/${NEW_FILE}"; \
-      [ -f "dist/.stage/${OLD_FILE}" ] && mv "dist/.stage/${OLD_FILE}" "dist/.stage/${NEW_FILE}" || true; \
-      NEW_INTEGRITY=$(openssl dgst -sha384 -binary "dist/${NEW_FILE}" | base64 -w 0); \
-      sed -i "s|${OLD_FILE}|${NEW_FILE}|g" dist/index.html; \
-      sed -i "s|/${NEW_FILE}\" integrity=\"sha384-[^\"]*\"|/${NEW_FILE}\" integrity=\"sha384-${NEW_INTEGRITY}\"|g; s|/${NEW_FILE} integrity=\"sha384-[^\"]*\"|/${NEW_FILE} integrity=\"sha384-${NEW_INTEGRITY}\"|g" dist/index.html; \
-    done; \
-    [ -n "${COLOR_PRIMARY_BG:-}" ] && sed -i "s/content=\"#[^\"]*\"/content=\"${COLOR_PRIMARY_BG}\"/g; s/content=#[^ >]*/content=${COLOR_PRIMARY_BG}/g" dist/index.html || true; \
-    [ -n "${THEME:-}" ] && sed -i "s/data-bs-theme=\"dark\"/data-bs-theme=\"${THEME}\"/g; s/data-bs-theme=dark/data-bs-theme=${THEME}/g" dist/index.html || true; \
-    [ -n "${LOGO_URL:-}" ] && curl -fsSL "${LOGO_URL}" -o dist/logo.svg || true
+    [ -n "${COLOR_PRIMARY_BG:-}" ] && sed -i "s/--bs-primary-bg-subtle:[^;]*;/--bs-primary-bg-subtle:${COLOR_PRIMARY_BG};/g" index.css || true; \
+    [ -n "${COLOR_BODY_BG:-}" ]    && sed -i "s/--bs-body-bg:[^;]*;/--bs-body-bg:${COLOR_BODY_BG};/g" index.css || true; \
+    [ -n "${COLOR_SECOND_BG:-}" ]  && sed -i "s/--bs-second-bg:[^;]*;/--bs-second-bg:${COLOR_SECOND_BG};/g" index.css || true; \
+    [ -n "${COLOR_LIGHT:-}" ]      && sed -i "s/--bs-light-color:[^;]*;/--bs-light-color:${COLOR_LIGHT};/g" index.css || true; \
+    [ -n "${COLOR_BODY:-}" ]       && sed -i "s/--bs-body-color:[^;]*;/--bs-body-color:${COLOR_BODY};/g" index.css || true; \
+    [ -n "${COLOR_PRIMARY_BG:-}" ] && sed -i "s/content=\"#[^\"]*\"/content=\"${COLOR_PRIMARY_BG}\"/g" index.html || true; \
+    [ -n "${THEME:-}" ]            && sed -i "s/data-bs-theme=\"dark\"/data-bs-theme=\"${THEME}\"/g" index.html || true; \
+    [ -n "${LOGO_URL:-}" ]         && curl -fsSL "${LOGO_URL}" -o logo.svg || true
+
+RUN trunk build --release --no-default-features --features "hydration,$FEATURES"
 
 FROM rust:1.95-slim AS server-builder
 
