@@ -100,6 +100,7 @@ COPY --from=server-builder /app/target/release/blog-server-api .
 COPY --from=server-builder /app/config.yaml .
 COPY --from=server-builder /app/index.html .
 COPY --from=ui-builder /app/blog-ui/dist ./dist
+RUN rm -f /app/dist/index.html
 
 COPY <<'EOF' /etc/nginx/conf.d/default.conf.template
 server {
@@ -108,6 +109,11 @@ server {
     root /app/dist;
 
     underscores_in_headers on;
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
     resolver ${RESOLVER} valid=10s;
 
