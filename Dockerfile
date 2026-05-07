@@ -10,6 +10,7 @@ RUN curl -L --proto '=https' --tlsv1.2 -sSf \
 
 ARG FEATURES="telegram,chatgpt,lang_ru"
 ARG DOMAIN
+ARG IMAGES_PROCESSOR_URL
 ARG TITLE
 ARG DESCRIPTION
 ARG KEYWORDS
@@ -25,6 +26,7 @@ ARG COLOR_LIGHT=""
 ARG COLOR_BODY=""
 
 ENV API_URL=https://$DOMAIN/api \
+    IMAGES_PROCESSOR_URL=$IMAGES_PROCESSOR_URL \
     TITLE=$TITLE \
     DESCRIPTION=$DESCRIPTION \
     KEYWORDS=$KEYWORDS \
@@ -57,6 +59,7 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev git && rm -rf /va
 
 ARG FEATURES="telegram,chatgpt,lang_ru"
 ARG DOMAIN
+ARG IMAGES_PROCESSOR_URL
 ARG TITLE
 ARG DESCRIPTION
 ARG KEYWORDS
@@ -65,6 +68,7 @@ ARG TELEGRAM_BOT_LOGIN
 ARG YANDEX_CLIENT_ID
 
 ENV API_URL=https://$DOMAIN/api \
+    IMAGES_PROCESSOR_URL=$IMAGES_PROCESSOR_URL \
     TITLE=$TITLE \
     DESCRIPTION=$DESCRIPTION \
     KEYWORDS=$KEYWORDS \
@@ -90,11 +94,9 @@ RUN rm -f /etc/nginx/sites-enabled/default \
           /var/www/html/index.nginx-debian.html
 
 ARG DOMAIN
-ARG IMAGES_PROCESSOR_ADDRESS
 ENV SERVER_ADDRESS="127.0.0.1:3000" \
     SITE_URL=https://$DOMAIN \
-    DOMAIN=$DOMAIN \
-    IMAGES_PROCESSOR_ADDRESS=$IMAGES_PROCESSOR_ADDRESS
+    DOMAIN=$DOMAIN
 
 WORKDIR /app
 COPY --from=server-builder /app/target/release/blog-server-api .
@@ -120,26 +122,8 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
-    resolver ${RESOLVER} valid=10s;
-
     location / {
         try_files $uri @serverproxy;
-    }
-
-    location /images/external/ {
-        set $images_upstream "${IMAGES_PROCESSOR_ADDRESS}";
-        rewrite ^/images/external/(.*)$ /$1 break;
-        proxy_pass http://$images_upstream;
-        proxy_http_version 1.1;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Host $host;
-        proxy_set_header X-Forwarded-Port $server_port;
     }
 
     location @serverproxy {
@@ -162,11 +146,8 @@ COPY <<'EOF' /app/start.sh
 #!/bin/sh
 set -eu
 echo "PORT=$PORT"
-RESOLVER=$(awk '/^nameserver/ {print $2; exit}' /etc/resolv.conf)
-case "$RESOLVER" in *:*) RESOLVER="[$RESOLVER]" ;; esac
-echo "RESOLVER=$RESOLVER"
-export PORT IMAGES_PROCESSOR_ADDRESS RESOLVER
-envsubst '${PORT} ${IMAGES_PROCESSOR_ADDRESS} ${RESOLVER}' \
+export PORT
+envsubst '${PORT}' \
     < /etc/nginx/conf.d/default.conf.template \
     > /etc/nginx/conf.d/default.conf
 nginx -t
