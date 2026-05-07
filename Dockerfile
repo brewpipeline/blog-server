@@ -59,6 +59,7 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev git && rm -rf /va
 
 ARG FEATURES="telegram,chatgpt,lang_ru"
 ARG DOMAIN
+ARG IMAGES_PROCESSOR_URL
 ARG TITLE
 ARG DESCRIPTION
 ARG KEYWORDS
@@ -67,6 +68,7 @@ ARG TELEGRAM_BOT_LOGIN
 ARG YANDEX_CLIENT_ID
 
 ENV API_URL=https://$DOMAIN/api \
+    IMAGES_PROCESSOR_URL=$IMAGES_PROCESSOR_URL \
     TITLE=$TITLE \
     DESCRIPTION=$DESCRIPTION \
     KEYWORDS=$KEYWORDS \

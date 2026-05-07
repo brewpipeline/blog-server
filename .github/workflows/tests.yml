@@ -26,6 +26,7 @@ jobs:
       OPENAI_API_KEY: ""
 
       TELEGRAM_BOT_LOGIN: ""
+      IMAGES_PROCESSOR_URL: ""
       TITLE: ""
       DESCRIPTION: ""
       KEYWORDS: ""
