@@ -91,6 +91,10 @@ pub async fn init_db() -> rbatis::RBatis {
     let rb = rbatis::RBatis::new();
     rb.init(rbdc_pg::driver::PgDriver {}, &*PG_URL)
         .expect("DB init failed");
+    let pool = rb.get_pool().expect("DB pool not initialized");
+    pool.set_max_open_conns(10).await;
+    pool.set_max_idle_conns(5).await;
+    pool.set_conn_max_lifetime(Some(std::time::Duration::from_secs(1800))).await;
     migrations::exec(&rb).await.expect("DB migration failed");
     rb
 }
