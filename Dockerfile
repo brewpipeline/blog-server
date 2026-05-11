@@ -112,7 +112,7 @@ set_real_ip_from 0.0.0.0/0;
 real_ip_header CF-Connecting-IP;
 real_ip_recursive on;
 
-limit_req_zone $binary_remote_addr zone=static:10m rate=50/m;
+limit_req_zone $binary_remote_addr zone=static:10m rate=50r/m;
 limit_req_zone $binary_remote_addr zone=server:10m rate=50r/m;
 
 server {
