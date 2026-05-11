@@ -107,6 +107,13 @@ COPY --from=ui-builder /app/blog-ui/dist ./dist
 RUN rm -f /app/dist/index.html
 
 COPY <<'EOF' /etc/nginx/conf.d/default.conf.template
+
+set_real_ip_from 0.0.0.0/0;
+real_ip_header CF-Connecting-IP;
+real_ip_recursive on;
+
+limit_req_zone $binary_remote_addr zone=blog:10m rate=100r/m;
+
 server {
     listen 0.0.0.0:${PORT};
 
@@ -122,6 +129,9 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
+
+    limit_req zone=blog burst=20 nodelay;
+    limit_req_status 429;
 
     location / {
         try_files $uri @serverproxy;
