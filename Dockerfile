@@ -112,7 +112,8 @@ set_real_ip_from 0.0.0.0/0;
 real_ip_header CF-Connecting-IP;
 real_ip_recursive on;
 
-limit_req_zone $binary_remote_addr zone=blog:10m rate=100r/m;
+limit_req_zone $binary_remote_addr zone=static:10m rate=50/m;
+limit_req_zone $binary_remote_addr zone=server:10m rate=50r/m;
 
 server {
     listen 0.0.0.0:${PORT};
@@ -130,14 +131,17 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
-    limit_req zone=blog burst=20 nodelay;
-    limit_req_status 429;
-
-    location / {
-        try_files $uri @serverproxy;
+    location ~* \.[a-z0-9]+$ {
+        limit_req zone=static burst=10 nodelay;
+        limit_req_status 429;
+        
+        try_files $uri =404;
     }
 
-    location @serverproxy {
+    location / {
+        limit_req zone=server burst=10 nodelay;
+        limit_req_status 429;
+
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_cache_bypass $http_upgrade;
