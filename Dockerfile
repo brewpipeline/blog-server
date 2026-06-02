@@ -131,7 +131,7 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
-    location ~* ^(?!/sitemap\.xml$).+\.[a-z0-9]+$ {
+    location ~* ^(?!/(?:sitemap\.xml|index\.html)$).+\.[a-z0-9]+$ {
         limit_req zone=static burst=15 nodelay;
         limit_req_status 429;
         
