@@ -4,6 +4,7 @@ use std::sync::Arc;
 use crate::traits::author_service::{Author, AuthorService};
 use crate::traits::entity_post_service::EntityPostService as EntityPostServiceTrait;
 use crate::traits::post_service::{BasePost, Post};
+use crate::utils::image_signer::{processed_image_urls, ImageVariant};
 use blog_generic::entities::{Post as EPost, PublishType, Tag as ETag};
 use screw_components::dyn_result::{DError, DResult};
 
@@ -24,6 +25,17 @@ impl Into<EPost> for EPostBuilder {
                 .lang
                 .as_deref()
                 .is_some_and(|l| BasePost::current_lang().is_some_and(|cl| l != cl));
+        let processed_image_urls = {
+            let cover: Vec<(&str, ImageVariant)> = self
+                .0
+                .base
+                .image_url
+                .as_deref()
+                .map(|u| (u, ImageVariant::Medium))
+                .into_iter()
+                .collect();
+            processed_image_urls(&cover, self.0.base.content.as_deref())
+        };
         EPost {
             id: self.0.id,
             title: self.0.base.title,
@@ -45,6 +57,7 @@ impl Into<EPost> for EPostBuilder {
                 })
                 .collect(),
             image_url: self.0.base.image_url,
+            processed_image_urls,
             noindex,
         }
     }

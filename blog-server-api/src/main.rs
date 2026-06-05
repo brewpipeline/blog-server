@@ -24,12 +24,21 @@ pub(crate) static TELEGRAM_BOT_TOKEN: Lazy<String> =
     Lazy::new(|| std::env::var("TELEGRAM_BOT_TOKEN").expect("TELEGRAM_BOT_TOKEN not set"));
 pub(crate) static SERVER_ADDRESS: Lazy<String> =
     Lazy::new(|| std::env::var("SERVER_ADDRESS").expect("SERVER_ADDRESS not set"));
+pub(crate) static IMAGES_PROCESSOR_URL: Lazy<String> =
+    Lazy::new(|| std::env::var("IMAGES_PROCESSOR_URL").expect("IMAGES_PROCESSOR_URL not set"));
+pub(crate) static IMAGES_HMAC_SECRET: Lazy<String> =
+    Lazy::new(|| std::env::var("IMAGES_HMAC_SECRET").expect("IMAGES_HMAC_SECRET not set"));
 #[cfg(feature = "chatgpt")]
 pub(crate) static OPENAI_API_KEY: Lazy<String> =
     Lazy::new(|| std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set"));
 
 #[tokio::main]
 async fn main() -> screw_components::dyn_result::DResult<()> {
+    blog_server_services::utils::image_signer::init(
+        IMAGES_PROCESSOR_URL.to_string(),
+        IMAGES_HMAC_SECRET.to_string(),
+    );
+
     let config = init_config().await;
     let rbatis = init_db().await;
 

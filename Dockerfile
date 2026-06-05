@@ -10,7 +10,7 @@ RUN curl -L --proto '=https' --tlsv1.2 -sSf \
 
 ARG FEATURES="telegram,chatgpt,lang_ru"
 ARG DOMAIN
-ARG IMAGES_PROCESSOR_URL
+ARG SCHEME=https
 ARG TITLE
 ARG DESCRIPTION
 ARG KEYWORDS
@@ -25,8 +25,7 @@ ARG COLOR_SECOND_BG=""
 ARG COLOR_LIGHT=""
 ARG COLOR_BODY=""
 
-ENV API_URL=https://$DOMAIN/api \
-    IMAGES_PROCESSOR_URL=$IMAGES_PROCESSOR_URL \
+ENV API_URL=$SCHEME://$DOMAIN/api \
     TITLE=$TITLE \
     DESCRIPTION=$DESCRIPTION \
     KEYWORDS=$KEYWORDS \
@@ -59,7 +58,7 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev git && rm -rf /va
 
 ARG FEATURES="telegram,chatgpt,lang_ru"
 ARG DOMAIN
-ARG IMAGES_PROCESSOR_URL
+ARG SCHEME=https
 ARG TITLE
 ARG DESCRIPTION
 ARG KEYWORDS
@@ -67,8 +66,7 @@ ARG ACCORDION_JSON
 ARG TELEGRAM_BOT_LOGIN
 ARG YANDEX_CLIENT_ID
 
-ENV API_URL=https://$DOMAIN/api \
-    IMAGES_PROCESSOR_URL=$IMAGES_PROCESSOR_URL \
+ENV API_URL=$SCHEME://$DOMAIN/api \
     TITLE=$TITLE \
     DESCRIPTION=$DESCRIPTION \
     KEYWORDS=$KEYWORDS \
@@ -95,8 +93,9 @@ RUN rm -f /etc/nginx/sites-enabled/default \
  && sed -i 's/^worker_processes .*/worker_processes 4;/' /etc/nginx/nginx.conf
 
 ARG DOMAIN
+ARG SCHEME=https
 ENV SERVER_ADDRESS="127.0.0.1:3000" \
-    SITE_URL=https://$DOMAIN \
+    SITE_URL=$SCHEME://$DOMAIN \
     DOMAIN=$DOMAIN
 
 WORKDIR /app
@@ -104,7 +103,6 @@ COPY --from=server-builder /app/target/release/blog-server-api .
 COPY --from=server-builder /app/config.yaml .
 COPY --from=server-builder /app/index.html .
 COPY --from=ui-builder /app/blog-ui/dist ./dist
-RUN rm -f /app/dist/index.html
 
 COPY <<'EOF' /etc/nginx/conf.d/default.conf.template
 

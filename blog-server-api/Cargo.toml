@@ -38,7 +38,7 @@ package = "screw-ws"
 
 [dependencies.blog-ui]
 git = "https://github.com/Tikitko/blog-ui.git"
-tag = "1.2.0"
+tag = "1.3.0"
 #path = "../../blog-ui"
 default-features = false
 features = ["server"]
@@ -46,7 +46,7 @@ optional = true
 
 [dependencies.blog-generic]
 git = "https://github.com/brewpipeline/blog-generic.git"
-tag = "0.0.4"
+tag = "1.0.0"
 features = ["validator"]
 
 [dependencies]
