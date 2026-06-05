@@ -76,6 +76,16 @@ pub struct Author {
 
 impl Into<EAuthor> for Author {
     fn into(self) -> EAuthor {
+        use crate::utils::image_signer::{processed_image_urls, ImageVariant};
+        let avatar: Vec<(&str, ImageVariant)> = self
+            .base
+            .image_url
+            .as_deref()
+            .filter(|_| self.base.blocked == 0)
+            .map(|u| (u, ImageVariant::Small))
+            .into_iter()
+            .collect();
+        let processed_image_urls = processed_image_urls(&avatar, None);
         EAuthor {
             id: self.id,
             slug: self.base.slug,
@@ -87,6 +97,7 @@ impl Into<EAuthor> for Author {
             registered_at: self.base.registered_at,
             status: self.base.status.filter(|_| self.base.blocked == 0),
             image_url: self.base.image_url.filter(|_| self.base.blocked == 0),
+            processed_image_urls,
             editor: self.base.editor,
             blocked: self.base.blocked,
             notification_subscribed: self.base.notification_subscribed,

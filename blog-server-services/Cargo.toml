@@ -10,7 +10,7 @@ package = "screw-components"
 
 [dependencies.blog-generic]
 git = "https://github.com/brewpipeline/blog-generic.git"
-tag = "0.0.4"
+tag = "1.0.0"
 
 [features]
 default = []
@@ -28,3 +28,7 @@ translit = { version = "0.6.0" }
 ammonia = "4.1.2"
 html2text = "0.9.4"
 reqwest = { version = "0.13.1", features = ["json"] }
+base64 = { version = "0.22" }
+hmac = { version = "0.12" }
+sha2 = { version = "0.10" }
+hex = { version = "0.4" }
