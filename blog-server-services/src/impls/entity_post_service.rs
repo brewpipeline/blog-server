@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::traits::author_service::{Author, AuthorService};
 use crate::traits::entity_post_service::EntityPostService as EntityPostServiceTrait;
 use crate::traits::post_service::{BasePost, Post};
-use crate::utils::image_signer::{processed_image_urls, ImageVariant};
+use crate::utils::image_signer::{ImageVariant, processed_image_urls};
 use blog_generic::entities::{Post as EPost, PublishType, Tag as ETag};
 use screw_components::dyn_result::{DError, DResult};
 

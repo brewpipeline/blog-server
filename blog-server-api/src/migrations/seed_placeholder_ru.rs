@@ -134,10 +134,7 @@ pub async fn exec(rb: &rbatis::RBatis) -> Result<(), Box<dyn std::error::Error>>
 
     rb.query(
         "insert into migration (key, created_at) values (?, to_timestamp(?))",
-        vec![
-            rbs::value!(KEY),
-            rbs::value!(time_utils::now_as_secs()),
-        ],
+        vec![rbs::value!(KEY), rbs::value!(time_utils::now_as_secs())],
     )
     .await?;
 

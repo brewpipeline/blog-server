@@ -76,7 +76,7 @@ pub struct Author {
 
 impl Into<EAuthor> for Author {
     fn into(self) -> EAuthor {
-        use crate::utils::image_signer::{processed_image_urls, ImageVariant};
+        use crate::utils::image_signer::{ImageVariant, processed_image_urls};
         let avatar: Vec<(&str, ImageVariant)> = self
             .base
             .image_url

@@ -18,6 +18,9 @@ ARG ACCORDION_JSON
 ARG TELEGRAM_BOT_LOGIN
 ARG YANDEX_CLIENT_ID
 ARG LOGO_URL=""
+ARG FAVICON_URL=""
+ARG ICON512_MASKABLE_URL=""
+ARG ICON512_ROUNDED_URL=""
 ARG THEME=""
 ARG COLOR_PRIMARY_BG=""
 ARG COLOR_BODY_BG=""
@@ -36,7 +39,7 @@ ENV API_URL=$SCHEME://$DOMAIN/api \
 WORKDIR /app
 COPY blog-server-api/Cargo.toml blog-server-api/Cargo.toml
 RUN BLOG_UI_TAG=$(sed -n '/\[dependencies\.blog-ui\]/,/^\[/p' blog-server-api/Cargo.toml | grep '^tag = ' | sed 's/tag = "\(.*\)"/\1/') && \
-    git clone --depth 1 --branch "$BLOG_UI_TAG" https://github.com/Tikitko/blog-ui.git /app/blog-ui
+    git clone --depth 1 --branch "$BLOG_UI_TAG" https://github.com/brewpipeline/blog-ui.git /app/blog-ui
 
 WORKDIR /app/blog-ui
 
@@ -48,7 +51,10 @@ RUN set -e; \
     [ -n "${COLOR_BODY:-}" ]       && sed -i "s/--bs-body-color:[^;]*;/--bs-body-color:${COLOR_BODY};/g" index.css || true; \
     [ -n "${COLOR_PRIMARY_BG:-}" ] && sed -i "s/content=\"#[^\"]*\"/content=\"${COLOR_PRIMARY_BG}\"/g" index.html || true; \
     [ -n "${THEME:-}" ]            && sed -i "s/data-bs-theme=\"dark\"/data-bs-theme=\"${THEME}\"/g" index.html || true; \
-    [ -n "${LOGO_URL:-}" ]         && curl -fsSL "${LOGO_URL}" -o logo.svg || true
+    [ -n "${LOGO_URL:-}" ]             && curl -fsSL "${LOGO_URL}" -o logo.svg || true; \
+    [ -n "${FAVICON_URL:-}" ]          && curl -fsSL "${FAVICON_URL}" -o favicon.ico || true; \
+    [ -n "${ICON512_MASKABLE_URL:-}" ] && curl -fsSL "${ICON512_MASKABLE_URL}" -o icon512_maskable.png || true; \
+    [ -n "${ICON512_ROUNDED_URL:-}" ]  && curl -fsSL "${ICON512_ROUNDED_URL}" -o icon512_rounded.png || true
 
 RUN trunk build --release --no-default-features --features "hydration,$FEATURES"
 
@@ -79,7 +85,7 @@ COPY . .
 COPY --from=ui-builder /app/blog-ui /app/blog-ui
 COPY --from=ui-builder /app/blog-ui/dist/index.html ./index.html
 
-RUN printf '\n[patch."https://github.com/Tikitko/blog-ui.git"]\nblog-ui = { path = "blog-ui" }\n' >> Cargo.toml
+RUN printf '\n[patch."https://github.com/brewpipeline/blog-ui.git"]\nblog-ui = { path = "blog-ui" }\n' >> Cargo.toml
 
 RUN cargo build -p blog-server-api --release --no-default-features --features "ssr,$FEATURES"
 

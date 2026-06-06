@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use base64::engine::general_purpose::URL_SAFE;
 use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
 
