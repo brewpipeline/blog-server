@@ -39,7 +39,7 @@ package = "screw-ws"
 
 [dependencies.blog-ui]
 git = "https://github.com/brewpipeline/blog-ui.git"
-tag = "1.4.0"
+tag = "1.4.1"
 #path = "../../blog-ui"
 default-features = false
 features = ["server"]
