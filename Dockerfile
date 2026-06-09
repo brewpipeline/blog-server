@@ -14,7 +14,7 @@ RUN rustup target add wasm32-unknown-unknown
 RUN curl -L --proto '=https' --tlsv1.2 -sSf \
     https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz \
     | tar -xzf - -C /usr/local/bin && \
-    cargo binstall --no-confirm trunk
+    cargo binstall --no-confirm trunk@0.22.0-beta.1
 
 ARG FEATURES="telegram,chatgpt,lang_ru"
 ARG DOMAIN
