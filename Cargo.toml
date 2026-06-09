@@ -2,5 +2,17 @@
 resolver = "2"
 members = [
     "blog-server-api",
-    "blog-server-services"
+    "blog-server-services",
+    "blog-ui"
 ]
+
+[patch.crates-io]
+yew = { git = "https://github.com/tikitko/yew.git", branch = "yew-v0.22.0.1" }
+yew-router = { git = "https://github.com/tikitko/yew.git", branch = "yew-v0.22.0.1" }
+
+[profile.release]
+lto = true
+
+[profile.release.package.blog-ui]
+opt-level = "z"
+codegen-units = 1

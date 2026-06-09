@@ -11,7 +11,10 @@ use screw_core::routing::*;
 use blog_generic::*;
 use blog_ui::*;
 
-const INDEX_HTML: &str = include_str!("../../../index.html");
+static INDEX_HTML: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+    std::fs::read_to_string("dist/index.html")
+        .unwrap_or_else(|e| panic!("failed to read dist/index.html: {e}"))
+});
 
 const APP_TAG_PREFIX: &str = "<div id=app>";
 
@@ -76,7 +79,8 @@ pub async fn client_handler<
     request: router::RoutedRequest<Request<Extensions>>,
 ) -> Response {
     let (index_html_before, index_html_after) = {
-        let (index_html_before, index_html_after) = INDEX_HTML.split_once(APP_TAG_PREFIX).unwrap();
+        let (index_html_before, index_html_after) =
+            INDEX_HTML.as_str().split_once(APP_TAG_PREFIX).unwrap();
         let mut index_html_before = index_html_before.to_owned();
         index_html_before.push_str(APP_TAG_PREFIX);
         let index_html_after = index_html_after.to_owned();
