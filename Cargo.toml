@@ -7,8 +7,8 @@ members = [
 ]
 
 [patch.crates-io]
-yew = { git = "https://github.com/tikitko/yew.git", branch = "yew-v0.22.0.1" }
-yew-router = { git = "https://github.com/tikitko/yew.git", branch = "yew-v0.22.0.1" }
+yew = { git = "https://github.com/yewstack/yew.git", rev = "47d4082d301d495c3c97fc9ed5cb18ffffaa3198" }
+yew-router = { git = "https://github.com/yewstack/yew.git", rev = "47d4082d301d495c3c97fc9ed5cb18ffffaa3198" }
 
 [profile.release]
 lto = true
