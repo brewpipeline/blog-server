@@ -2,5 +2,17 @@
 resolver = "2"
 members = [
     "blog-server-api",
-    "blog-server-services"
+    "blog-server-services",
+    "blog-ui"
 ]
+
+[patch.crates-io]
+yew = { git = "https://github.com/yewstack/yew.git", rev = "47d4082d301d495c3c97fc9ed5cb18ffffaa3198" }
+yew-router = { git = "https://github.com/yewstack/yew.git", rev = "47d4082d301d495c3c97fc9ed5cb18ffffaa3198" }
+
+[profile.release]
+lto = true
+
+[profile.release.package.blog-ui]
+opt-level = "z"
+codegen-units = 1

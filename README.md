@@ -14,8 +14,20 @@ for database access with PostgreSQL. The web front-end lives in the
 The user-facing website is developed separately in the
 [`blog-ui`](https://github.com/brewpipeline/blog-ui) repository. It provides
 the front-end that consumes this API and offers server-side rendering support
-when the `ssr` feature is enabled. Check that repository for instructions on
-building and running the web interface.
+when the `ssr` feature is enabled.
+
+`blog-ui` is wired in as a Cargo workspace member at `blog-server/blog-ui`, but
+it is **not** committed here (it is gitignored). The `Makefile` clones it for you
+on demand, pinned to `BLOG_UI_TAG`:
+
+```bash
+make blog-ui            # clone blog-ui at BLOG_UI_TAG into ./blog-ui
+make blog-ui BLOG_UI_TAG=1.4.2   # override the pinned tag
+```
+
+`make run` and `make build` depend on this target, so the clone happens
+automatically the first time you build (see [Running](#running)). The clone is
+idempotent — to switch tags after a clone exists, `rm -rf blog-ui` first.
 
 ## Workspace Layout
 
@@ -26,6 +38,7 @@ This repository is a Cargo workspace made up of several crates:
 | `blog-server-api` | HTTP entry point, request routing and middleware setup. |
 | `blog-server-services` | Service layer with implementations for posts, comments, authors and social integrations. |
 | `blog-generic` | Shared domain entities, events and utilities used by other crates. |
+| `blog-ui` | Yew/WASM front-end (`ssr` rendering + static assets). Fetched on demand via `make`; gitignored, not committed here. See [UI Repository](#ui-repository). |
 
 ## Features
 
@@ -40,9 +53,12 @@ This repository is a Cargo workspace made up of several crates:
 ## Requirements
 
 * [Rust](https://www.rust-lang.org/) toolchain (1.70 or later recommended)
+* `git` and `make` (used to fetch the `blog-ui` workspace member)
 * PostgreSQL database
 * Optional: RabbitMQ for the event bus
-* Optional: [`blog-ui`](https://github.com/brewpipeline/blog-ui) repository when using server‑side rendering
+* Optional, only to build the front-end / SSR assets: the
+  `wasm32-unknown-unknown` target (`rustup target add wasm32-unknown-unknown`)
+  and [`trunk`](https://trunkrs.dev/) (`cargo install trunk`)
 
 ## Configuration
 
@@ -68,11 +84,21 @@ Runtime configuration such as Telegram chat IDs or Discord webhooks is stored in
 3. Start the server:
 
 ```bash
-cargo run -p blog-server-api
+make run
 ```
+
+`make run` first fetches `blog-ui` (if missing) and then runs
+`cargo run -p blog-server-api`. Use `make build` to compile without running.
+You can still invoke cargo directly (`cargo run -p blog-server-api`), but only
+once `blog-ui` has been cloned — otherwise the workspace fails to load.
 
 On start up the server applies database migrations, connects to RabbitMQ if
 available and listens on `SERVER_ADDRESS`.
+
+> **Note:** server-side rendering reads `dist/index.html` at runtime (produced by
+> a `trunk build` of `blog-ui`). A plain `make run` from the workspace root has no
+> `dist/`, so SSR requests will fail locally; the full stack is assembled by the
+> `Dockerfile`.
 
 ## API Overview
 
@@ -93,10 +119,12 @@ See `router.rs` for the full list.
 
 ## Testing
 
-Run the complete test suite for all workspace members with:
+Fetch `blog-ui` first (so the workspace loads), then run the suite. CI scopes
+tests to the server crate:
 
 ```bash
-cargo test
+make blog-ui
+cargo test -p blog-server-api
 ```
 
 ## License

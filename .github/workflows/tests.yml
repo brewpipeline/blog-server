@@ -34,6 +34,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Fetch blog-ui
+      run: make blog-ui
     - name: Run tests
-      run: cargo test --verbose --no-default-features -F $(cargo metadata --format-version=1 --no-deps | jq -r '.packages[0].features | keys[]' | grep -v "lang_en" | tr '\n' ',' | sed 's/,$//')
+      run: cargo test -p blog-server-api --verbose --no-default-features -F $(cargo metadata --format-version=1 --no-deps | jq -r '.packages[] | select(.name == "blog-server-api") | .features | keys[]' | grep -v "lang_en" | tr '\n' ',' | sed 's/,$//')
 

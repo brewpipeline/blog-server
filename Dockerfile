@@ -1,4 +1,12 @@
 # syntax=docker/dockerfile:1
+FROM rust:1.95-slim AS sources
+RUN apt-get update && apt-get install -y git make && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY Makefile .
+RUN make blog-ui
+COPY . .
+RUN cargo generate-lockfile
+
 FROM rust:1.95-slim AS ui-builder
 
 RUN apt-get update && apt-get install -y pkg-config libssl-dev curl git && rm -rf /var/lib/apt/lists/*
@@ -6,7 +14,7 @@ RUN rustup target add wasm32-unknown-unknown
 RUN curl -L --proto '=https' --tlsv1.2 -sSf \
     https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz \
     | tar -xzf - -C /usr/local/bin && \
-    cargo binstall --no-confirm trunk
+    cargo binstall --no-confirm trunk@0.22.0-beta.1
 
 ARG FEATURES="telegram,chatgpt,lang_ru"
 ARG DOMAIN
@@ -37,9 +45,7 @@ ENV API_URL=$SCHEME://$DOMAIN/api \
     YANDEX_CLIENT_ID=$YANDEX_CLIENT_ID
 
 WORKDIR /app
-COPY blog-server-api/Cargo.toml blog-server-api/Cargo.toml
-RUN BLOG_UI_TAG=$(sed -n '/\[dependencies\.blog-ui\]/,/^\[/p' blog-server-api/Cargo.toml | grep '^tag = ' | sed 's/tag = "\(.*\)"/\1/') && \
-    git clone --depth 1 --branch "$BLOG_UI_TAG" https://github.com/brewpipeline/blog-ui.git /app/blog-ui
+COPY --from=sources /app /app
 
 WORKDIR /app/blog-ui
 
@@ -56,7 +62,7 @@ RUN set -e; \
     [ -n "${ICON512_MASKABLE_URL:-}" ] && curl -fsSL "${ICON512_MASKABLE_URL}" -o icon512_maskable.png || true; \
     [ -n "${ICON512_ROUNDED_URL:-}" ]  && curl -fsSL "${ICON512_ROUNDED_URL}" -o icon512_rounded.png || true
 
-RUN trunk build --release --no-default-features --features "hydration,$FEATURES"
+RUN trunk build --release --locked --no-default-features --features "hydration,$FEATURES"
 
 FROM rust:1.95-slim AS server-builder
 
@@ -81,13 +87,9 @@ ENV API_URL=$SCHEME://$DOMAIN/api \
     YANDEX_CLIENT_ID=$YANDEX_CLIENT_ID
 
 WORKDIR /app
-COPY . .
-COPY --from=ui-builder /app/blog-ui /app/blog-ui
-COPY --from=ui-builder /app/blog-ui/dist/index.html ./index.html
+COPY --from=sources /app /app
 
-RUN printf '\n[patch."https://github.com/brewpipeline/blog-ui.git"]\nblog-ui = { path = "blog-ui" }\n' >> Cargo.toml
-
-RUN cargo build -p blog-server-api --release --no-default-features --features "ssr,$FEATURES"
+RUN cargo build -p blog-server-api --release --locked --no-default-features --features "ssr,$FEATURES"
 
 FROM debian:trixie-slim
 
@@ -107,7 +109,6 @@ ENV SERVER_ADDRESS="127.0.0.1:3000" \
 WORKDIR /app
 COPY --from=server-builder /app/target/release/blog-server-api .
 COPY --from=server-builder /app/config.yaml .
-COPY --from=server-builder /app/index.html .
 COPY --from=ui-builder /app/blog-ui/dist ./dist
 
 COPY <<'EOF' /etc/nginx/conf.d/default.conf.template
