@@ -1,4 +1,4 @@
-BLOG_UI_TAG ?= 1.5.0
+BLOG_UI_TAG ?= 1.5.1
 
 blog-ui:
 	git clone --depth 1 --branch $(BLOG_UI_TAG) https://github.com/brewpipeline/blog-ui.git blog-ui
