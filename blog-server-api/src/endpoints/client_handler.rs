@@ -155,6 +155,13 @@ fn app_content_encode<E: serde::Serialize>(entity: &E) -> Option<AppContent> {
     })
 }
 
+async fn encoded<C, E: serde::Serialize>(
+    container: impl std::future::Future<Output = Option<C>>,
+    select: impl FnOnce(C) -> E,
+) -> Option<AppContent> {
+    app_content_encode(&select(container.await?))
+}
+
 async fn status<Extensions>(
     request: &router::RoutedRequest<Request<Extensions>>,
 ) -> hyper::StatusCode {
@@ -181,38 +188,48 @@ where
         .and_then(|v| v.parse().ok())
         .unwrap_or(1);
     let page_processor = PP::create_for_page(&page);
+    let ext = &request.origin.extensions;
 
     match Route::recognize_path(request.path.as_str())? {
-        Route::Post { slug: _, id } | Route::EditPost { id } => post::direct_handler(
-            id.to_string(),
-            request.origin.extensions.resolve(),
-            request.origin.extensions.resolve(),
-        )
-        .await
-        .and_then(|v| app_content_encode(&v.post)),
-        Route::Author { slug } => author::direct_handler(slug, request.origin.extensions.resolve())
+        Route::Post { slug: _, id } | Route::EditPost { id } => {
+            encoded(
+                post::direct_handler(id.to_string(), ext.resolve(), ext.resolve()),
+                |c| c.post,
+            )
             .await
-            .and_then(|v| app_content_encode(&v.author)),
-        Route::Tag { slug: _, id } => {
-            tag::direct_handler(id.to_string(), request.origin.extensions.resolve())
-                .await
-                .and_then(|v| app_content_encode(&v.tag))
         }
-        Route::Posts => posts::direct_handler(
-            page_processor.offset(),
-            page_processor.limit(),
-            request.origin.extensions.resolve(),
-            request.origin.extensions.resolve(),
-        )
-        .await
-        .and_then(|v| app_content_encode(&v)),
-        Route::Authors => authors::direct_handler(
-            page_processor.offset(),
-            page_processor.limit(),
-            request.origin.extensions.resolve(),
-        )
-        .await
-        .and_then(|v| app_content_encode(&v)),
+        Route::Author { slug } => {
+            encoded(author::direct_handler(slug, ext.resolve()), |c| c.author).await
+        }
+        Route::Tag { slug: _, id } => {
+            encoded(tag::direct_handler(id.to_string(), ext.resolve()), |c| {
+                c.tag
+            })
+            .await
+        }
+        Route::Posts => {
+            encoded(
+                posts::direct_handler(
+                    page_processor.offset(),
+                    page_processor.limit(),
+                    ext.resolve(),
+                    ext.resolve(),
+                ),
+                |c| c,
+            )
+            .await
+        }
+        Route::Authors => {
+            encoded(
+                authors::direct_handler(
+                    page_processor.offset(),
+                    page_processor.limit(),
+                    ext.resolve(),
+                ),
+                |c| c,
+            )
+            .await
+        }
         _ => None,
     }
 }
