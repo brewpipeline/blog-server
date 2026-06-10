@@ -90,13 +90,16 @@ pub async fn client_handler<
     let status = status(&request).await;
     let app_content = app_content::<_, DefaultPageProcessor>(&request).await;
 
-    let rendered = server_renderer(
-        request.path.as_str().to_string(),
-        request.query,
-        app_content,
-    )
-    .render()
-    .await;
+    let path = request.path.as_str();
+    let render_path = if path.starts_with('/') && !path.contains('?') && !path.contains('#') {
+        path.to_string()
+    } else {
+        "/404".to_string()
+    };
+
+    let rendered = server_renderer(render_path, request.query, app_content)
+        .render()
+        .await;
 
     let page = {
         let mut page = String::new();
