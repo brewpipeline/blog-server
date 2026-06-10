@@ -18,57 +18,68 @@ static INDEX_HTML: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
 
 const APP_TAG_PREFIX: &str = "<div id=app>";
 
-const TITLE_TAG: [&str; 2] = ["<title>", "</title>"];
-const DESCRIPTION_TAG: [&str; 2] = ["<meta name=description", ">"];
-const KEYWORDS_TAG: [&str; 2] = ["<meta name=keywords", ">"];
-const ROBOTS_TAG: [&str; 2] = ["<meta name=robots", ">"];
-const OG_TITLE_TAG: [&str; 2] = ["<meta property=og:title", ">"];
-const OG_DESCRIPTION_TAG: [&str; 2] = ["<meta property=og:description", ">"];
-const OG_TYPE_TAG: [&str; 2] = ["<meta property=og:type", ">"];
-const OG_IMAGE_TAG: [&str; 2] = ["<meta property=og:image", ">"];
-const OG_IMAGE_WIDTH_TAG: [&str; 2] = ["<meta property=og:image:width", ">"];
-const OG_IMAGE_HEIGHT_TAG: [&str; 2] = ["<meta property=og:image:height", ">"];
-const OG_SITE_NAME_TAG: [&str; 2] = ["<meta property=og:site_name", ">"];
+struct MetaRule {
+    page_content_key: &'static str,
+    head_tag: [&'static str; 2],
+    wrap_as_content: bool,
+}
 
-const TYPE_TAG_BODY: [&str; 2] = [
-    "<script data-page-content=\"type\" type=\"text/plain\">",
-    "</script>",
-];
-const TITLE_TAG_BODY: [&str; 2] = [
-    "<script data-page-content=\"title\" type=\"text/plain\">",
-    "</script>",
-];
-const SHORT_TITLE_TAG_BODY: [&str; 2] = [
-    "<script data-page-content=\"short_title\" type=\"text/plain\">",
-    "</script>",
-];
-const DESCRIPTION_TAG_BODY: [&str; 2] = [
-    "<script data-page-content=\"description\" type=\"text/plain\">",
-    "</script>",
-];
-const KEYWORDS_TAG_BODY: [&str; 2] = [
-    "<script data-page-content=\"keywords\" type=\"text/plain\">",
-    "</script>",
-];
-const IMAGE_TAG_BODY: [&str; 2] = [
-    "<script data-page-content=\"image\" type=\"text/plain\">",
-    "</script>",
-];
-const IMAGE_WIDTH_TAG_BODY: [&str; 2] = [
-    "<script data-page-content=\"image_width\" type=\"text/plain\">",
-    "</script>",
-];
-const IMAGE_HEIGHT_TAG_BODY: [&str; 2] = [
-    "<script data-page-content=\"image_height\" type=\"text/plain\">",
-    "</script>",
-];
-const ROBOTS_TAG_BODY: [&str; 2] = [
-    "<script data-page-content=\"robots\" type=\"text/plain\">",
-    "</script>",
-];
-const SITE_NAME_TAG_BODY: [&str; 2] = [
-    "<script data-page-content=\"site_name\" type=\"text/plain\">",
-    "</script>",
+const META_RULES: &[MetaRule] = &[
+    MetaRule {
+        page_content_key: "title",
+        head_tag: ["<title>", "</title>"],
+        wrap_as_content: false,
+    },
+    MetaRule {
+        page_content_key: "description",
+        head_tag: ["<meta name=description", ">"],
+        wrap_as_content: true,
+    },
+    MetaRule {
+        page_content_key: "keywords",
+        head_tag: ["<meta name=keywords", ">"],
+        wrap_as_content: true,
+    },
+    MetaRule {
+        page_content_key: "robots",
+        head_tag: ["<meta name=robots", ">"],
+        wrap_as_content: true,
+    },
+    MetaRule {
+        page_content_key: "short_title",
+        head_tag: ["<meta property=og:title", ">"],
+        wrap_as_content: true,
+    },
+    MetaRule {
+        page_content_key: "description",
+        head_tag: ["<meta property=og:description", ">"],
+        wrap_as_content: true,
+    },
+    MetaRule {
+        page_content_key: "type",
+        head_tag: ["<meta property=og:type", ">"],
+        wrap_as_content: true,
+    },
+    MetaRule {
+        page_content_key: "image",
+        head_tag: ["<meta property=og:image", ">"],
+        wrap_as_content: true,
+    },
+    MetaRule {
+        page_content_key: "image_width",
+        head_tag: ["<meta property=og:image:width", ">"],
+        wrap_as_content: true,
+    },
+    MetaRule {
+        page_content_key: "image_height",
+        head_tag: ["<meta property=og:image:height", ">"],
+        wrap_as_content: true,
+    },
+    MetaRule {
+        page_content_key: "site_name",
+        head_tag: ["<meta property=og:site_name", ">"],
+        wrap_as_content: true,
+    },
 ];
 
 pub async fn client_handler<
@@ -78,14 +89,7 @@ pub async fn client_handler<
 >(
     request: router::RoutedRequest<Request<Extensions>>,
 ) -> Response {
-    let (index_html_before, index_html_after) = {
-        let (index_html_before, index_html_after) =
-            INDEX_HTML.as_str().split_once(APP_TAG_PREFIX).unwrap();
-        let mut index_html_before = index_html_before.to_owned();
-        index_html_before.push_str(APP_TAG_PREFIX);
-        let index_html_after = index_html_after.to_owned();
-        (index_html_before, index_html_after)
-    };
+    let (before, after) = INDEX_HTML.split_once(APP_TAG_PREFIX).unwrap();
 
     let status = status(&request).await;
     let app_content = app_content::<_, DefaultPageProcessor>(&request).await;
@@ -101,13 +105,7 @@ pub async fn client_handler<
         .render()
         .await;
 
-    let page = {
-        let mut page = String::new();
-        page.push_str(index_html_before.as_str());
-        page.push_str(rendered.as_str());
-        page.push_str(index_html_after.as_str());
-        update_meta(page)
-    };
+    let page = update_meta(format!("{before}{APP_TAG_PREFIX}{rendered}{after}"));
 
     Response {
         http: hyper::Response::builder()
@@ -118,73 +116,36 @@ pub async fn client_handler<
     }
 }
 
-fn content_wrap(content: String) -> String {
-    format!(" content=\"{content}\"")
-}
-
 fn update_meta(mut html: String) -> String {
-    update_tag(&mut html, TITLE_TAG, TITLE_TAG_BODY, |c| c);
-    update_tag(
-        &mut html,
-        DESCRIPTION_TAG,
-        DESCRIPTION_TAG_BODY,
-        content_wrap,
-    );
-    update_tag(&mut html, KEYWORDS_TAG, KEYWORDS_TAG_BODY, content_wrap);
-    update_tag(&mut html, ROBOTS_TAG, ROBOTS_TAG_BODY, content_wrap);
-    update_tag(&mut html, OG_TITLE_TAG, SHORT_TITLE_TAG_BODY, content_wrap);
-    update_tag(
-        &mut html,
-        OG_DESCRIPTION_TAG,
-        DESCRIPTION_TAG_BODY,
-        content_wrap,
-    );
-    update_tag(&mut html, OG_TYPE_TAG, TYPE_TAG_BODY, content_wrap);
-    update_tag(&mut html, OG_IMAGE_TAG, IMAGE_TAG_BODY, content_wrap);
-    update_tag(
-        &mut html,
-        OG_IMAGE_WIDTH_TAG,
-        IMAGE_WIDTH_TAG_BODY,
-        content_wrap,
-    );
-    update_tag(
-        &mut html,
-        OG_IMAGE_HEIGHT_TAG,
-        IMAGE_HEIGHT_TAG_BODY,
-        content_wrap,
-    );
-    update_tag(
-        &mut html,
-        OG_SITE_NAME_TAG,
-        SITE_NAME_TAG_BODY,
-        content_wrap,
-    );
+    for rule in META_RULES {
+        update_tag(&mut html, rule);
+    }
     html
 }
 
-fn update_tag<W>(html: &mut String, main_tag: [&str; 2], body_tag: [&str; 2], wrap_fn: W)
-where
-    W: FnOnce(String) -> String,
-{
-    let Some(content) = last_content(&html, body_tag[0], body_tag[1]) else {
+fn update_tag(html: &mut String, rule: &MetaRule) {
+    let body_prefix = format!(
+        "<script data-page-content=\"{}\" type=\"text/plain\">",
+        rule.page_content_key
+    );
+    let Some(content) = last_content(html, &body_prefix, "</script>") else {
         return;
     };
-    let empty_tag = main_tag[0].to_string() + main_tag[1];
-    let tag = {
-        let mut tag = String::new();
-        tag.push_str(main_tag[0]);
-        tag.push_str(wrap_fn(content).as_str());
-        tag.push_str(main_tag[1]);
-        tag
+    let content = if rule.wrap_as_content {
+        format!(" content=\"{content}\"")
+    } else {
+        content
     };
-    *html = html.replace(empty_tag.as_str(), tag.as_str());
+
+    let [open, close] = rule.head_tag;
+    let empty_tag = format!("{open}{close}");
+    let filled_tag = format!("{open}{content}{close}");
+    *html = html.replace(&empty_tag, &filled_tag);
 }
 
-fn last_content(html: &String, prefix: &str, suffix: &str) -> Option<String> {
-    let parts = html.split(prefix);
-    let mut content = parts.last()?.to_owned();
-    content = content.split_once(suffix)?.0.to_owned();
-    Some(content)
+fn last_content(html: &str, prefix: &str, suffix: &str) -> Option<String> {
+    let content = html.split(prefix).last()?;
+    Some(content.split_once(suffix)?.0.to_owned())
 }
 
 fn app_content_encode<E: serde::Serialize>(entity: &E) -> Option<AppContent> {
@@ -214,14 +175,13 @@ where
         + Resolve<std::sync::Arc<dyn EntityPostService>>,
     PP: PageProcessor,
 {
-    let page_processor = PP::create_for_page(
-        &request
-            .query
-            .get("page")
-            .map(|v| v.parse().ok())
-            .flatten()
-            .unwrap_or(1),
-    );
+    let page = request
+        .query
+        .get("page")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(1);
+    let page_processor = PP::create_for_page(&page);
+
     match Route::recognize_path(request.path.as_str())? {
         Route::Post { slug: _, id } | Route::EditPost { id } => post::direct_handler(
             id.to_string(),
@@ -229,17 +189,14 @@ where
             request.origin.extensions.resolve(),
         )
         .await
-        .map(|v| app_content_encode(&v.post))
-        .flatten(),
+        .and_then(|v| app_content_encode(&v.post)),
         Route::Author { slug } => author::direct_handler(slug, request.origin.extensions.resolve())
             .await
-            .map(|v| app_content_encode(&v.author))
-            .flatten(),
+            .and_then(|v| app_content_encode(&v.author)),
         Route::Tag { slug: _, id } => {
             tag::direct_handler(id.to_string(), request.origin.extensions.resolve())
                 .await
-                .map(|v| app_content_encode(&v.tag))
-                .flatten()
+                .and_then(|v| app_content_encode(&v.tag))
         }
         Route::Posts => posts::direct_handler(
             page_processor.offset(),
@@ -248,16 +205,14 @@ where
             request.origin.extensions.resolve(),
         )
         .await
-        .map(|v| app_content_encode(&v))
-        .flatten(),
+        .and_then(|v| app_content_encode(&v)),
         Route::Authors => authors::direct_handler(
             page_processor.offset(),
             page_processor.limit(),
             request.origin.extensions.resolve(),
         )
         .await
-        .map(|v| app_content_encode(&v))
-        .flatten(),
+        .and_then(|v| app_content_encode(&v)),
         _ => None,
     }
 }
