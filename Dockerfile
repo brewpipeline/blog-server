@@ -93,7 +93,7 @@ RUN cargo build -p blog-server-api --release --locked --no-default-features --fe
 
 FROM debian:trixie-slim
 
-RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx gettext-base && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx gettext-base curl && rm -rf /var/lib/apt/lists/*
 RUN rm -f /etc/nginx/sites-enabled/default \
           /etc/nginx/sites-available/default \
           /etc/nginx/conf.d/default.conf \
