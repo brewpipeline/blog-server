@@ -91,17 +91,9 @@ pub async fn client_handler<
 ) -> Response {
     let (before, after) = INDEX_HTML.split_once(APP_TAG_PREFIX).unwrap();
 
-    let status = status(&request).await;
-    let app_content = app_content::<_, DefaultPageProcessor>(&request).await;
+    let (status, app_content) = resolve_page::<_, DefaultPageProcessor>(&request).await;
 
-    let path = request.path.as_str();
-    let render_path = if path.starts_with('/') && !path.contains('?') && !path.contains('#') {
-        path.to_string()
-    } else {
-        "/404".to_string()
-    };
-
-    let rendered = server_renderer(render_path, request.query, app_content)
+    let rendered = server_renderer(render_path(request.path.as_str()), request.query, app_content)
         .render()
         .await;
 
@@ -148,34 +140,27 @@ fn last_content(html: &str, prefix: &str, suffix: &str) -> Option<String> {
     Some(content.split_once(suffix)?.0.to_owned())
 }
 
-fn app_content_encode<E: serde::Serialize>(entity: &E) -> Option<AppContent> {
-    Some(AppContent {
-        r#type: "application/json".to_string(),
-        value: serde_json::to_string(entity).ok()?,
-    })
+fn render_path(path: &str) -> String {
+    if path.starts_with('/') && !path.contains('?') && !path.contains('#') {
+        path.to_string()
+    } else {
+        "/404".to_string()
+    }
 }
 
 async fn encoded<C, E: serde::Serialize>(
     container: impl std::future::Future<Output = Option<C>>,
     select: impl FnOnce(C) -> E,
 ) -> Option<AppContent> {
-    app_content_encode(&select(container.await?))
+    Some(AppContent {
+        r#type: "application/json".to_string(),
+        value: serde_json::to_string(&select(container.await?)).ok()?,
+    })
 }
 
-async fn status<Extensions>(
+async fn resolve_page<Extensions, PP>(
     request: &router::RoutedRequest<Request<Extensions>>,
-) -> hyper::StatusCode {
-    if Route::recognize_path(request.path.as_str()).unwrap_or(Route::NotFound) != Route::NotFound {
-        hyper::StatusCode::OK
-    } else {
-        hyper::StatusCode::NOT_FOUND
-    }
-}
-
-// TODO: to think, if it's not a cringe
-async fn app_content<Extensions, PP>(
-    request: &router::RoutedRequest<Request<Extensions>>,
-) -> Option<AppContent>
+) -> (hyper::StatusCode, Option<AppContent>)
 where
     Extensions: Resolve<std::sync::Arc<dyn AuthorService>>
         + Resolve<std::sync::Arc<dyn PostService>>
@@ -190,46 +175,59 @@ where
     let page_processor = PP::create_for_page(&page);
     let ext = &request.origin.extensions;
 
-    match Route::recognize_path(request.path.as_str())? {
-        Route::Post { slug: _, id } | Route::EditPost { id } => {
+    let content = match Route::recognize_path(request.path.as_str()) {
+        Some(Route::Post { id, .. }) => {
             encoded(
                 post::direct_handler(id.to_string(), ext.resolve(), ext.resolve()),
                 |c| c.post,
             )
             .await
         }
-        Route::Author { slug } => {
+        Some(Route::Author { slug }) => {
             encoded(author::direct_handler(slug, ext.resolve()), |c| c.author).await
         }
-        Route::Tag { slug: _, id } => {
-            encoded(tag::direct_handler(id.to_string(), ext.resolve()), |c| {
-                c.tag
-            })
-            .await
+        Some(Route::Tag { id, .. }) => {
+            encoded(tag::direct_handler(id.to_string(), ext.resolve()), |c| c.tag).await
         }
-        Route::Posts => {
+        Some(Route::Posts) => {
             encoded(
-                posts::direct_handler(
-                    page_processor.offset(),
-                    page_processor.limit(),
-                    ext.resolve(),
-                    ext.resolve(),
-                ),
+                async {
+                    posts::direct_handler(
+                        page_processor.offset(),
+                        page_processor.limit(),
+                        ext.resolve(),
+                        ext.resolve(),
+                    )
+                    .await
+                    .filter(|c| !c.posts.is_empty())
+                },
                 |c| c,
             )
             .await
         }
-        Route::Authors => {
+        Some(Route::Authors) => {
             encoded(
-                authors::direct_handler(
-                    page_processor.offset(),
-                    page_processor.limit(),
-                    ext.resolve(),
-                ),
+                async {
+                    authors::direct_handler(
+                        page_processor.offset(),
+                        page_processor.limit(),
+                        ext.resolve(),
+                    )
+                    .await
+                    .filter(|c| !c.authors.is_empty())
+                },
                 |c| c,
             )
             .await
         }
-        _ => None,
-    }
+        None | Some(Route::NotFound) => return (hyper::StatusCode::NOT_FOUND, None),
+        Some(_) => return (hyper::StatusCode::OK, None),
+    };
+
+    let status = if content.is_some() {
+        hyper::StatusCode::OK
+    } else {
+        hyper::StatusCode::NOT_FOUND
+    };
+    (status, content)
 }
