@@ -93,9 +93,13 @@ pub async fn client_handler<
 
     let (status, app_content) = resolve_page::<_, DefaultPageProcessor>(&request).await;
 
-    let rendered = server_renderer(render_path(request.path.as_str()), request.query, app_content)
-        .render()
-        .await;
+    let rendered = server_renderer(
+        render_path(request.path.as_str()),
+        request.query,
+        app_content,
+    )
+    .render()
+    .await;
 
     let page = update_meta(format!("{before}{APP_TAG_PREFIX}{rendered}{after}"));
 
@@ -175,9 +179,9 @@ where
     let page_processor = PP::create_for_page(&page);
     let ext = &request.origin.extensions;
 
-    let content = match Route::recognize_path(request.path.as_str()) {
+    match Route::recognize_path(request.path.as_str()) {
         Some(Route::Post { slug, id }) => {
-            encoded(
+            let content = encoded(
                 async {
                     post::direct_handler(id.to_string(), ext.resolve(), ext.resolve())
                         .await
@@ -185,13 +189,15 @@ where
                 },
                 |c| c.post,
             )
-            .await
+            .await;
+            (page_status(content.is_some()), content)
         }
         Some(Route::Author { slug }) => {
-            encoded(author::direct_handler(slug, ext.resolve()), |c| c.author).await
+            let content = encoded(author::direct_handler(slug, ext.resolve()), |c| c.author).await;
+            (page_status(content.is_some()), content)
         }
         Some(Route::Tag { slug, id }) => {
-            encoded(
+            let content = encoded(
                 async {
                     tag::direct_handler(id.to_string(), ext.resolve())
                         .await
@@ -199,47 +205,41 @@ where
                 },
                 |c| c.tag,
             )
-            .await
+            .await;
+            (page_status(content.is_some()), content)
         }
         Some(Route::Posts) => {
-            encoded(
-                async {
-                    posts::direct_handler(
-                        page_processor.offset(),
-                        page_processor.limit(),
-                        ext.resolve(),
-                        ext.resolve(),
-                    )
-                    .await
-                    .filter(|c| !c.posts.is_empty())
-                },
-                |c| c,
+            let container = posts::direct_handler(
+                page_processor.offset(),
+                page_processor.limit(),
+                ext.resolve(),
+                ext.resolve(),
             )
-            .await
+            .await;
+            let is_empty = container.as_ref().map_or(true, |c| c.posts.is_empty());
+            let content = encoded(std::future::ready(container), |c| c).await;
+            (page_status(!is_empty), content)
         }
         Some(Route::Authors) => {
-            encoded(
-                async {
-                    authors::direct_handler(
-                        page_processor.offset(),
-                        page_processor.limit(),
-                        ext.resolve(),
-                    )
-                    .await
-                    .filter(|c| !c.authors.is_empty())
-                },
-                |c| c,
+            let container = authors::direct_handler(
+                page_processor.offset(),
+                page_processor.limit(),
+                ext.resolve(),
             )
-            .await
+            .await;
+            let is_empty = container.as_ref().map_or(true, |c| c.authors.is_empty());
+            let content = encoded(std::future::ready(container), |c| c).await;
+            (page_status(!is_empty), content)
         }
-        None | Some(Route::NotFound) => return (hyper::StatusCode::NOT_FOUND, None),
-        Some(_) => return (hyper::StatusCode::OK, None),
-    };
+        None | Some(Route::NotFound) => (hyper::StatusCode::NOT_FOUND, None),
+        Some(_) => (hyper::StatusCode::OK, None),
+    }
+}
 
-    let status = if content.is_some() {
+fn page_status(found: bool) -> hyper::StatusCode {
+    if found {
         hyper::StatusCode::OK
     } else {
         hyper::StatusCode::NOT_FOUND
-    };
-    (status, content)
+    }
 }
