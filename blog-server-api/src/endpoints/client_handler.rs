@@ -176,9 +176,13 @@ where
     let ext = &request.origin.extensions;
 
     let content = match Route::recognize_path(request.path.as_str()) {
-        Some(Route::Post { id, .. }) => {
+        Some(Route::Post { slug, id }) => {
             encoded(
-                post::direct_handler(id.to_string(), ext.resolve(), ext.resolve()),
+                async {
+                    post::direct_handler(id.to_string(), ext.resolve(), ext.resolve())
+                        .await
+                        .filter(|c| c.post.id == id && c.post.slug == slug)
+                },
                 |c| c.post,
             )
             .await
@@ -186,8 +190,16 @@ where
         Some(Route::Author { slug }) => {
             encoded(author::direct_handler(slug, ext.resolve()), |c| c.author).await
         }
-        Some(Route::Tag { id, .. }) => {
-            encoded(tag::direct_handler(id.to_string(), ext.resolve()), |c| c.tag).await
+        Some(Route::Tag { slug, id }) => {
+            encoded(
+                async {
+                    tag::direct_handler(id.to_string(), ext.resolve())
+                        .await
+                        .filter(|c| c.tag.id == id && c.tag.slug == slug)
+                },
+                |c| c.tag,
+            )
+            .await
         }
         Some(Route::Posts) => {
             encoded(
