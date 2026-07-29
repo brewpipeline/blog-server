@@ -19,8 +19,8 @@ impl Into<AuthorMeResponseContentSuccess> for ServiceAuthor {
 }
 
 impl ApiResponseContentBase for AuthorMeResponseContentSuccess {
-    fn status_code(&self) -> &'static StatusCode {
-        &StatusCode::OK
+    fn status_code(&self) -> StatusCode {
+        StatusCode::OK
     }
 }
 

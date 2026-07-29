@@ -8,14 +8,14 @@ pub enum PostRecommendationResponseContentFailure {
 }
 
 impl ApiResponseContentBase for PostRecommendationResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             PostRecommendationResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-            PostRecommendationResponseContentFailure::NotFound => &StatusCode::NOT_FOUND,
+            PostRecommendationResponseContentFailure::NotFound => StatusCode::NOT_FOUND,
             PostRecommendationResponseContentFailure::IncorrectIdFormat { reason: _ } => {
-                &StatusCode::BAD_REQUEST
+                StatusCode::BAD_REQUEST
             }
         }
     }

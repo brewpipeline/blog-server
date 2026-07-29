@@ -10,19 +10,19 @@ pub enum DeleteCommentResponseContentFailure {
 }
 
 impl ApiResponseContentBase for DeleteCommentResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             DeleteCommentResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-            DeleteCommentResponseContentFailure::NotFound => &StatusCode::NOT_FOUND,
+            DeleteCommentResponseContentFailure::NotFound => StatusCode::NOT_FOUND,
             DeleteCommentResponseContentFailure::IncorrectIdFormat { reason: _ } => {
-                &StatusCode::BAD_REQUEST
+                StatusCode::BAD_REQUEST
             }
             DeleteCommentResponseContentFailure::Unauthorized { reason: _ } => {
-                &StatusCode::UNAUTHORIZED
+                StatusCode::UNAUTHORIZED
             }
-            DeleteCommentResponseContentFailure::EditingForbidden => &StatusCode::FORBIDDEN,
+            DeleteCommentResponseContentFailure::EditingForbidden => StatusCode::FORBIDDEN,
         }
     }
 }

@@ -5,8 +5,8 @@ use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
 pub struct DeletePostResponseContentSuccess;
 
 impl ApiResponseContentBase for DeletePostResponseContentSuccess {
-    fn status_code(&self) -> &'static StatusCode {
-        &StatusCode::OK
+    fn status_code(&self) -> StatusCode {
+        StatusCode::OK
     }
 }
 

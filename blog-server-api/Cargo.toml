@@ -14,26 +14,26 @@ tikitko = ["blog-ui?/tikitko"]
 
 [dependencies.screw-components]
 git = "https://github.com/Tikitko/screw.git"
-tag = "0.0.2"
+tag = "0.1.0"
 #path = "../../screw/screw-components"
 package = "screw-components"
 
 [dependencies.screw-core]
 git = "https://github.com/Tikitko/screw.git"
-tag = "0.0.2"
+tag = "0.1.0"
 #path = "../../screw/screw-core"
 package = "screw-core"
 
 [dependencies.screw-api]
 git = "https://github.com/Tikitko/screw.git"
-tag = "0.0.2"
+tag = "0.1.0"
 #path = "../../screw/screw-api"
 package = "screw-api"
 features = ["json"]
 
 [dependencies.screw-ws]
 git = "https://github.com/Tikitko/screw.git"
-tag = "0.0.2"
+tag = "0.1.0"
 #path = "../../screw/screw-ws"
 package = "screw-ws"
 

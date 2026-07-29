@@ -14,8 +14,8 @@ impl Into<CommentsResponseContentSuccess> for CommentsContainer {
 }
 
 impl ApiResponseContentBase for CommentsResponseContentSuccess {
-    fn status_code(&self) -> &'static StatusCode {
-        &StatusCode::OK
+    fn status_code(&self) -> StatusCode {
+        StatusCode::OK
     }
 }
 

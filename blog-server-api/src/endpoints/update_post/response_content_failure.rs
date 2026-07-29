@@ -11,16 +11,16 @@ pub enum UpdatePostContentFailure {
 }
 
 impl ApiResponseContentBase for UpdatePostContentFailure {
-    fn status_code(&self) -> &'static hyper::StatusCode {
+    fn status_code(&self) -> hyper::StatusCode {
         match self {
             UpdatePostContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-            UpdatePostContentFailure::PostNotFound => &StatusCode::BAD_REQUEST,
-            UpdatePostContentFailure::ValidationError { reason: _ } => &StatusCode::BAD_REQUEST,
-            UpdatePostContentFailure::Unauthorized { reason: _ } => &StatusCode::UNAUTHORIZED,
-            UpdatePostContentFailure::EditingForbidden => &StatusCode::FORBIDDEN,
-            UpdatePostContentFailure::IncorrectIdFormat { reason: _ } => &StatusCode::BAD_REQUEST,
+            UpdatePostContentFailure::PostNotFound => StatusCode::BAD_REQUEST,
+            UpdatePostContentFailure::ValidationError { reason: _ } => StatusCode::BAD_REQUEST,
+            UpdatePostContentFailure::Unauthorized { reason: _ } => StatusCode::UNAUTHORIZED,
+            UpdatePostContentFailure::EditingForbidden => StatusCode::FORBIDDEN,
+            UpdatePostContentFailure::IncorrectIdFormat { reason: _ } => StatusCode::BAD_REQUEST,
         }
     }
 }

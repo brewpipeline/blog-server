@@ -8,14 +8,14 @@ pub enum AuthorOverrideSocialDataResponseContentFailure {
 }
 
 impl ApiResponseContentBase for AuthorOverrideSocialDataResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             AuthorOverrideSocialDataResponseContentFailure::Unauthorized { reason: _ } => {
-                &StatusCode::UNAUTHORIZED
+                StatusCode::UNAUTHORIZED
             }
-            AuthorOverrideSocialDataResponseContentFailure::Forbidden => &StatusCode::FORBIDDEN,
+            AuthorOverrideSocialDataResponseContentFailure::Forbidden => StatusCode::FORBIDDEN,
             AuthorOverrideSocialDataResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
         }
     }

@@ -9,17 +9,17 @@ pub enum PostUpdateRecommendedResponseContentFailure {
 }
 
 impl ApiResponseContentBase for PostUpdateRecommendedResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             PostUpdateRecommendedResponseContentFailure::Unauthorized { reason: _ } => {
-                &StatusCode::UNAUTHORIZED
+                StatusCode::UNAUTHORIZED
             }
-            PostUpdateRecommendedResponseContentFailure::Forbidden => &StatusCode::FORBIDDEN,
+            PostUpdateRecommendedResponseContentFailure::Forbidden => StatusCode::FORBIDDEN,
             PostUpdateRecommendedResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
             PostUpdateRecommendedResponseContentFailure::IncorrectIdFormat { reason: _ } => {
-                &StatusCode::BAD_REQUEST
+                StatusCode::BAD_REQUEST
             }
         }
     }

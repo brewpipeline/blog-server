@@ -9,19 +9,19 @@ pub enum LoginTelegramResponseContentFailure {
 }
 
 impl ApiResponseContentBase for LoginTelegramResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             LoginTelegramResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
             LoginTelegramResponseContentFailure::ParamsDecodeError { reason: _ } => {
-                &StatusCode::BAD_REQUEST
+                StatusCode::BAD_REQUEST
             }
             LoginTelegramResponseContentFailure::TokenGeneratingError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
             LoginTelegramResponseContentFailure::TelegramError { reason: _ } => {
-                &StatusCode::BAD_REQUEST
+                StatusCode::BAD_REQUEST
             }
         }
     }

@@ -16,8 +16,8 @@ impl Into<LoginTelegramResponseContentSuccess> for String {
 }
 
 impl ApiResponseContentBase for LoginTelegramResponseContentSuccess {
-    fn status_code(&self) -> &'static StatusCode {
-        &StatusCode::OK
+    fn status_code(&self) -> StatusCode {
+        StatusCode::OK
     }
 }
 

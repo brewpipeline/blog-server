@@ -22,8 +22,8 @@ async fn not_found_fallback_handler<Extensions>(
 struct NotFoundResponseContentFailure;
 
 impl ApiResponseContentBase for NotFoundResponseContentFailure {
-    fn status_code(&self) -> &'static hyper::StatusCode {
-        &hyper::StatusCode::NOT_FOUND
+    fn status_code(&self) -> hyper::StatusCode {
+        hyper::StatusCode::NOT_FOUND
     }
 }
 
@@ -74,6 +74,7 @@ pub fn make_router<Extensions: ExtensionsProviderType>()
             "/api",
             JsonApiMiddlewareConverter {
                 pretty_printed: cfg!(debug_assertions),
+                ..Default::default()
             },
             |r| {
                 r.scoped("/author", |r| {

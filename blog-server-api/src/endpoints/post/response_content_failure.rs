@@ -8,13 +8,13 @@ pub enum PostResponseContentFailure {
 }
 
 impl ApiResponseContentBase for PostResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             PostResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-            PostResponseContentFailure::NotFound => &StatusCode::NOT_FOUND,
-            PostResponseContentFailure::IncorrectIdFormat { reason: _ } => &StatusCode::BAD_REQUEST,
+            PostResponseContentFailure::NotFound => StatusCode::NOT_FOUND,
+            PostResponseContentFailure::IncorrectIdFormat { reason: _ } => StatusCode::BAD_REQUEST,
         }
     }
 }

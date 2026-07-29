@@ -9,17 +9,17 @@ pub enum AuthorBlockResponseContentFailure {
 }
 
 impl ApiResponseContentBase for AuthorBlockResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             AuthorBlockResponseContentFailure::Unauthorized { reason: _ } => {
-                &StatusCode::UNAUTHORIZED
+                StatusCode::UNAUTHORIZED
             }
-            AuthorBlockResponseContentFailure::Forbidden => &StatusCode::FORBIDDEN,
+            AuthorBlockResponseContentFailure::Forbidden => StatusCode::FORBIDDEN,
             AuthorBlockResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
             AuthorBlockResponseContentFailure::IncorrectIdFormat { reason: _ } => {
-                &StatusCode::BAD_REQUEST
+                StatusCode::BAD_REQUEST
             }
         }
     }

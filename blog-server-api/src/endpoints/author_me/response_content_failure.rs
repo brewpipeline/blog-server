@@ -6,9 +6,9 @@ pub enum AuthorMeResponseContentFailure {
 }
 
 impl ApiResponseContentBase for AuthorMeResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
-            AuthorMeResponseContentFailure::Unauthorized { reason: _ } => &StatusCode::UNAUTHORIZED,
+            AuthorMeResponseContentFailure::Unauthorized { reason: _ } => StatusCode::UNAUTHORIZED,
         }
     }
 }

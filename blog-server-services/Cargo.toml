@@ -4,7 +4,7 @@ edition = "2024"
 
 [dependencies.screw-components]
 git = "https://github.com/Tikitko/screw.git"
-tag = "0.0.2"
+tag = "0.1.0"
 #path = "../../screw/screw-components"
 package = "screw-components"
 

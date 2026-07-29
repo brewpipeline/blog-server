@@ -8,13 +8,13 @@ pub enum AuthorResponseContentFailure {
 }
 
 impl ApiResponseContentBase for AuthorResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             AuthorResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-            AuthorResponseContentFailure::SlugEmpty => &StatusCode::BAD_REQUEST,
-            AuthorResponseContentFailure::NotFound => &StatusCode::NOT_FOUND,
+            AuthorResponseContentFailure::SlugEmpty => StatusCode::BAD_REQUEST,
+            AuthorResponseContentFailure::NotFound => StatusCode::NOT_FOUND,
         }
     }
 }

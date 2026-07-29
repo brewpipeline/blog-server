@@ -10,15 +10,15 @@ pub enum CreateCommentContentFailure {
 }
 
 impl ApiResponseContentBase for CreateCommentContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             CreateCommentContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-            CreateCommentContentFailure::ValidationError { reason: _ } => &StatusCode::BAD_REQUEST,
-            CreateCommentContentFailure::Unauthorized { reason: _ } => &StatusCode::UNAUTHORIZED,
-            CreateCommentContentFailure::InsertFailed => &StatusCode::INTERNAL_SERVER_ERROR,
-            CreateCommentContentFailure::CreatingForbidden => &StatusCode::FORBIDDEN,
+            CreateCommentContentFailure::ValidationError { reason: _ } => StatusCode::BAD_REQUEST,
+            CreateCommentContentFailure::Unauthorized { reason: _ } => StatusCode::UNAUTHORIZED,
+            CreateCommentContentFailure::InsertFailed => StatusCode::INTERNAL_SERVER_ERROR,
+            CreateCommentContentFailure::CreatingForbidden => StatusCode::FORBIDDEN,
         }
     }
 }
