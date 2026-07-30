@@ -1,39 +1,17 @@
 use blog_generic::entities::TagContainer;
+use blog_server_api_macros::ApiSuccess;
 use blog_server_services::traits::post_service::Tag as ServiceTag;
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ApiSuccess)]
+#[success(found, description = "tag record found")]
 pub struct TagResponseContentSuccess {
     pub(super) container: TagContainer,
 }
 
-impl Into<TagResponseContentSuccess> for ServiceTag {
-    fn into(self) -> TagResponseContentSuccess {
+impl From<ServiceTag> for TagResponseContentSuccess {
+    fn from(value: ServiceTag) -> Self {
         TagResponseContentSuccess {
-            container: TagContainer { tag: self.into() },
+            container: TagContainer { tag: value.into() },
         }
-    }
-}
-
-impl ApiResponseContentBase for TagResponseContentSuccess {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::OK
-    }
-}
-
-impl ApiResponseContentSuccess for TagResponseContentSuccess {
-    type Data = TagContainer;
-
-    fn identifier(&self) -> &'static str {
-        "TAG_FOUND"
-    }
-
-    fn description(&self) -> Option<String> {
-        Some("tag record found".to_string())
-    }
-
-    fn data(&self) -> &Self::Data {
-        &self.container
     }
 }

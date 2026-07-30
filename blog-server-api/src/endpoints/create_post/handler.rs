@@ -1,5 +1,6 @@
 use blog_generic::entities::PublishType;
 use blog_generic::events::NewPostPublished;
+use blog_server_services::traits::author_service::Author;
 use validator::Validate;
 
 use super::request_content::CreatePostRequestContent;
@@ -8,22 +9,16 @@ use super::response_content_failure::CreatePostContentFailure::*;
 use super::response_content_success::CreatePostContentSuccess;
 
 pub async fn http_handler(
-    (CreatePostRequestContent {
-        new_post_data,
-        post_service,
-        entity_post_service,
-        auth_author_future,
-        new_post_service,
-    },): (CreatePostRequestContent,),
+    (
+        author,
+        CreatePostRequestContent {
+            new_post_data,
+            post_service,
+            entity_post_service,
+            new_post_service,
+        },
+    ): (Author, CreatePostRequestContent),
 ) -> Result<CreatePostContentSuccess, CreatePostContentFailure> {
-    let author = auth_author_future.await.map_err(|e| Unauthorized {
-        reason: e.to_string(),
-    })?;
-
-    if author.base.blocked == 1 {
-        return Err(CreatingForbidden);
-    }
-
     let base_post = new_post_data.map_err(|e| ValidationError {
         reason: e.to_string(),
     })?;
@@ -31,13 +26,15 @@ pub async fn http_handler(
     if let Some(err) = base_post.validate().err() {
         return Err(ValidationError {
             reason: err.to_string(),
-        });
+        }
+        .into());
     }
 
     if author.base.editor == 0 && base_post.publish_type.is_published() {
         return Err(ValidationError {
             reason: "publishing not allowed for you".to_owned(),
-        });
+        }
+        .into());
     }
 
     let tag_titles: Vec<String> = base_post.tags.to_owned();

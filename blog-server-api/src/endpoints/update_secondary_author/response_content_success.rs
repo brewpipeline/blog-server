@@ -1,33 +1,11 @@
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
+use blog_server_api_macros::ApiSuccess;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ApiSuccess)]
+#[success(ok, description = "secondary author record updated")]
 pub struct UpdateSecondaryAuthorContentSuccess;
 
-impl Into<UpdateSecondaryAuthorContentSuccess> for () {
-    fn into(self) -> UpdateSecondaryAuthorContentSuccess {
+impl From<()> for UpdateSecondaryAuthorContentSuccess {
+    fn from(_value: ()) -> Self {
         UpdateSecondaryAuthorContentSuccess
-    }
-}
-
-impl ApiResponseContentBase for UpdateSecondaryAuthorContentSuccess {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::OK
-    }
-}
-
-impl ApiResponseContentSuccess for UpdateSecondaryAuthorContentSuccess {
-    type Data = ();
-
-    fn identifier(&self) -> &'static str {
-        "UPDATE_SECONDARY_AUTHOR_SUCCESS"
-    }
-
-    fn description(&self) -> Option<String> {
-        Some(String::from("secondary author record updated"))
-    }
-
-    fn data(&self) -> &Self::Data {
-        &()
     }
 }

@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
-use crate::utils::auth;
 use blog_generic::entities::{PostsContainer, PublishType, TotalOffsetLimitContainer};
 use blog_server_services::traits::author_service::Author;
 use blog_server_services::traits::entity_post_service::EntityPostService;
 use blog_server_services::traits::post_service::{PostService, PostsQuery, PostsQueryAnswer};
-use screw_components::dyn_fn::DFuture;
 
 use super::request_content::{PostsRequestContentFilter as Filter, *};
 use super::response_content_failure::PostsResponseContentFailure;
@@ -19,32 +17,26 @@ pub async fn http_handler(
 }
 
 pub async fn http_handler_unpublished(
-    (UnpublishedPostsRequestContent {
-        base: posts_request_content,
-        auth_author_future,
-    },): (UnpublishedPostsRequestContent,),
+    (author, posts_request_content): (Author, PostsRequestContent),
 ) -> Result<PostsResponseContentSuccess, PostsResponseContentFailure> {
     handler(
         posts_request_content,
         HandlerType::AuthRequired {
             inner_type: HandlerTypeAuthRequired::Unpublished,
-            auth_author_future,
+            author,
         },
     )
     .await
 }
 
 pub async fn http_handler_hidden(
-    (UnpublishedPostsRequestContent {
-        base: posts_request_content,
-        auth_author_future,
-    },): (UnpublishedPostsRequestContent,),
+    (author, posts_request_content): (Author, PostsRequestContent),
 ) -> Result<PostsResponseContentSuccess, PostsResponseContentFailure> {
     handler(
         posts_request_content,
         HandlerType::AuthRequired {
             inner_type: HandlerTypeAuthRequired::Hidden,
-            auth_author_future,
+            author,
         },
     )
     .await
@@ -59,7 +51,7 @@ enum HandlerType {
     Published,
     AuthRequired {
         inner_type: HandlerTypeAuthRequired,
-        auth_author_future: DFuture<Result<Author, auth::Error>>,
+        author: Author,
     },
 }
 
@@ -78,13 +70,7 @@ async fn handler(
 
     let publish_type = match handler_type {
         HandlerType::Published => PublishType::Published,
-        HandlerType::AuthRequired {
-            inner_type,
-            auth_author_future,
-        } => {
-            let author = auth_author_future.await.map_err(|e| Unauthorized {
-                reason: e.to_string(),
-            })?;
+        HandlerType::AuthRequired { inner_type, author } => {
             if !(filter.author_id == Some(author.id) || author.base.editor == 1) {
                 return Err(Forbidden);
             }
@@ -302,22 +288,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn unauthorized_error_when_token_invalid() {
-        let post_service = Arc::new(MockPostService {
-            behavior: PostBehavior::Success(0),
-        });
-        let entity_post_service = Arc::new(MockEntityPostService {
-            behavior: EntityBehavior::Success(vec![]),
-        });
-        let request = UnpublishedPostsRequestContent {
-            base: empty_request(post_service, entity_post_service),
-            auth_author_future: Box::pin(async { Err(auth::Error::TokenMissing) }),
-        };
-        let result = http_handler_unpublished((request,)).await;
-        assert!(matches!(result, Err(Unauthorized { .. })));
-    }
-
-    #[tokio::test]
     async fn forbidden_when_author_mismatch() {
         let post_service = Arc::new(MockPostService {
             behavior: PostBehavior::Success(0),
@@ -325,22 +295,42 @@ mod tests {
         let entity_post_service = Arc::new(MockEntityPostService {
             behavior: EntityBehavior::Success(vec![]),
         });
-        let request = UnpublishedPostsRequestContent {
-            base: PostsRequestContent {
-                filter: Filter {
-                    search_query: None,
-                    author_id: Some(2),
-                    tag_id: None,
-                },
-                offset: None,
-                limit: None,
-                post_service,
-                entity_post_service,
+        let request = PostsRequestContent {
+            filter: Filter {
+                search_query: None,
+                author_id: Some(2),
+                tag_id: None,
             },
-            auth_author_future: Box::pin(async { Ok(sample_author(0, 1)) }),
+            offset: None,
+            limit: None,
+            post_service,
+            entity_post_service,
         };
-        let result = http_handler_unpublished((request,)).await;
+        let result = http_handler_unpublished((sample_author(0, 1), request)).await;
         assert!(matches!(result, Err(Forbidden)));
+    }
+
+    #[tokio::test]
+    async fn editor_may_read_other_authors_unpublished() {
+        let post_service = Arc::new(MockPostService {
+            behavior: PostBehavior::Success(0),
+        });
+        let entity_post_service = Arc::new(MockEntityPostService {
+            behavior: EntityBehavior::Success(vec![]),
+        });
+        let request = PostsRequestContent {
+            filter: Filter {
+                search_query: None,
+                author_id: Some(2),
+                tag_id: None,
+            },
+            offset: None,
+            limit: None,
+            post_service,
+            entity_post_service,
+        };
+        let result = http_handler_unpublished((sample_author(1, 1), request)).await;
+        assert!(matches!(result, Ok(_)));
     }
 
     #[tokio::test]

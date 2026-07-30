@@ -133,7 +133,8 @@ pub async fn http_handler(
     if user_question.is_empty() {
         return Err(ParamsDecodeError {
             reason: "question must not be empty".to_string(),
-        });
+        }
+        .into());
     }
 
     let question_char_count = user_question.chars().count();
@@ -143,7 +144,8 @@ pub async fn http_handler(
                 "question must be at most {} symbols",
                 OPENAI_MAX_QUESTION_CHARS
             ),
-        });
+        }
+        .into());
     }
     let chat_session_id = chat_session_id.map_err(|e| ParamsDecodeError {
         reason: e.to_string(),

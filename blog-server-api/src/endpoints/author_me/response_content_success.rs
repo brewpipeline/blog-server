@@ -1,41 +1,19 @@
 use blog_generic::entities::AuthorContainer;
+use blog_server_api_macros::ApiSuccess;
 use blog_server_services::traits::author_service::Author as ServiceAuthor;
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ApiSuccess)]
+#[success(found, description = "auth passed and self author profile returned")]
 pub struct AuthorMeResponseContentSuccess {
     container: AuthorContainer,
 }
 
-impl Into<AuthorMeResponseContentSuccess> for ServiceAuthor {
-    fn into(self) -> AuthorMeResponseContentSuccess {
+impl From<ServiceAuthor> for AuthorMeResponseContentSuccess {
+    fn from(value: ServiceAuthor) -> Self {
         AuthorMeResponseContentSuccess {
             container: AuthorContainer {
-                author: self.into(),
+                author: value.into(),
             },
         }
-    }
-}
-
-impl ApiResponseContentBase for AuthorMeResponseContentSuccess {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::OK
-    }
-}
-
-impl ApiResponseContentSuccess for AuthorMeResponseContentSuccess {
-    type Data = AuthorContainer;
-
-    fn identifier(&self) -> &'static str {
-        "AUTHOR_ME_OK"
-    }
-
-    fn description(&self) -> Option<String> {
-        Some("auth passed and self author profile returned".to_string())
-    }
-
-    fn data(&self) -> &Self::Data {
-        &self.container
     }
 }

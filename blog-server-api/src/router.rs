@@ -1,5 +1,6 @@
 use super::endpoints::*;
 use super::extensions::*;
+use super::utils::auth_middleware::{AuthApiMiddleware, AuthPolicy, OptionalAuthApiMiddleware};
 use screw_api::json::*;
 use screw_api::request::*;
 use screw_api::response::*;
@@ -85,48 +86,62 @@ pub fn make_router<Extensions: ExtensionsProviderType>()
                 r.scoped("/author", |r| {
                     r.route(
                         route::first::Route::with_method(&hyper::Method::GET)
-                            .and_path("/me")
-                            .and_handler(author_me::http_handler),
-                    )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::GET)
                             .and_path("/slug/{slug:[^/]*}")
                             .and_handler(author::http_handler),
                     )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::GET)
-                            .and_path("/id/{id:[^/]*}/block")
-                            .and_handler(author_block::http_handler_block),
+                    .middleware(
+                        AuthApiMiddleware::with_policy(AuthPolicy::Authenticated),
+                        |r| {
+                            r.route(
+                                route::first::Route::with_method(&hyper::Method::GET)
+                                    .and_path("/me")
+                                    .and_handler(author_me::http_handler),
+                            )
+                            .route(
+                                route::first::Route::with_method(&hyper::Method::PATCH)
+                                    .and_path("/id/{id:[^/]*}/subscribe")
+                                    .and_handler(author_subscribe::http_handler_subscribe),
+                            )
+                            .route(
+                                route::first::Route::with_method(&hyper::Method::PATCH)
+                                    .and_path("/id/{id:[^/]*}/unsubscribe")
+                                    .and_handler(author_subscribe::http_handler_unsubscribe),
+                            )
+                        },
                     )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::GET)
-                            .and_path("/id/{id:[^/]*}/unblock")
-                            .and_handler(author_block::http_handler_unblock),
-                    )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::PATCH)
-                            .and_path("/id/{id:[^/]*}/subscribe")
-                            .and_handler(author_subscribe::http_handler_subscribe),
-                    )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::PATCH)
-                            .and_path("/id/{id:[^/]*}/unsubscribe")
-                            .and_handler(author_subscribe::http_handler_unsubscribe),
-                    )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::PATCH)
-                            .and_path("/reset_override_social_data")
-                            .and_handler(author_override_social_data::http_handler_disabled),
-                    )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::PATCH)
-                            .and_path("/minimal")
-                            .and_handler(update_minimal_author::http_handler),
-                    )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::PATCH)
-                            .and_path("/secondary")
-                            .and_handler(update_secondary_author::http_handler),
+                    .middleware(AuthApiMiddleware::with_policy(AuthPolicy::Editor), |r| {
+                        r.route(
+                            route::first::Route::with_method(&hyper::Method::GET)
+                                .and_path("/id/{id:[^/]*}/block")
+                                .and_handler(author_block::http_handler_block),
+                        )
+                        .route(
+                            route::first::Route::with_method(&hyper::Method::GET)
+                                .and_path("/id/{id:[^/]*}/unblock")
+                                .and_handler(author_block::http_handler_unblock),
+                        )
+                    })
+                    .middleware(
+                        AuthApiMiddleware::with_policy(AuthPolicy::NotBlocked),
+                        |r| {
+                            r.route(
+                                route::first::Route::with_method(&hyper::Method::PATCH)
+                                    .and_path("/reset_override_social_data")
+                                    .and_handler(
+                                        author_override_social_data::http_handler_disabled,
+                                    ),
+                            )
+                            .route(
+                                route::first::Route::with_method(&hyper::Method::PATCH)
+                                    .and_path("/minimal")
+                                    .and_handler(update_minimal_author::http_handler),
+                            )
+                            .route(
+                                route::first::Route::with_method(&hyper::Method::PATCH)
+                                    .and_path("/secondary")
+                                    .and_handler(update_secondary_author::http_handler),
+                            )
+                        },
                     )
                 })
                 .scoped("/authors", |r| {
@@ -142,57 +157,74 @@ pub fn make_router<Extensions: ExtensionsProviderType>()
                     )
                 })
                 .scoped("/post", |r| {
-                    r.route(
-                        route::first::Route::with_method(&hyper::Method::GET)
-                            .and_path("/{id:[^/]*}")
-                            .and_handler(post::http_handler),
-                    )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::PATCH)
-                            .and_path("/{id:[^/]*}")
-                            .and_handler(update_post::http_handler),
-                    )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::DELETE)
-                            .and_path("/{id:[^/]*}")
-                            .and_handler(delete_post::http_handler),
-                    )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::POST)
-                            .and_path("")
-                            .and_handler(create_post::http_handler),
-                    )
+                    r.middleware(OptionalAuthApiMiddleware, |r| {
+                        r.route(
+                            route::first::Route::with_method(&hyper::Method::GET)
+                                .and_path("/{id:[^/]*}")
+                                .and_handler(post::http_handler),
+                        )
+                    })
                     .route(
                         route::first::Route::with_method(&hyper::Method::GET)
                             .and_path("/{id:[^/]*}/recommendation")
                             .and_handler(post_recommendation::http_handler),
                     )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::PATCH)
-                            .and_path("/{id:[^/]*}/recommended/true")
-                            .and_handler(post_update_recommended::http_handler_true),
+                    .middleware(
+                        AuthApiMiddleware::with_policy(AuthPolicy::NotBlocked),
+                        |r| {
+                            r.route(
+                                route::first::Route::with_method(&hyper::Method::PATCH)
+                                    .and_path("/{id:[^/]*}")
+                                    .and_handler(update_post::http_handler),
+                            )
+                            .route(
+                                route::first::Route::with_method(&hyper::Method::DELETE)
+                                    .and_path("/{id:[^/]*}")
+                                    .and_handler(delete_post::http_handler),
+                            )
+                            .route(
+                                route::first::Route::with_method(&hyper::Method::POST)
+                                    .and_path("")
+                                    .and_handler(create_post::http_handler),
+                            )
+                        },
                     )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::PATCH)
-                            .and_path("/{id:[^/]*}/recommended/false")
-                            .and_handler(post_update_recommended::http_handler_false),
+                    .middleware(
+                        AuthApiMiddleware::with_policy(AuthPolicy::Editor),
+                        |r| {
+                            r.route(
+                                route::first::Route::with_method(&hyper::Method::PATCH)
+                                    .and_path("/{id:[^/]*}/recommended/true")
+                                    .and_handler(post_update_recommended::http_handler_true),
+                            )
+                            .route(
+                                route::first::Route::with_method(&hyper::Method::PATCH)
+                                    .and_path("/{id:[^/]*}/recommended/false")
+                                    .and_handler(post_update_recommended::http_handler_false),
+                            )
+                        },
                     )
                 })
                 .scoped("/posts", |r| {
-                    r.scoped("/unpublished", |r| {
-                        r.route(
-                            route::first::Route::with_method(&hyper::Method::GET)
-                                .and_path("")
-                                .and_handler(posts::http_handler_unpublished),
-                        )
-                    })
-                    .scoped("/hidden", |r| {
-                        r.route(
-                            route::first::Route::with_method(&hyper::Method::GET)
-                                .and_path("")
-                                .and_handler(posts::http_handler_hidden),
-                        )
-                    })
+                    r.middleware(
+                        AuthApiMiddleware::with_policy(AuthPolicy::Authenticated),
+                        |r| {
+                            r.scoped("/unpublished", |r| {
+                                r.route(
+                                    route::first::Route::with_method(&hyper::Method::GET)
+                                        .and_path("")
+                                        .and_handler(posts::http_handler_unpublished),
+                                )
+                            })
+                            .scoped("/hidden", |r| {
+                                r.route(
+                                    route::first::Route::with_method(&hyper::Method::GET)
+                                        .and_path("")
+                                        .and_handler(posts::http_handler_hidden),
+                                )
+                            })
+                        },
+                    )
                     .route(
                         route::first::Route::with_method(&hyper::Method::GET)
                             .and_path("")
@@ -210,15 +242,20 @@ pub fn make_router<Extensions: ExtensionsProviderType>()
                         .and_handler(comments::http_handler),
                 )
                 .scoped("/comment", |r| {
-                    r.route(
-                        route::first::Route::with_method(&hyper::Method::DELETE)
-                            .and_path("/{id:[^/]*}")
-                            .and_handler(delete_comment::http_handler),
-                    )
-                    .route(
-                        route::first::Route::with_method(&hyper::Method::POST)
-                            .and_path("")
-                            .and_handler(create_comment::http_handler),
+                    r.middleware(
+                        AuthApiMiddleware::with_policy(AuthPolicy::NotBlocked),
+                        |r| {
+                            r.route(
+                                route::first::Route::with_method(&hyper::Method::DELETE)
+                                    .and_path("/{id:[^/]*}")
+                                    .and_handler(delete_comment::http_handler),
+                            )
+                            .route(
+                                route::first::Route::with_method(&hyper::Method::POST)
+                                    .and_path("")
+                                    .and_handler(create_comment::http_handler),
+                            )
+                        },
                     )
                 })
                 .route(
@@ -259,4 +296,46 @@ pub fn make_router<Extensions: ExtensionsProviderType>()
                 .and_handler(robots_handler),
         )
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use blog_generic::events::{NewPostPublished, SubscriptionStateChanged};
+    use blog_server_services::traits::Publish;
+    use blog_server_services::traits::author_service::AuthorService;
+    use blog_server_services::traits::comment_service::CommentService;
+    use blog_server_services::traits::entity_comment_service::EntityCommentService;
+    use blog_server_services::traits::entity_post_service::EntityPostService;
+    use blog_server_services::traits::post_service::PostService;
+    use blog_server_services::traits::social_service::SocialService;
+    use std::sync::Arc;
+
+    struct StubExtensions;
+
+    macro_rules! stub_resolve {
+        ($service:ty) => {
+            impl Resolve<Arc<$service>> for StubExtensions {
+                fn resolve(&self) -> Arc<$service> {
+                    unimplemented!()
+                }
+            }
+        };
+    }
+
+    stub_resolve!(dyn AuthorService);
+    stub_resolve!(dyn PostService);
+    stub_resolve!(dyn CommentService);
+    stub_resolve!(dyn EntityCommentService);
+    stub_resolve!(dyn EntityPostService);
+    stub_resolve!(dyn SocialService);
+    stub_resolve!(dyn Publish<NewPostPublished>);
+    stub_resolve!(dyn Publish<SubscriptionStateChanged>);
+
+    impl ExtensionsProviderType for StubExtensions {}
+
+    #[test]
+    fn router_builds_without_route_conflicts() {
+        let _ = make_router::<StubExtensions>();
+    }
 }

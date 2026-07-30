@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "blog-server-api",
+    "blog-server-api-macros",
     "blog-server-services",
     "blog-ui"
 ]

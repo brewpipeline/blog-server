@@ -31,12 +31,6 @@ tag = "0.1.0"
 package = "screw-api"
 features = ["json"]
 
-[dependencies.screw-ws]
-git = "https://github.com/Tikitko/screw.git"
-tag = "0.1.0"
-#path = "../../screw/screw-ws"
-package = "screw-ws"
-
 [dependencies.blog-ui]
 path = "../blog-ui"
 default-features = false
@@ -49,6 +43,7 @@ tag = "1.0.0"
 features = ["validator"]
 
 [dependencies]
+blog-server-api-macros = { path = "../blog-server-api-macros" }
 blog-server-services = { path = "../blog-server-services" }
 tokio = { version = "1.27.0", features = ["full"] }
 hyper = { version = "1.8.1", features = ["full"] }

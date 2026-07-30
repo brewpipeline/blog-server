@@ -1,33 +1,11 @@
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
+use blog_server_api_macros::ApiSuccess;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ApiSuccess)]
+#[success(ok, description = "author block state changed")]
 pub struct AuthorOverrideSocialDataResponseContentSuccess;
 
-impl Into<AuthorOverrideSocialDataResponseContentSuccess> for () {
-    fn into(self) -> AuthorOverrideSocialDataResponseContentSuccess {
+impl From<()> for AuthorOverrideSocialDataResponseContentSuccess {
+    fn from(_value: ()) -> Self {
         AuthorOverrideSocialDataResponseContentSuccess
-    }
-}
-
-impl ApiResponseContentBase for AuthorOverrideSocialDataResponseContentSuccess {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::OK
-    }
-}
-
-impl ApiResponseContentSuccess for AuthorOverrideSocialDataResponseContentSuccess {
-    type Data = ();
-
-    fn identifier(&self) -> &'static str {
-        "AUTHOR_OVERRIDE_SOCIAL_DATA_OK"
-    }
-
-    fn description(&self) -> Option<String> {
-        Some("author block state changed".to_string())
-    }
-
-    fn data(&self) -> &Self::Data {
-        &()
     }
 }

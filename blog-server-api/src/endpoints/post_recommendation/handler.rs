@@ -23,7 +23,7 @@ pub async fn http_handler(
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
         })?
-        .ok_or(NotFound)?;
+        .ok_or(NotFound {})?;
 
     let post_entity = entity_post_service
         .posts_entities(vec![post])
