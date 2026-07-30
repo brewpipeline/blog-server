@@ -93,7 +93,7 @@ impl Connect for RabbitEventBusService {
             .register_callback(DefaultConnectionCallback)
             .await?;
 
-        let channel = new_connection.open_channel(None).await.unwrap();
+        let channel = new_connection.open_channel(None).await?;
         channel.register_callback(DefaultChannelCallback).await?;
 
         channel
@@ -169,7 +169,9 @@ async fn internal_publish(
 
     let mut props = BasicProperties::default();
     let mut field_table = FieldTable::new();
-    let header_key = ROUTING_HEADER_KEY.try_into().unwrap();
+    let header_key = ROUTING_HEADER_KEY
+        .try_into()
+        .map_err(|_| EventBusError::PublishingError)?;
     field_table.insert(header_key, routing_value.into());
     props.with_headers(field_table);
 
