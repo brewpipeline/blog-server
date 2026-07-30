@@ -5,15 +5,6 @@ use super::response_content_failure::AuthorOverrideSocialDataResponseContentFail
 use super::response_content_failure::AuthorOverrideSocialDataResponseContentFailure::*;
 use super::response_content_success::AuthorOverrideSocialDataResponseContentSuccess;
 
-pub async fn http_handler_enabled(
-    (author, request_content): (Author, AuthorOverrideSocialDataRequestContent),
-) -> Result<
-    AuthorOverrideSocialDataResponseContentSuccess,
-    AuthorOverrideSocialDataResponseContentFailure,
-> {
-    http_handler(author, request_content, 1).await
-}
-
 pub async fn http_handler_disabled(
     (author, request_content): (Author, AuthorOverrideSocialDataRequestContent),
 ) -> Result<

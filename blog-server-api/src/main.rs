@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_imports)]
-
 mod endpoints;
 mod extensions;
 mod migrations;

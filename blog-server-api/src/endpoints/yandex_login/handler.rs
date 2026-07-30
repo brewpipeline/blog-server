@@ -12,19 +12,11 @@ use super::response_content_success::LoginYandexResponseContentSuccess;
 use crate::utils::*;
 
 #[derive(Clone, Debug, Deserialize)]
-struct YandexLoginPhoneResponse {
-    id: u64,
-    number: String,
-}
-
-#[derive(Clone, Debug, Deserialize)]
 struct YandexLoginResponse {
     id: String,
     first_name: Option<String>,
     last_name: Option<String>,
     login: String,
-    default_email: Option<String>,
-    default_phone: Option<YandexLoginPhoneResponse>,
     #[serde(default)]
     is_avatar_empty: bool,
     #[serde(default)]

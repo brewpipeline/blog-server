@@ -5,7 +5,7 @@ use blog_server_services::traits::author_service::Author;
 use blog_server_services::traits::entity_post_service::EntityPostService;
 use blog_server_services::traits::post_service::{PostService, PostsQuery, PostsQueryAnswer};
 
-use super::request_content::{PostsRequestContentFilter as Filter, *};
+use super::request_content::*;
 use super::response_content_failure::PostsResponseContentFailure;
 use super::response_content_failure::PostsResponseContentFailure::*;
 use super::response_content_success::PostsResponseContentSuccess;
@@ -113,6 +113,7 @@ async fn handler(
     .into())
 }
 
+#[cfg_attr(not(feature = "ssr"), allow(dead_code))]
 pub async fn direct_handler(
     offset: u64,
     limit: u64,
@@ -141,13 +142,13 @@ mod tests {
     use async_trait::async_trait;
     use blog_generic::entities::Post as EPost;
     use blog_server_services::traits::{
-        author_service::{
-            Author as SAuthor, AuthorService, BaseAuthor, BaseMinimalAuthor, BaseSecondaryAuthor,
-        },
+        author_service::{Author as SAuthor, BaseAuthor},
         entity_post_service::EntityPostService,
         post_service::{Post, PostService},
     };
     use screw_components::dyn_result::DResult;
+
+    use super::super::request_content::PostsRequestContentFilter as Filter;
 
     enum PostBehavior {
         Success(u64),

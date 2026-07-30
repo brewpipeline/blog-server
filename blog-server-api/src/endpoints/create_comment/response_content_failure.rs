@@ -10,6 +10,4 @@ pub enum CreateCommentContentFailure {
     DatabaseError { reason: String },
     #[failure(validation)]
     ValidationError { reason: String },
-    #[failure(status = INTERNAL_SERVER_ERROR, reason = "error while creating new comment")]
-    InsertFailed,
 }

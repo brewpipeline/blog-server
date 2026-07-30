@@ -29,6 +29,7 @@ pub async fn http_handler(
     Ok(author.into())
 }
 
+#[cfg_attr(not(feature = "ssr"), allow(dead_code))]
 pub async fn direct_handler(
     slug: String,
     author_service: Arc<dyn AuthorService>,

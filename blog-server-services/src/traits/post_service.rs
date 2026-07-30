@@ -16,12 +16,12 @@ pub struct Tag {
     pub title: String,
 }
 
-impl Into<ETag> for Tag {
-    fn into(self) -> ETag {
+impl From<Tag> for ETag {
+    fn from(value: Tag) -> Self {
         ETag {
-            id: self.id,
-            title: self.title,
-            slug: self.slug,
+            id: value.id,
+            title: value.title,
+            slug: value.slug,
         }
     }
 }

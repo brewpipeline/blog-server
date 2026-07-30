@@ -4,9 +4,7 @@ use screw_core::routing::*;
 
 // Served via nginx exclusion -> proxied to the server so the absolute
 // `Sitemap:` URL can be built from the runtime SITE_URL.
-pub async fn robots_handler<Extensions>(
-    _: router::RoutedRequest<Request<Extensions>>,
-) -> Response {
+pub async fn robots_handler<Extensions>(_: router::RoutedRequest<Request<Extensions>>) -> Response {
     let body = format!(
         "User-agent: *\n\
          Allow: /\n\

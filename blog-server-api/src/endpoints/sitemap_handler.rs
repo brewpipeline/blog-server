@@ -1,4 +1,4 @@
-use chrono::{DateTime, FixedOffset, NaiveDateTime};
+use chrono::{DateTime, FixedOffset};
 use sitemap_rs::url::{ChangeFrequency, Url};
 use sitemap_rs::url_set::UrlSet;
 use std::sync::Arc;
@@ -52,27 +52,29 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<dyn PostService>>>(
             .unwrap(),
     ];
 
-    urls.extend(posts
-        .into_iter()
-        .map(|post| {
-            Url::builder(format!(
-                "{site_url}/post/{slug}/{id}",
-                site_url = &*crate::SITE_URL,
-                slug = post.base.slug,
-                id = post.id,
-            ))
-            .last_modified(DateTime::from_naive_utc_and_offset(
-                DateTime::from_timestamp(post.base.created_at as i64 / 1000, 0)
-                    .unwrap()
-                    .naive_utc(),
-                FixedOffset::east_opt(0).unwrap(),
-            ))
-            .change_frequency(ChangeFrequency::Weekly)
-            .priority(1.0)
-            .build()
-            .unwrap()
-        })
-        .collect::<Vec<Url>>());
+    urls.extend(
+        posts
+            .into_iter()
+            .map(|post| {
+                Url::builder(format!(
+                    "{site_url}/post/{slug}/{id}",
+                    site_url = &*crate::SITE_URL,
+                    slug = post.base.slug,
+                    id = post.id,
+                ))
+                .last_modified(DateTime::from_naive_utc_and_offset(
+                    DateTime::from_timestamp(post.base.created_at as i64 / 1000, 0)
+                        .unwrap()
+                        .naive_utc(),
+                    FixedOffset::east_opt(0).unwrap(),
+                ))
+                .change_frequency(ChangeFrequency::Weekly)
+                .priority(1.0)
+                .build()
+                .unwrap()
+            })
+            .collect::<Vec<Url>>(),
+    );
     urls.truncate(RECORDS_LIMIT);
 
     let url_set: UrlSet = UrlSet::new(urls).unwrap();

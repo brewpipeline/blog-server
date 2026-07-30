@@ -15,18 +15,18 @@ pub fn create_entity_comment_service(
 
 struct ECommentBuilder(Comment, Author);
 
-impl Into<EComment> for ECommentBuilder {
-    fn into(self) -> EComment {
+impl From<ECommentBuilder> for EComment {
+    fn from(value: ECommentBuilder) -> Self {
         EComment {
-            id: self.0.id,
-            post_id: self.0.base.post_id,
-            created_at: self.0.base.created_at,
-            content: if self.1.base.blocked == 0 && self.0.base.published == 1 {
-                Some(self.0.base.content)
+            id: value.0.id,
+            post_id: value.0.base.post_id,
+            created_at: value.0.base.created_at,
+            content: if value.1.base.blocked == 0 && value.0.base.published == 1 {
+                Some(value.0.base.content)
             } else {
                 None
             },
-            author: self.1.into(),
+            author: value.1.into(),
         }
     }
 }

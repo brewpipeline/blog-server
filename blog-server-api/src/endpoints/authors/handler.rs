@@ -54,6 +54,7 @@ pub async fn http_handler(
     .into())
 }
 
+#[cfg_attr(not(feature = "ssr"), allow(dead_code))]
 pub async fn direct_handler(
     offset: u64,
     limit: u64,

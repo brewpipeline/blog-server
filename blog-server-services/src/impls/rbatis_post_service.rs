@@ -37,12 +37,12 @@ pub struct TagDto {
     title: String,
 }
 
-impl Into<Tag> for TagDto {
-    fn into(self) -> Tag {
+impl From<TagDto> for Tag {
+    fn from(value: TagDto) -> Self {
         Tag {
-            id: self.id,
-            title: self.title,
-            slug: self.slug,
+            id: value.id,
+            title: value.title,
+            slug: value.slug,
         }
     }
 }

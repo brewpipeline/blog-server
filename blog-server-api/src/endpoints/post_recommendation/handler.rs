@@ -1,6 +1,3 @@
-use blog_server_services::traits::entity_post_service::EntityPostService;
-use blog_server_services::traits::post_service::PostService;
-
 use super::request_content::PostRecommendationRequestContent;
 use super::response_content_failure::PostRecommendationResponseContentFailure;
 use super::response_content_failure::PostRecommendationResponseContentFailure::*;

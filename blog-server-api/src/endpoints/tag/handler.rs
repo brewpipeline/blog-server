@@ -26,6 +26,7 @@ pub async fn http_handler(
     Ok(tag.into())
 }
 
+#[cfg_attr(not(feature = "ssr"), allow(dead_code))]
 pub async fn direct_handler(
     id: String,
     post_service: Arc<dyn PostService>,

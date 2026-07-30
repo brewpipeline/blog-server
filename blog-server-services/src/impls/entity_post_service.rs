@@ -16,17 +16,17 @@ pub fn create_entity_post_service(
 
 struct EPostBuilder(Post, Author);
 
-impl Into<EPost> for EPostBuilder {
-    fn into(self) -> EPost {
-        let noindex = self.0.base.publish_type != PublishType::Published
-            || self
+impl From<EPostBuilder> for EPost {
+    fn from(value: EPostBuilder) -> Self {
+        let noindex = value.0.base.publish_type != PublishType::Published
+            || value
                 .0
                 .base
                 .lang
                 .as_deref()
                 .is_some_and(|l| BasePost::current_lang().is_some_and(|cl| l != cl));
         let processed_image_urls = {
-            let cover: Vec<(&str, ImageVariant)> = self
+            let cover: Vec<(&str, ImageVariant)> = value
                 .0
                 .base
                 .image_url
@@ -34,19 +34,19 @@ impl Into<EPost> for EPostBuilder {
                 .map(|u| (u, ImageVariant::Medium))
                 .into_iter()
                 .collect();
-            processed_image_urls(&cover, self.0.base.content.as_deref())
+            processed_image_urls(&cover, value.0.base.content.as_deref())
         };
         EPost {
-            id: self.0.id,
-            title: self.0.base.title,
-            slug: self.0.base.slug,
-            summary: self.0.base.summary,
-            publish_type: self.0.base.publish_type,
-            recommended: self.0.recommended != 0,
-            created_at: self.0.base.created_at,
-            content: self.0.base.content,
-            author: self.1.into(),
-            tags: self
+            id: value.0.id,
+            title: value.0.base.title,
+            slug: value.0.base.slug,
+            summary: value.0.base.summary,
+            publish_type: value.0.base.publish_type,
+            recommended: value.0.recommended != 0,
+            created_at: value.0.base.created_at,
+            content: value.0.base.content,
+            author: value.1.into(),
+            tags: value
                 .0
                 .tags
                 .into_iter()
@@ -56,7 +56,7 @@ impl Into<EPost> for EPostBuilder {
                     slug: v.slug,
                 })
                 .collect(),
-            image_url: self.0.base.image_url,
+            image_url: value.0.base.image_url,
             processed_image_urls,
             noindex,
         }
