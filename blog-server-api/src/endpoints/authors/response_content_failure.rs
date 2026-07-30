@@ -6,10 +6,10 @@ pub enum AuthorsResponseContentFailure {
 }
 
 impl ApiResponseContentBase for AuthorsResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             AuthorsResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
         }
     }

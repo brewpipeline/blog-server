@@ -13,24 +13,22 @@ pub enum LoginResponseContentFailure {
 }
 
 impl ApiResponseContentBase for LoginResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             LoginResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-            LoginResponseContentFailure::ParamsDecodeError { reason: _ } => {
-                &StatusCode::BAD_REQUEST
-            }
-            LoginResponseContentFailure::SlugEmpty => &StatusCode::BAD_REQUEST,
-            LoginResponseContentFailure::NotFound => &StatusCode::NOT_FOUND,
+            LoginResponseContentFailure::ParamsDecodeError { reason: _ } => StatusCode::BAD_REQUEST,
+            LoginResponseContentFailure::SlugEmpty => StatusCode::BAD_REQUEST,
+            LoginResponseContentFailure::NotFound => StatusCode::NOT_FOUND,
             LoginResponseContentFailure::PasswordVerificationError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-            LoginResponseContentFailure::WrongPassword => &StatusCode::FORBIDDEN,
+            LoginResponseContentFailure::WrongPassword => StatusCode::FORBIDDEN,
             LoginResponseContentFailure::TokenGeneratingError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-            LoginResponseContentFailure::Blocked => &StatusCode::FORBIDDEN,
+            LoginResponseContentFailure::Blocked => StatusCode::FORBIDDEN,
         }
     }
 }

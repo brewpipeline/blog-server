@@ -14,8 +14,8 @@ impl From<ChatAnswer> for ChatResponseContentSuccess {
 }
 
 impl ApiResponseContentBase for ChatResponseContentSuccess {
-    fn status_code(&self) -> &'static StatusCode {
-        &StatusCode::OK
+    fn status_code(&self) -> StatusCode {
+        StatusCode::OK
     }
 }
 

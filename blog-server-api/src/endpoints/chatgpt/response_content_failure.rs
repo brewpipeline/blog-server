@@ -9,12 +9,12 @@ pub enum ChatResponseContentFailure {
 }
 
 impl ApiResponseContentBase for ChatResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
-            ChatResponseContentFailure::DatabaseError { .. } => &StatusCode::INTERNAL_SERVER_ERROR,
-            ChatResponseContentFailure::ParamsDecodeError { .. } => &StatusCode::BAD_REQUEST,
-            ChatResponseContentFailure::OpenAiError { .. } => &StatusCode::INTERNAL_SERVER_ERROR,
-            ChatResponseContentFailure::SessionLimitReached => &StatusCode::TOO_MANY_REQUESTS,
+            ChatResponseContentFailure::DatabaseError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            ChatResponseContentFailure::ParamsDecodeError { .. } => StatusCode::BAD_REQUEST,
+            ChatResponseContentFailure::OpenAiError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            ChatResponseContentFailure::SessionLimitReached => StatusCode::TOO_MANY_REQUESTS,
         }
     }
 }

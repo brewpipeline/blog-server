@@ -95,7 +95,7 @@ pub async fn client_handler<
 
     let rendered = server_renderer(
         render_path(request.path.as_str()),
-        request.query,
+        request.query.as_map().clone(),
         app_content,
     )
     .render()

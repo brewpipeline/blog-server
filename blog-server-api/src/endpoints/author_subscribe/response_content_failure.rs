@@ -10,19 +10,19 @@ pub enum AuthorSubscribeResponseContentFailure {
 }
 
 impl ApiResponseContentBase for AuthorSubscribeResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             AuthorSubscribeResponseContentFailure::Unauthorized { reason: _ } => {
-                &StatusCode::UNAUTHORIZED
+                StatusCode::UNAUTHORIZED
             }
-            AuthorSubscribeResponseContentFailure::Forbidden => &StatusCode::FORBIDDEN,
+            AuthorSubscribeResponseContentFailure::Forbidden => StatusCode::FORBIDDEN,
             AuthorSubscribeResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
             AuthorSubscribeResponseContentFailure::IncorrectIdFormat { reason: _ } => {
-                &StatusCode::BAD_REQUEST
+                StatusCode::BAD_REQUEST
             }
-            AuthorSubscribeResponseContentFailure::NotFound => &StatusCode::NOT_FOUND,
+            AuthorSubscribeResponseContentFailure::NotFound => StatusCode::NOT_FOUND,
         }
     }
 }

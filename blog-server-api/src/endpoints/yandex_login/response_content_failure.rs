@@ -9,20 +9,18 @@ pub enum LoginYandexResponseContentFailure {
 }
 
 impl ApiResponseContentBase for LoginYandexResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             LoginYandexResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
             LoginYandexResponseContentFailure::ParamsDecodeError { reason: _ } => {
-                &StatusCode::BAD_REQUEST
+                StatusCode::BAD_REQUEST
             }
             LoginYandexResponseContentFailure::TokenGeneratingError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-            LoginYandexResponseContentFailure::YandexError { reason: _ } => {
-                &StatusCode::BAD_REQUEST
-            }
+            LoginYandexResponseContentFailure::YandexError { reason: _ } => StatusCode::BAD_REQUEST,
         }
     }
 }

@@ -16,8 +16,8 @@ impl Into<LoginYandexResponseContentSuccess> for String {
 }
 
 impl ApiResponseContentBase for LoginYandexResponseContentSuccess {
-    fn status_code(&self) -> &'static StatusCode {
-        &StatusCode::OK
+    fn status_code(&self) -> StatusCode {
+        StatusCode::OK
     }
 }
 

@@ -8,13 +8,13 @@ pub enum PostsResponseContentFailure {
 }
 
 impl ApiResponseContentBase for PostsResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             PostsResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-            PostsResponseContentFailure::Unauthorized { reason: _ } => &StatusCode::UNAUTHORIZED,
-            PostsResponseContentFailure::Forbidden => &StatusCode::FORBIDDEN,
+            PostsResponseContentFailure::Unauthorized { reason: _ } => StatusCode::UNAUTHORIZED,
+            PostsResponseContentFailure::Forbidden => StatusCode::FORBIDDEN,
         }
     }
 }

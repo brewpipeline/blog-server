@@ -8,13 +8,13 @@ pub enum TagResponseContentFailure {
 }
 
 impl ApiResponseContentBase for TagResponseContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             TagResponseContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-            TagResponseContentFailure::NotFound => &StatusCode::NOT_FOUND,
-            TagResponseContentFailure::IncorrectIdFormat { reason: _ } => &StatusCode::BAD_REQUEST,
+            TagResponseContentFailure::NotFound => StatusCode::NOT_FOUND,
+            TagResponseContentFailure::IncorrectIdFormat { reason: _ } => StatusCode::BAD_REQUEST,
         }
     }
 }

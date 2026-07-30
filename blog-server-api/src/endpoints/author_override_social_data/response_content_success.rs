@@ -11,8 +11,8 @@ impl Into<AuthorOverrideSocialDataResponseContentSuccess> for () {
 }
 
 impl ApiResponseContentBase for AuthorOverrideSocialDataResponseContentSuccess {
-    fn status_code(&self) -> &'static StatusCode {
-        &StatusCode::OK
+    fn status_code(&self) -> StatusCode {
+        StatusCode::OK
     }
 }
 

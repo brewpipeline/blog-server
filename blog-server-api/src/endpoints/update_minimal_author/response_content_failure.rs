@@ -9,18 +9,18 @@ pub enum UpdateMinimalAuthorContentFailure {
 }
 
 impl ApiResponseContentBase for UpdateMinimalAuthorContentFailure {
-    fn status_code(&self) -> &'static hyper::StatusCode {
+    fn status_code(&self) -> hyper::StatusCode {
         match self {
             UpdateMinimalAuthorContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
             UpdateMinimalAuthorContentFailure::ValidationError { reason: _ } => {
-                &StatusCode::BAD_REQUEST
+                StatusCode::BAD_REQUEST
             }
             UpdateMinimalAuthorContentFailure::Unauthorized { reason: _ } => {
-                &StatusCode::UNAUTHORIZED
+                StatusCode::UNAUTHORIZED
             }
-            UpdateMinimalAuthorContentFailure::EditingForbidden => &StatusCode::FORBIDDEN,
+            UpdateMinimalAuthorContentFailure::EditingForbidden => StatusCode::FORBIDDEN,
         }
     }
 }

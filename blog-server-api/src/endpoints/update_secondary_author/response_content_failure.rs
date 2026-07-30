@@ -9,18 +9,18 @@ pub enum UpdateSecondaryAuthorContentFailure {
 }
 
 impl ApiResponseContentBase for UpdateSecondaryAuthorContentFailure {
-    fn status_code(&self) -> &'static hyper::StatusCode {
+    fn status_code(&self) -> hyper::StatusCode {
         match self {
             UpdateSecondaryAuthorContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
             UpdateSecondaryAuthorContentFailure::ValidationError { reason: _ } => {
-                &StatusCode::BAD_REQUEST
+                StatusCode::BAD_REQUEST
             }
             UpdateSecondaryAuthorContentFailure::Unauthorized { reason: _ } => {
-                &StatusCode::UNAUTHORIZED
+                StatusCode::UNAUTHORIZED
             }
-            UpdateSecondaryAuthorContentFailure::EditingForbidden => &StatusCode::FORBIDDEN,
+            UpdateSecondaryAuthorContentFailure::EditingForbidden => StatusCode::FORBIDDEN,
         }
     }
 }

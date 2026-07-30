@@ -10,15 +10,15 @@ pub enum CreatePostContentFailure {
 }
 
 impl ApiResponseContentBase for CreatePostContentFailure {
-    fn status_code(&self) -> &'static StatusCode {
+    fn status_code(&self) -> StatusCode {
         match self {
             CreatePostContentFailure::DatabaseError { reason: _ } => {
-                &StatusCode::INTERNAL_SERVER_ERROR
+                StatusCode::INTERNAL_SERVER_ERROR
             }
-            CreatePostContentFailure::ValidationError { reason: _ } => &StatusCode::BAD_REQUEST,
-            CreatePostContentFailure::Unauthorized { reason: _ } => &StatusCode::UNAUTHORIZED,
-            CreatePostContentFailure::InsertFailed => &StatusCode::INTERNAL_SERVER_ERROR,
-            CreatePostContentFailure::CreatingForbidden => &StatusCode::FORBIDDEN,
+            CreatePostContentFailure::ValidationError { reason: _ } => StatusCode::BAD_REQUEST,
+            CreatePostContentFailure::Unauthorized { reason: _ } => StatusCode::UNAUTHORIZED,
+            CreatePostContentFailure::InsertFailed => StatusCode::INTERNAL_SERVER_ERROR,
+            CreatePostContentFailure::CreatingForbidden => StatusCode::FORBIDDEN,
         }
     }
 }

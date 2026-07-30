@@ -17,8 +17,8 @@ impl Into<TagResponseContentSuccess> for ServiceTag {
 }
 
 impl ApiResponseContentBase for TagResponseContentSuccess {
-    fn status_code(&self) -> &'static StatusCode {
-        &StatusCode::OK
+    fn status_code(&self) -> StatusCode {
+        StatusCode::OK
     }
 }
 
