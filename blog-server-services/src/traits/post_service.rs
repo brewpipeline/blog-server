@@ -54,6 +54,19 @@ impl BasePost {
         #[allow(unreachable_code)]
         None
     }
+
+    pub fn current_text_search_config() -> &'static str {
+        #[cfg(feature = "lang_ru")]
+        {
+            return "russian";
+        }
+        #[cfg(feature = "lang_en")]
+        {
+            return "english";
+        }
+        #[allow(unreachable_code)]
+        "simple"
+    }
 }
 
 impl From<(u64, ECommonPost)> for BasePost {

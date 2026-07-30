@@ -1,8 +1,8 @@
 use crate::traits::post_service::{BasePost, Post, PostService, PostsQuery, PostsQueryAnswer, Tag};
 use crate::utils::{string_filter, transliteration};
+use blog_generic::entities::PublishType;
 use rbatis::executor::RBatisTxExecutorGuard;
 use rbatis::{rbatis::RBatis, rbdc::db::ExecResult};
-use rbs::{Value, value};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -243,6 +243,51 @@ impl RbatisPostService {
         impled!()
     }
 
+    #[py_sql(
+        "
+        SELECT \
+            post.*,
+        if search_query != null:
+            ts_rank_cd(textsearch, query) AS rank,
+        COUNT(*) OVER() AS total_count \
+        FROM post
+        if tag_id != null:
+            JOIN post_tag ON post.id = post_tag.post_id
+        if search_query != null:
+            , plainto_tsquery(#{ts_config}::regconfig, LOWER(#{search_query})) query \
+            , to_tsvector(#{ts_config}::regconfig, LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content)) textsearch
+        where:
+            if search_query != null:
+                and textsearch @@ query
+            if author_id != null:
+                and post.author_id = #{author_id}
+            if tag_id != null:
+                and post_tag.tag_id = #{tag_id}
+            if publish_type != null:
+                and post.publish_type = #{publish_type}
+            if lang != '':
+                and (post.lang = #{lang} OR post.lang IS NULL)
+        ORDER BY
+        if search_query != null:
+            rank,
+        post.id DESC \
+        LIMIT #{limit} OFFSET #{offset}
+    "
+    )]
+    async fn select_posts(
+        rb: &RBatis,
+        search_query: Option<&String>,
+        author_id: Option<&u64>,
+        tag_id: Option<&u64>,
+        publish_type: Option<&PublishType>,
+        lang: &str,
+        ts_config: &str,
+        offset: &u64,
+        limit: &u64,
+    ) -> rbatis::Result<Vec<PostAndTotalCount>> {
+        impled!()
+    }
+
     async fn saturate_with_tags(&self, post_option: Option<Post>) -> DResult<Option<Post>> {
         match post_option {
             None => Ok(None),
@@ -301,87 +346,20 @@ impl PostService for RbatisPostService {
         &self,
         query: PostsQuery<'q, 'a, 't, 'p, 'o, 'l>,
     ) -> DResult<PostsQueryAnswer> {
-        let mut args: Vec<Value> = vec![];
-        let query = vec![
-            {
-                let mut select_parts = vec!["post.*"];
-                if let Some(_) = query.search_query {
-                    select_parts.push("ts_rank_cd(textsearch, query) AS rank");
-                }
-                select_parts.push("COUNT(*) OVER() AS total_count");
-                Some(format!("SELECT {}", select_parts.join(", ")))
-            },
-            {
-                let mut from_parts = vec!["post"];
-                if let Some(search_query) = query.search_query {
-                    from_parts.push("plainto_tsquery('russian', LOWER(?)) query");
-                    args.push(value!(search_query));
-                    from_parts.push("to_tsvector('russian', LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content)) textsearch");
-                }
-                Some(format!("FROM {}", from_parts.join(", ")))
-            },
-            {
-                let mut join_parts = vec![];
-                if let Some(_) = query.tag_id {
-                    join_parts.push("post_tag ON post.id = post_tag.post_id");
-                }
-                if join_parts.is_empty() {
-                    None
-                } else {
-                    Some(format!("JOIN {}", join_parts.join(", ")))
-                }
-            },
-            {
-                let mut where_parts = vec![];
-                if let Some(_) = query.search_query {
-                    where_parts.push("textsearch @@ query");
-                }
-                if let Some(author_id) = query.author_id {
-                    where_parts.push("author_id = ?");
-                    args.push(value!(author_id));
-                }
-                if let Some(tag_id) = query.tag_id {
-                    where_parts.push("post_tag.tag_id = ?");
-                    args.push(value!(tag_id));
-                }
-                if let Some(publish_type) = query.publish_type {
-                    where_parts.push("publish_type = ?");
-                    args.push(value!(publish_type));
-                }
-                if let Some(lang) = BasePost::current_lang() {
-                    where_parts.push("(post.lang = ? OR post.lang IS NULL)");
-                    args.push(value!(lang));
-                }
-                if where_parts.is_empty() {
-                    None
-                } else {
-                    Some(format!("WHERE {}", where_parts.join(" AND ")))
-                }
-            },
-            {
-                let mut order_by_parts = vec![];
-                if let Some(_) = query.search_query {
-                    order_by_parts.push("rank");
-                }
-                order_by_parts.push("post.id DESC");
-                Some(format!("ORDER BY {}", order_by_parts.join(", ")))
-            },
-            {
-                args.push(value!(query.limit));
-                Some("LIMIT ?".to_string())
-            },
-            {
-                args.push(value!(query.offset));
-                Some("OFFSET ?".to_string())
-            }
-        ]
-            .into_iter()
-            .filter_map(|x| x)
-            .collect::<Vec<String>>()
-            .join(" ");
+        let lang = BasePost::current_lang().unwrap_or_default();
 
-        let posts_with_total_count: Vec<PostAndTotalCount> =
-            self.rb.query_decode(query.as_str(), args).await?;
+        let posts_with_total_count = RbatisPostService::select_posts(
+            &self.rb,
+            query.search_query,
+            query.author_id,
+            query.tag_id,
+            query.publish_type,
+            &lang,
+            BasePost::current_text_search_config(),
+            query.offset,
+            query.limit,
+        )
+        .await?;
 
         let total_count = posts_with_total_count
             .first()
@@ -392,7 +370,7 @@ impl PostService for RbatisPostService {
             .map(|p| p.origin)
             .collect();
 
-        let posts_with_tags = RbatisPostService::saturate_posts_with_tags(&self, posts).await?;
+        let posts_with_tags = self.saturate_posts_with_tags(posts).await?;
 
         Ok(PostsQueryAnswer {
             total_count,
