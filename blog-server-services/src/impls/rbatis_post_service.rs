@@ -232,6 +232,21 @@ impl RbatisPostService {
     }
     #[py_sql(
         "
+        INSERT INTO tag (title, slug) \
+        VALUES
+        trim ',': for _,tag in tags:
+            (#{tag.title}, #{tag.slug}),
+        ON CONFLICT (title) DO NOTHING
+    "
+    )]
+    async fn insert_tags_ignoring_conflicts(
+        rb: &RBatis,
+        tags: &Vec<NewTag>,
+    ) -> rbatis::Result<ExecResult> {
+        impled!()
+    }
+    #[py_sql(
+        "
         DELETE FROM post \
         WHERE post.id = #{id} \
     "
@@ -464,18 +479,7 @@ impl PostService for RbatisPostService {
             .collect();
         let search_titles = tag_titles.clone();
 
-        let existing_by_titles =
-            RbatisPostService::get_tags_by_titles(&self.rb, &search_titles).await?;
-
-        let existing_map =
-            existing_by_titles
-                .iter()
-                .fold(HashSet::new(), |mut set: HashSet<String>, tag| {
-                    set.insert(tag.title.clone());
-                    set
-                });
-
-        let fresh_tags: Vec<NewTag> =
+        let to_insert: Vec<NewTag> =
             transliteration::ru_to_latin(tag_titles, transliteration::TranslitOption::ToLowerCase)
                 .into_iter()
                 .map(|r| NewTag {
@@ -484,16 +488,7 @@ impl PostService for RbatisPostService {
                 })
                 .collect();
 
-        let to_insert: Vec<NewTag> = fresh_tags
-            .into_iter()
-            .filter(|t| !existing_map.contains(&t.title))
-            .collect();
-
-        if to_insert.is_empty() {
-            return Ok(existing_by_titles);
-        }
-
-        NewTag::insert_batch(&mut self.rb.clone(), &to_insert, to_insert.len() as u64).await?;
+        RbatisPostService::insert_tags_ignoring_conflicts(&self.rb, &to_insert).await?;
 
         let all_tags = RbatisPostService::get_tags_by_titles(&self.rb, &search_titles).await?;
         Ok(all_tags)
