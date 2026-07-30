@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
 use blog_generic::entities::PostContainer;
+use blog_server_services::traits::author_service::Author;
 use blog_server_services::traits::entity_post_service::EntityPostService;
 use blog_server_services::traits::post_service::PostService;
-
-use crate::utils::auth;
 
 use super::request_content::PostRequestContent;
 use super::response_content_failure::PostResponseContentFailure;
@@ -12,12 +11,14 @@ use super::response_content_failure::PostResponseContentFailure::*;
 use super::response_content_success::PostResponseContentSuccess;
 
 pub async fn http_handler(
-    (PostRequestContent {
-        id,
-        post_service,
-        entity_post_service,
-        auth_author_future,
-    },): (PostRequestContent,),
+    (
+        author,
+        PostRequestContent {
+            id,
+            post_service,
+            entity_post_service,
+        },
+    ): (Option<Author>, PostRequestContent),
 ) -> Result<PostResponseContentSuccess, PostResponseContentFailure> {
     let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
         reason: e.to_string(),
@@ -32,13 +33,13 @@ pub async fn http_handler(
         .ok_or(NotFound)?;
 
     if !post.base.publish_type.is_published() {
-        let have_access = if let Some(author) = auth_author_future.await.ok() {
+        let have_access = if let Some(author) = author {
             post.base.author_id == author.id || author.base.editor == 1
         } else {
             false
         };
         if !have_access {
-            return Err(NotFound);
+            return Err(NotFound.into());
         }
     }
 
@@ -58,12 +59,14 @@ pub async fn direct_handler(
     post_service: Arc<dyn PostService>,
     entity_post_service: Arc<dyn EntityPostService>,
 ) -> Option<PostContainer> {
-    http_handler((PostRequestContent {
-        id,
-        post_service,
-        entity_post_service,
-        auth_author_future: Box::pin(std::future::ready(Err(auth::Error::TokenMissing))),
-    },))
+    http_handler((
+        None,
+        PostRequestContent {
+            id,
+            post_service,
+            entity_post_service,
+        },
+    ))
     .await
     .ok()
     .map(|s| s.container)

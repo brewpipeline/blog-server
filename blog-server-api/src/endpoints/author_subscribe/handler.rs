@@ -1,34 +1,32 @@
+use blog_server_services::traits::author_service::Author;
+
 use super::request_content::AuthorSubscribeRequestContent;
 use super::response_content_failure::AuthorSubscribeResponseContentFailure;
 use super::response_content_failure::AuthorSubscribeResponseContentFailure::*;
 use super::response_content_success::AuthorSubscribeRequestContentSuccess;
 
 pub async fn http_handler_subscribe(
-    (request_content,): (AuthorSubscribeRequestContent,),
+    (author, request_content): (Author, AuthorSubscribeRequestContent),
 ) -> Result<AuthorSubscribeRequestContentSuccess, AuthorSubscribeResponseContentFailure> {
-    http_handler(request_content, 1).await
+    http_handler(author, request_content, 1).await
 }
 
 pub async fn http_handler_unsubscribe(
-    (request_content,): (AuthorSubscribeRequestContent,),
+    (author, request_content): (Author, AuthorSubscribeRequestContent),
 ) -> Result<AuthorSubscribeRequestContentSuccess, AuthorSubscribeResponseContentFailure> {
-    http_handler(request_content, 0).await
+    http_handler(author, request_content, 0).await
 }
 
 async fn http_handler(
+    logged_in_author: Author,
     AuthorSubscribeRequestContent {
         id,
         social_service,
         author_service,
-        auth_author_future,
     }: AuthorSubscribeRequestContent,
     subscribe: u8,
 ) -> Result<AuthorSubscribeRequestContentSuccess, AuthorSubscribeResponseContentFailure> {
     let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
-        reason: e.to_string(),
-    })?;
-
-    let logged_in_author = auth_author_future.await.map_err(|e| Unauthorized {
         reason: e.to_string(),
     })?;
 

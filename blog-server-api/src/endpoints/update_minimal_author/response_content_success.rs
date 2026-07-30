@@ -1,33 +1,11 @@
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
+use blog_server_api_macros::ApiSuccess;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ApiSuccess)]
+#[success(ok, description = "minimal author record updated")]
 pub struct UpdateMinimalAuthorContentSuccess;
 
-impl Into<UpdateMinimalAuthorContentSuccess> for () {
-    fn into(self) -> UpdateMinimalAuthorContentSuccess {
+impl From<()> for UpdateMinimalAuthorContentSuccess {
+    fn from(_value: ()) -> Self {
         UpdateMinimalAuthorContentSuccess
-    }
-}
-
-impl ApiResponseContentBase for UpdateMinimalAuthorContentSuccess {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::OK
-    }
-}
-
-impl ApiResponseContentSuccess for UpdateMinimalAuthorContentSuccess {
-    type Data = ();
-
-    fn identifier(&self) -> &'static str {
-        "UPDATE_MINIMAL_AUTHOR_SUCCESS"
-    }
-
-    fn description(&self) -> Option<String> {
-        Some(String::from("minimal author record updated"))
-    }
-
-    fn data(&self) -> &Self::Data {
-        &()
     }
 }

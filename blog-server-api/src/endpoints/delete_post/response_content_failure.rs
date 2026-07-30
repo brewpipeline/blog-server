@@ -1,74 +1,17 @@
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentFailure};
+use blog_server_api_macros::ApiFailure;
 
+use crate::utils::auth_middleware::AuthRejection;
+
+#[derive(ApiFailure)]
 pub enum DeletePostResponseContentFailure {
+    #[failure(auth)]
+    Auth(AuthRejection),
+    #[failure(database)]
     DatabaseError { reason: String },
+    #[failure(not_found = "post")]
     NotFound,
+    #[failure(incorrect_id = "post")]
     IncorrectIdFormat { reason: String },
-    Unauthorized { reason: String },
+    #[failure(status = FORBIDDEN, reason = "insufficient rights to delete post")]
     EditingForbidden,
-}
-
-impl ApiResponseContentBase for DeletePostResponseContentFailure {
-    fn status_code(&self) -> StatusCode {
-        match self {
-            DeletePostResponseContentFailure::DatabaseError { reason: _ } => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
-            DeletePostResponseContentFailure::NotFound => StatusCode::NOT_FOUND,
-            DeletePostResponseContentFailure::IncorrectIdFormat { reason: _ } => {
-                StatusCode::BAD_REQUEST
-            }
-            DeletePostResponseContentFailure::Unauthorized { reason: _ } => {
-                StatusCode::UNAUTHORIZED
-            }
-            DeletePostResponseContentFailure::EditingForbidden => StatusCode::FORBIDDEN,
-        }
-    }
-}
-
-impl ApiResponseContentFailure for DeletePostResponseContentFailure {
-    fn identifier(&self) -> &'static str {
-        match self {
-            DeletePostResponseContentFailure::DatabaseError { reason: _ } => {
-                "DELETE_POST_DATABASE_ERROR"
-            }
-            DeletePostResponseContentFailure::NotFound => "DELETE_POST_NOT_FOUND",
-            DeletePostResponseContentFailure::IncorrectIdFormat { reason: _ } => {
-                "DELETE_POST_INCORRECT_ID_FORMAT"
-            }
-            DeletePostResponseContentFailure::Unauthorized { reason: _ } => {
-                "DELETE_POST_UNAUTHORIZED"
-            }
-            DeletePostResponseContentFailure::EditingForbidden => "DELETE_POST_DELETING_FORBIDDEN",
-        }
-    }
-
-    fn reason(&self) -> Option<String> {
-        Some(match self {
-            DeletePostResponseContentFailure::DatabaseError { reason } => {
-                if cfg!(debug_assertions) {
-                    format!("database error: {}", reason)
-                } else {
-                    "internal database error".to_string()
-                }
-            }
-            DeletePostResponseContentFailure::NotFound => {
-                "post record not found in database".to_string()
-            }
-            DeletePostResponseContentFailure::IncorrectIdFormat { reason } => {
-                format!("incorrect value provided for post ID: {}", reason)
-            }
-            DeletePostResponseContentFailure::Unauthorized { reason } => {
-                if cfg!(debug_assertions) {
-                    format!("unauthorized error: {}", reason)
-                } else {
-                    "unauthorized error".to_string()
-                }
-            }
-            DeletePostResponseContentFailure::EditingForbidden => {
-                String::from("insufficient rights to delete post")
-            }
-        })
-    }
 }

@@ -1,27 +1,5 @@
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
+use blog_server_api_macros::ApiSuccess;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ApiSuccess)]
+#[success(created, description = "comment record created")]
 pub struct CreateCommentContentSuccess;
-
-impl ApiResponseContentBase for CreateCommentContentSuccess {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::OK
-    }
-}
-
-impl ApiResponseContentSuccess for CreateCommentContentSuccess {
-    type Data = ();
-
-    fn identifier(&self) -> &'static str {
-        "COMMENT_CREATED"
-    }
-
-    fn description(&self) -> Option<String> {
-        Some(String::from("comment record created"))
-    }
-
-    fn data(&self) -> &Self::Data {
-        &()
-    }
-}

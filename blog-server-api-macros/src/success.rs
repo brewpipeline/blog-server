@@ -1,0 +1,97 @@
+use proc_macro::TokenStream;
+use quote::quote;
+use syn::{Data, DeriveInput, Fields, LitStr, parse_macro_input};
+
+pub fn derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = input.ident;
+
+    let Data::Struct(data) = input.data else {
+        return syn::Error::new_spanned(name, "ApiSuccess only applies to structs")
+            .to_compile_error()
+            .into();
+    };
+
+    let mut identifier = None;
+    let mut description = None;
+
+    for attr in &input.attrs {
+        if !attr.path().is_ident("success") {
+            continue;
+        }
+        let parsed = attr.parse_nested_meta(|meta| {
+            let key = meta
+                .path
+                .get_ident()
+                .ok_or_else(|| meta.error("expected an identifier"))?
+                .to_string();
+            match key.as_str() {
+                "found" => identifier = Some("FOUND"),
+                "created" => identifier = Some("CREATED"),
+                "ok" => identifier = Some("OK"),
+                "description" => {
+                    description = Some(meta.value()?.parse::<LitStr>()?.value());
+                }
+                other => return Err(meta.error(format!("unknown success option `{other}`"))),
+            }
+            Ok(())
+        });
+        if let Err(error) = parsed {
+            return error.to_compile_error().into();
+        }
+    }
+
+    let Some(identifier) = identifier else {
+        return syn::Error::new_spanned(
+            name,
+            "expected one of #[success(found)], #[success(created)] or #[success(ok)]",
+        )
+        .to_compile_error()
+        .into();
+    };
+    let Some(description) = description else {
+        return syn::Error::new_spanned(name, "expected #[success(description = \"...\")]")
+            .to_compile_error()
+            .into();
+    };
+
+    let (data_type, data_body) = match &data.fields {
+        Fields::Unit => (quote! { () }, quote! { &() }),
+        Fields::Named(named) if named.named.len() == 1 => {
+            let field = named.named.first().unwrap();
+            let field_name = &field.ident;
+            let field_type = &field.ty;
+            (quote! { #field_type }, quote! { &self.#field_name })
+        }
+        _ => {
+            return syn::Error::new_spanned(
+                name,
+                "expected a unit struct or a struct with exactly one field holding the data",
+            )
+            .to_compile_error()
+            .into();
+        }
+    };
+
+    quote! {
+        impl screw_api::response::ApiResponseContentBase for #name {
+            fn status_code(&self) -> hyper::StatusCode {
+                hyper::StatusCode::OK
+            }
+        }
+
+        impl screw_api::response::ApiResponseContentSuccess for #name {
+            type Data = #data_type;
+            fn identifier(&self) -> &'static str {
+                #identifier
+            }
+            fn description(&self) -> Option<String> {
+                Some(#description.to_string())
+            }
+            fn data(&self) -> &Self::Data {
+                #data_body
+            }
+        }
+    }
+    .into()
+}

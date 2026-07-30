@@ -1,35 +1,15 @@
-use crate::extensions::Resolve;
+use blog_server_api_macros::ApiRequest;
 use blog_server_services::traits::author_service::*;
-use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
 use std::sync::Arc;
 
+#[derive(ApiRequest)]
 pub struct AuthorsRequestContent {
+    #[request(path = "query")]
     pub(super) query: Option<String>,
+    #[request(query = "offset")]
     pub(super) offset: Option<u64>,
+    #[request(query = "limit")]
     pub(super) limit: Option<u64>,
+    #[request(extension)]
     pub(super) author_service: Arc<dyn AuthorService>,
-}
-
-impl<Extensions> ApiRequestContent<Extensions> for AuthorsRequestContent
-where
-    Extensions: Resolve<Arc<dyn AuthorService>>,
-{
-    type Data = ();
-
-    fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
-        Self {
-            query: origin_content.path.get("query").map(|n| n.to_owned()),
-            offset: origin_content
-                .query
-                .get("offset")
-                .map(|v| v.parse().ok())
-                .flatten(),
-            limit: origin_content
-                .query
-                .get("limit")
-                .map(|v| v.parse().ok())
-                .flatten(),
-            author_service: origin_content.extensions.resolve(),
-        }
-    }
 }

@@ -1,36 +1,7 @@
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentFailure};
+use blog_server_api_macros::ApiFailure;
 
+#[derive(ApiFailure)]
 pub enum AuthorsResponseContentFailure {
+    #[failure(database)]
     DatabaseError { reason: String },
-}
-
-impl ApiResponseContentBase for AuthorsResponseContentFailure {
-    fn status_code(&self) -> StatusCode {
-        match self {
-            AuthorsResponseContentFailure::DatabaseError { reason: _ } => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
-        }
-    }
-}
-
-impl ApiResponseContentFailure for AuthorsResponseContentFailure {
-    fn identifier(&self) -> &'static str {
-        match self {
-            AuthorsResponseContentFailure::DatabaseError { reason: _ } => "AUTHORS_DATABASE_ERROR",
-        }
-    }
-
-    fn reason(&self) -> Option<String> {
-        Some(match self {
-            AuthorsResponseContentFailure::DatabaseError { reason } => {
-                if cfg!(debug_assertions) {
-                    format!("database error: {}", reason)
-                } else {
-                    "internal database error".to_string()
-                }
-            }
-        })
-    }
 }

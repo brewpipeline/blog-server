@@ -1,28 +1,9 @@
-use crate::extensions::Resolve;
-use crate::utils::auth;
+use blog_server_api_macros::ApiRequest;
 use blog_server_services::traits::author_service::*;
-use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
-use screw_components::dyn_fn::DFuture;
 use std::sync::Arc;
 
+#[derive(ApiRequest)]
 pub struct AuthorOverrideSocialDataRequestContent {
+    #[request(extension)]
     pub(super) author_service: Arc<dyn AuthorService>,
-    pub(super) auth_author_future: DFuture<Result<Author, auth::Error>>,
-}
-
-impl<Extensions> ApiRequestContent<Extensions> for AuthorOverrideSocialDataRequestContent
-where
-    Extensions: Resolve<Arc<dyn AuthorService>>,
-{
-    type Data = ();
-
-    fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
-        Self {
-            author_service: origin_content.extensions.resolve(),
-            auth_author_future: Box::pin(auth::author(
-                &origin_content.http_parts,
-                origin_content.extensions.resolve(),
-            )),
-        }
-    }
 }

@@ -1,31 +1,15 @@
-use crate::extensions::Resolve;
+use blog_server_api_macros::ApiRequest;
 use blog_server_services::traits::{
     entity_post_service::EntityPostService, post_service::PostService,
 };
-use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
 use std::sync::Arc;
 
+#[derive(ApiRequest)]
 pub struct PostRecommendationRequestContent {
+    #[request(path = "id")]
     pub(super) id: String,
+    #[request(extension)]
     pub(super) post_service: Arc<dyn PostService>,
+    #[request(extension)]
     pub(super) entity_post_service: Arc<dyn EntityPostService>,
-}
-
-impl<Extensions> ApiRequestContent<Extensions> for PostRecommendationRequestContent
-where
-    Extensions: Resolve<Arc<dyn PostService>> + Resolve<Arc<dyn EntityPostService>>,
-{
-    type Data = ();
-
-    fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
-        Self {
-            id: origin_content
-                .path
-                .get("id")
-                .map(|n| n.to_owned())
-                .unwrap_or_default(),
-            post_service: origin_content.extensions.resolve(),
-            entity_post_service: origin_content.extensions.resolve(),
-        }
-    }
 }

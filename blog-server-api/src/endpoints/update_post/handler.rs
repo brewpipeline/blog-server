@@ -1,5 +1,6 @@
 use blog_generic::entities::PublishType;
 use blog_generic::events::NewPostPublished;
+use blog_server_services::traits::author_service::Author;
 use validator::Validate;
 
 use super::request_content::UpdatePostRequestContent;
@@ -8,26 +9,20 @@ use super::response_content_failure::UpdatePostContentFailure::*;
 use super::response_content_success::UpdatePostContentSuccess;
 
 pub async fn http_handler(
-    (UpdatePostRequestContent {
-        id,
-        updated_post_data,
-        post_service,
-        entity_post_service,
-        auth_author_future,
-        new_post_service,
-    },): (UpdatePostRequestContent,),
+    (
+        author,
+        UpdatePostRequestContent {
+            id,
+            updated_post_data,
+            post_service,
+            entity_post_service,
+            new_post_service,
+        },
+    ): (Author, UpdatePostRequestContent),
 ) -> Result<UpdatePostContentSuccess, UpdatePostContentFailure> {
     let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
         reason: e.to_string(),
     })?;
-
-    let author = auth_author_future.await.map_err(|e| Unauthorized {
-        reason: e.to_string(),
-    })?;
-
-    if author.base.blocked == 1 {
-        return Err(EditingForbidden);
-    }
 
     let existing_post = post_service
         .post_by_id(&id)
@@ -35,13 +30,13 @@ pub async fn http_handler(
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
         })?
-        .ok_or(PostNotFound)?;
+        .ok_or(NotFound)?;
 
     if !(existing_post.base.author_id == author.id || author.base.editor == 1) {
         return Err(if existing_post.base.publish_type.is_published() {
             EditingForbidden
         } else {
-            PostNotFound
+            NotFound.into()
         });
     }
 
@@ -56,13 +51,15 @@ pub async fn http_handler(
     if let Some(err) = base_post.validate().err() {
         return Err(ValidationError {
             reason: err.to_string(),
-        });
+        }
+        .into());
     }
 
     if author.base.editor == 0 && base_post.publish_type.is_published() {
         return Err(ValidationError {
             reason: "publishing not allowed for you".to_owned(),
-        });
+        }
+        .into());
     }
 
     let tag_titles: Vec<String> = base_post.tags.to_owned();
@@ -99,7 +96,7 @@ pub async fn http_handler(
         .map_err(|e| DatabaseError {
             reason: e.to_string(),
         })?
-        .ok_or(PostNotFound)?;
+        .ok_or(NotFound)?;
 
     let is_visible_published = updated_post.base.publish_type == PublishType::Published;
 

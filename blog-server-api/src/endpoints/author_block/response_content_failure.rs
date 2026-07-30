@@ -1,66 +1,13 @@
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentFailure};
+use blog_server_api_macros::ApiFailure;
 
+use crate::utils::auth_middleware::AuthRejection;
+
+#[derive(ApiFailure)]
 pub enum AuthorBlockResponseContentFailure {
-    Unauthorized { reason: String },
-    Forbidden,
+    #[failure(auth)]
+    Auth(AuthRejection),
+    #[failure(database)]
     DatabaseError { reason: String },
+    #[failure(incorrect_id = "author")]
     IncorrectIdFormat { reason: String },
-}
-
-impl ApiResponseContentBase for AuthorBlockResponseContentFailure {
-    fn status_code(&self) -> StatusCode {
-        match self {
-            AuthorBlockResponseContentFailure::Unauthorized { reason: _ } => {
-                StatusCode::UNAUTHORIZED
-            }
-            AuthorBlockResponseContentFailure::Forbidden => StatusCode::FORBIDDEN,
-            AuthorBlockResponseContentFailure::DatabaseError { reason: _ } => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
-            AuthorBlockResponseContentFailure::IncorrectIdFormat { reason: _ } => {
-                StatusCode::BAD_REQUEST
-            }
-        }
-    }
-}
-
-impl ApiResponseContentFailure for AuthorBlockResponseContentFailure {
-    fn identifier(&self) -> &'static str {
-        match self {
-            AuthorBlockResponseContentFailure::Unauthorized { reason: _ } => {
-                "AUTHOR_BLOCK_UNAUTHORIZED"
-            }
-            AuthorBlockResponseContentFailure::Forbidden => "AUTHOR_BLOCK_FORBIDDEN",
-            AuthorBlockResponseContentFailure::DatabaseError { reason: _ } => {
-                "AUTHOR_BLOCK_DATABASE_ERROR"
-            }
-            AuthorBlockResponseContentFailure::IncorrectIdFormat { reason: _ } => {
-                "AUTHOR_BLOCK_INCORRECT_ID_FORMAT"
-            }
-        }
-    }
-
-    fn reason(&self) -> Option<String> {
-        Some(match self {
-            AuthorBlockResponseContentFailure::Unauthorized { reason } => {
-                if cfg!(debug_assertions) {
-                    format!("unauthorized error: {}", reason)
-                } else {
-                    "unauthorized error".to_string()
-                }
-            }
-            AuthorBlockResponseContentFailure::Forbidden => String::from("insufficient rights"),
-            AuthorBlockResponseContentFailure::DatabaseError { reason } => {
-                if cfg!(debug_assertions) {
-                    format!("database error: {}", reason)
-                } else {
-                    "internal database error".to_string()
-                }
-            }
-            AuthorBlockResponseContentFailure::IncorrectIdFormat { reason } => {
-                format!("incorrect value provided for author ID: {}", reason)
-            }
-        })
-    }
 }

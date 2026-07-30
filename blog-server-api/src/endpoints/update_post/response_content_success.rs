@@ -1,38 +1,16 @@
 use blog_generic::entities::{Post, PostContainer};
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
+use blog_server_api_macros::ApiSuccess;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ApiSuccess)]
+#[success(ok, description = "post record updated")]
 pub struct UpdatePostContentSuccess {
     container: PostContainer,
 }
 
-impl Into<UpdatePostContentSuccess> for Post {
-    fn into(self) -> UpdatePostContentSuccess {
+impl From<Post> for UpdatePostContentSuccess {
+    fn from(value: Post) -> Self {
         UpdatePostContentSuccess {
-            container: PostContainer { post: self },
+            container: PostContainer { post: value },
         }
-    }
-}
-
-impl ApiResponseContentBase for UpdatePostContentSuccess {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::OK
-    }
-}
-
-impl ApiResponseContentSuccess for UpdatePostContentSuccess {
-    type Data = PostContainer;
-
-    fn identifier(&self) -> &'static str {
-        "UPDATE_POST_SUCCESS"
-    }
-
-    fn description(&self) -> Option<String> {
-        Some(String::from("post record updated"))
-    }
-
-    fn data(&self) -> &Self::Data {
-        &self.container
     }
 }

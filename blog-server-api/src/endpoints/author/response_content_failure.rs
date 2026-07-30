@@ -1,48 +1,11 @@
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentFailure};
+use blog_server_api_macros::ApiFailure;
 
+#[derive(ApiFailure)]
 pub enum AuthorResponseContentFailure {
+    #[failure(database)]
     DatabaseError { reason: String },
-    SlugEmpty,
+    #[failure(not_found = "author")]
     NotFound,
-}
-
-impl ApiResponseContentBase for AuthorResponseContentFailure {
-    fn status_code(&self) -> StatusCode {
-        match self {
-            AuthorResponseContentFailure::DatabaseError { reason: _ } => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
-            AuthorResponseContentFailure::SlugEmpty => StatusCode::BAD_REQUEST,
-            AuthorResponseContentFailure::NotFound => StatusCode::NOT_FOUND,
-        }
-    }
-}
-
-impl ApiResponseContentFailure for AuthorResponseContentFailure {
-    fn identifier(&self) -> &'static str {
-        match self {
-            AuthorResponseContentFailure::DatabaseError { reason: _ } => "AUTHOR_DATABASE_ERROR",
-            AuthorResponseContentFailure::SlugEmpty => "AUTHOR_SLUG_EMPTY",
-            AuthorResponseContentFailure::NotFound => "AUTHOR_NOT_FOUND",
-        }
-    }
-
-    fn reason(&self) -> Option<String> {
-        Some(match self {
-            AuthorResponseContentFailure::DatabaseError { reason } => {
-                if cfg!(debug_assertions) {
-                    format!("database error: {}", reason)
-                } else {
-                    "internal database error".to_string()
-                }
-            }
-            AuthorResponseContentFailure::SlugEmpty => {
-                "author slug is empty in request URL".to_string()
-            }
-            AuthorResponseContentFailure::NotFound => {
-                "author record not found in database".to_string()
-            }
-        })
-    }
+    #[failure(status = BAD_REQUEST, reason = "author slug is empty in request URL")]
+    SlugEmpty,
 }

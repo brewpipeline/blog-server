@@ -1,0 +1,288 @@
+use std::marker::PhantomData;
+use std::sync::Arc;
+
+use hyper::StatusCode;
+use screw_api::request::{ApiRequest, ApiRequestContent, ApiRequestOriginContent};
+use screw_api::response::{
+    ApiResponse, ApiResponseContentBase, ApiResponseContentFailure, ApiResponseContentSuccess,
+};
+use screw_components::dyn_fn::{DFnOnce, DFuture};
+use screw_core::routing::middleware::Middleware;
+
+use blog_server_services::traits::author_service::{Author, AuthorService};
+
+use crate::extensions::Resolve;
+use crate::utils::auth;
+
+#[derive(Clone, Copy, Debug)]
+pub enum AuthPolicy {
+    Authenticated,
+    NotBlocked,
+    Editor,
+}
+
+impl AuthPolicy {
+    fn check(&self, author: &Author) -> Result<(), AuthRejection> {
+        match self {
+            AuthPolicy::Authenticated => Ok(()),
+            AuthPolicy::NotBlocked => {
+                if author.base.blocked == 1 {
+                    Err(AuthRejection::Blocked)
+                } else {
+                    Ok(())
+                }
+            }
+            AuthPolicy::Editor => {
+                if author.base.editor == 0 {
+                    Err(AuthRejection::NotEditor)
+                } else {
+                    Ok(())
+                }
+            }
+        }
+    }
+}
+
+pub enum AuthRejection {
+    Unauthorized(auth::Error),
+    Blocked,
+    NotEditor,
+}
+
+impl ApiResponseContentBase for AuthRejection {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            AuthRejection::Unauthorized(_) => StatusCode::UNAUTHORIZED,
+            AuthRejection::Blocked => StatusCode::FORBIDDEN,
+            AuthRejection::NotEditor => StatusCode::FORBIDDEN,
+        }
+    }
+}
+
+impl ApiResponseContentFailure for AuthRejection {
+    fn identifier(&self) -> &'static str {
+        match self {
+            AuthRejection::Unauthorized(_) => "UNAUTHORIZED",
+            AuthRejection::Blocked => "AUTHOR_BLOCKED",
+            AuthRejection::NotEditor => "EDITOR_RIGHTS_REQUIRED",
+        }
+    }
+
+    fn reason(&self) -> Option<String> {
+        Some(match self {
+            AuthRejection::Unauthorized(e) => {
+                if cfg!(debug_assertions) {
+                    format!("unauthorized error: {}", e)
+                } else {
+                    "unauthorized error".to_string()
+                }
+            }
+            AuthRejection::Blocked => "author is blocked".to_string(),
+            AuthRejection::NotEditor => "insufficient rights".to_string(),
+        })
+    }
+}
+
+pub struct AuthApiRequestContent<Content> {
+    auth_author_future: DFuture<Result<Author, auth::Error>>,
+    inner: Content,
+}
+
+impl<Content, Extensions> ApiRequestContent<Extensions> for AuthApiRequestContent<Content>
+where
+    Content: ApiRequestContent<Extensions>,
+    Extensions: Resolve<Arc<dyn AuthorService>>,
+{
+    type Data = Content::Data;
+
+    fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
+        let auth_author_future: DFuture<Result<Author, auth::Error>> = Box::pin(auth::author(
+            &origin_content.http_parts,
+            origin_content.extensions.resolve(),
+        ));
+        Self {
+            auth_author_future,
+            inner: Content::create(origin_content),
+        }
+    }
+}
+
+pub struct AuthorizedApiRequest<Content, Extensions> {
+    pub author: Author,
+    pub content: Content,
+    _p_e: PhantomData<Extensions>,
+}
+
+impl<Content, Extensions> From<AuthorizedApiRequest<Content, Extensions>> for (Author, Content) {
+    fn from(value: AuthorizedApiRequest<Content, Extensions>) -> Self {
+        (value.author, value.content)
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct AuthApiMiddleware {
+    pub policy: AuthPolicy,
+}
+
+impl AuthApiMiddleware {
+    pub fn with_policy(policy: AuthPolicy) -> Self {
+        Self { policy }
+    }
+}
+
+impl<Content, Extensions, Success, Failure>
+    Middleware<AuthorizedApiRequest<Content, Extensions>, ApiResponse<Success, Failure>>
+    for AuthApiMiddleware
+where
+    Content: ApiRequestContent<Extensions> + Send + 'static,
+    <Content as ApiRequestContent<Extensions>>::Data: Sync + Send + 'static,
+    Extensions: Resolve<Arc<dyn AuthorService>> + Sync + Send + 'static,
+    Success: ApiResponseContentSuccess + Send + 'static,
+    Failure: ApiResponseContentFailure + From<AuthRejection> + Send + 'static,
+{
+    type Request = ApiRequest<AuthApiRequestContent<Content>, Extensions>;
+    type Response = ApiResponse<Success, Failure>;
+
+    async fn respond(
+        &self,
+        request: Self::Request,
+        next: DFnOnce<AuthorizedApiRequest<Content, Extensions>, ApiResponse<Success, Failure>>,
+    ) -> Self::Response {
+        let AuthApiRequestContent {
+            auth_author_future,
+            inner,
+        } = request.content;
+
+        let author = match auth_author_future.await {
+            Ok(author) => author,
+            Err(e) => return ApiResponse::failure(AuthRejection::Unauthorized(e).into()),
+        };
+
+        if let Err(rejection) = self.policy.check(&author) {
+            return ApiResponse::failure(rejection.into());
+        }
+
+        next(AuthorizedApiRequest {
+            author,
+            content: inner,
+            _p_e: PhantomData,
+        })
+        .await
+    }
+}
+
+pub struct MaybeAuthorizedApiRequest<Content, Extensions> {
+    pub author: Option<Author>,
+    pub content: Content,
+    _p_e: PhantomData<Extensions>,
+}
+
+impl<Content, Extensions> From<MaybeAuthorizedApiRequest<Content, Extensions>>
+    for (Option<Author>, Content)
+{
+    fn from(value: MaybeAuthorizedApiRequest<Content, Extensions>) -> Self {
+        (value.author, value.content)
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct OptionalAuthApiMiddleware;
+
+impl<Content, Extensions, Success, Failure>
+    Middleware<MaybeAuthorizedApiRequest<Content, Extensions>, ApiResponse<Success, Failure>>
+    for OptionalAuthApiMiddleware
+where
+    Content: ApiRequestContent<Extensions> + Send + 'static,
+    <Content as ApiRequestContent<Extensions>>::Data: Sync + Send + 'static,
+    Extensions: Resolve<Arc<dyn AuthorService>> + Sync + Send + 'static,
+    Success: ApiResponseContentSuccess + Send + 'static,
+    Failure: ApiResponseContentFailure + Send + 'static,
+{
+    type Request = ApiRequest<AuthApiRequestContent<Content>, Extensions>;
+    type Response = ApiResponse<Success, Failure>;
+
+    async fn respond(
+        &self,
+        request: Self::Request,
+        next: DFnOnce<
+            MaybeAuthorizedApiRequest<Content, Extensions>,
+            ApiResponse<Success, Failure>,
+        >,
+    ) -> Self::Response {
+        let AuthApiRequestContent {
+            auth_author_future,
+            inner,
+        } = request.content;
+
+        next(MaybeAuthorizedApiRequest {
+            author: auth_author_future.await.ok(),
+            content: inner,
+            _p_e: PhantomData,
+        })
+        .await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use blog_server_services::traits::author_service::BaseAuthor;
+
+    fn author(editor: u8, blocked: u8) -> Author {
+        Author {
+            id: 1,
+            base: BaseAuthor {
+                slug: "slug".to_string(),
+                first_name: None,
+                middle_name: None,
+                last_name: None,
+                mobile: None,
+                email: None,
+                password_hash: None,
+                registered_at: 0,
+                status: None,
+                image_url: None,
+                editor,
+                blocked,
+                yandex_id: None,
+                telegram_id: None,
+                notification_subscribed: None,
+                override_social_data: 0,
+            },
+        }
+    }
+
+    #[test]
+    fn authenticated_policy_accepts_blocked_author() {
+        assert!(AuthPolicy::Authenticated.check(&author(0, 1)).is_ok());
+    }
+
+    #[test]
+    fn not_blocked_policy_rejects_blocked_author() {
+        let rejection = AuthPolicy::NotBlocked.check(&author(1, 1)).unwrap_err();
+        assert_eq!(rejection.status_code(), StatusCode::FORBIDDEN);
+        assert_eq!(rejection.identifier(), "AUTHOR_BLOCKED");
+    }
+
+    #[test]
+    fn not_blocked_policy_accepts_plain_author() {
+        assert!(AuthPolicy::NotBlocked.check(&author(0, 0)).is_ok());
+    }
+
+    #[test]
+    fn editor_policy_rejects_non_editor() {
+        let rejection = AuthPolicy::Editor.check(&author(0, 0)).unwrap_err();
+        assert_eq!(rejection.status_code(), StatusCode::FORBIDDEN);
+        assert_eq!(rejection.identifier(), "EDITOR_RIGHTS_REQUIRED");
+    }
+
+    #[test]
+    fn editor_policy_accepts_editor() {
+        assert!(AuthPolicy::Editor.check(&author(1, 0)).is_ok());
+    }
+
+    #[test]
+    fn editor_policy_ignores_blocked_flag() {
+        assert!(AuthPolicy::Editor.check(&author(1, 1)).is_ok());
+    }
+}

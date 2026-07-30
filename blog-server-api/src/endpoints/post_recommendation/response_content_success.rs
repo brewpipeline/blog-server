@@ -1,38 +1,16 @@
 use blog_generic::entities::{Post, PostContainer};
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
+use blog_server_api_macros::ApiSuccess;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ApiSuccess)]
+#[success(found, description = "recommended post found")]
 pub struct PostRecommendationResponseContentSuccess {
     pub(super) container: PostContainer,
 }
 
-impl Into<PostRecommendationResponseContentSuccess> for Post {
-    fn into(self) -> PostRecommendationResponseContentSuccess {
+impl From<Post> for PostRecommendationResponseContentSuccess {
+    fn from(value: Post) -> Self {
         PostRecommendationResponseContentSuccess {
-            container: PostContainer { post: self },
+            container: PostContainer { post: value },
         }
-    }
-}
-
-impl ApiResponseContentBase for PostRecommendationResponseContentSuccess {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::OK
-    }
-}
-
-impl ApiResponseContentSuccess for PostRecommendationResponseContentSuccess {
-    type Data = PostContainer;
-
-    fn identifier(&self) -> &'static str {
-        "POST_RECOMMENDATION_FOUND"
-    }
-
-    fn description(&self) -> Option<String> {
-        Some("recommended post found".to_string())
-    }
-
-    fn data(&self) -> &Self::Data {
-        &self.container
     }
 }

@@ -1,38 +1,16 @@
 use blog_generic::entities::LoginAnswer;
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
+use blog_server_api_macros::ApiSuccess;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ApiSuccess)]
+#[success(ok, description = "login success and token generated")]
 pub struct LoginResponseContentSuccess {
     login_answer: LoginAnswer,
 }
 
-impl Into<LoginResponseContentSuccess> for String {
-    fn into(self) -> LoginResponseContentSuccess {
+impl From<String> for LoginResponseContentSuccess {
+    fn from(value: String) -> Self {
         LoginResponseContentSuccess {
-            login_answer: LoginAnswer { token: self },
+            login_answer: LoginAnswer { token: value },
         }
-    }
-}
-
-impl ApiResponseContentBase for LoginResponseContentSuccess {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::OK
-    }
-}
-
-impl ApiResponseContentSuccess for LoginResponseContentSuccess {
-    type Data = LoginAnswer;
-
-    fn identifier(&self) -> &'static str {
-        "LOGIN_SUCCESS"
-    }
-
-    fn description(&self) -> Option<String> {
-        Some("login success and token generated".to_string())
-    }
-
-    fn data(&self) -> &Self::Data {
-        &self.login_answer
     }
 }

@@ -1,38 +1,16 @@
 use blog_generic::entities::LoginAnswer;
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
+use blog_server_api_macros::ApiSuccess;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ApiSuccess)]
+#[success(ok, description = "login telegram success and token generated")]
 pub struct LoginTelegramResponseContentSuccess {
     login_answer: LoginAnswer,
 }
 
-impl Into<LoginTelegramResponseContentSuccess> for String {
-    fn into(self) -> LoginTelegramResponseContentSuccess {
+impl From<String> for LoginTelegramResponseContentSuccess {
+    fn from(value: String) -> Self {
         LoginTelegramResponseContentSuccess {
-            login_answer: LoginAnswer { token: self },
+            login_answer: LoginAnswer { token: value },
         }
-    }
-}
-
-impl ApiResponseContentBase for LoginTelegramResponseContentSuccess {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::OK
-    }
-}
-
-impl ApiResponseContentSuccess for LoginTelegramResponseContentSuccess {
-    type Data = LoginAnswer;
-
-    fn identifier(&self) -> &'static str {
-        "LOGIN_TELEGRAM_SUCCESS"
-    }
-
-    fn description(&self) -> Option<String> {
-        Some("login telegram success and token generated".to_string())
-    }
-
-    fn data(&self) -> &Self::Data {
-        &self.login_answer
     }
 }

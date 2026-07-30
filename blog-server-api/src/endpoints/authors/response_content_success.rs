@@ -1,36 +1,14 @@
 use blog_generic::entities::AuthorsContainer;
-use hyper::StatusCode;
-use screw_api::response::{ApiResponseContentBase, ApiResponseContentSuccess};
+use blog_server_api_macros::ApiSuccess;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, ApiSuccess)]
+#[success(found, description = "authors list returned")]
 pub struct AuthorsResponseContentSuccess {
     pub(super) container: AuthorsContainer,
 }
 
-impl Into<AuthorsResponseContentSuccess> for AuthorsContainer {
-    fn into(self) -> AuthorsResponseContentSuccess {
-        AuthorsResponseContentSuccess { container: self }
-    }
-}
-
-impl ApiResponseContentBase for AuthorsResponseContentSuccess {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::OK
-    }
-}
-
-impl ApiResponseContentSuccess for AuthorsResponseContentSuccess {
-    type Data = AuthorsContainer;
-
-    fn identifier(&self) -> &'static str {
-        "AUTHORS_OK"
-    }
-
-    fn description(&self) -> Option<String> {
-        Some("authors list returned".to_string())
-    }
-
-    fn data(&self) -> &Self::Data {
-        &self.container
+impl From<AuthorsContainer> for AuthorsResponseContentSuccess {
+    fn from(value: AuthorsContainer) -> Self {
+        AuthorsResponseContentSuccess { container: value }
     }
 }
