@@ -111,12 +111,12 @@ pub fn make_router<Extensions: ExtensionsProviderType>()
                     )
                     .middleware(AuthApiMiddleware::with_policy(AuthPolicy::Editor), |r| {
                         r.route(
-                            route::first::Route::with_method(&hyper::Method::GET)
+                            route::first::Route::with_method(&hyper::Method::PATCH)
                                 .and_path("/id/{id:[^/]*}/block")
                                 .and_handler(author_block::http_handler_block),
                         )
                         .route(
-                            route::first::Route::with_method(&hyper::Method::GET)
+                            route::first::Route::with_method(&hyper::Method::PATCH)
                                 .and_path("/id/{id:[^/]*}/unblock")
                                 .and_handler(author_block::http_handler_unblock),
                         )
