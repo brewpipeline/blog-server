@@ -164,6 +164,10 @@ mod tests {
         ) -> DResult<()> {
             unimplemented!()
         }
+
+        async fn subscribed_telegram_ids(&self) -> DResult<Vec<u64>> {
+            unimplemented!()
+        }
     }
 
     fn sample_author() -> Author {

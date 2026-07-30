@@ -106,6 +106,18 @@ impl Author {
     ) -> rbatis::Result<ExecResult> {
         impled!()
     }
+    #[py_sql(
+        "
+        SELECT telegram_id \
+        FROM author \
+        WHERE \
+            notification_subscribed <> 0 \
+            AND telegram_id IS NOT NULL
+    "
+    )]
+    async fn select_subscribed_telegram_ids(rb: &RBatis) -> rbatis::Result<Vec<u64>> {
+        impled!()
+    }
 }
 
 struct RbatisAuthorService {
@@ -331,5 +343,8 @@ impl AuthorService for RbatisAuthorService {
         Author::set_notification_subscribed_by_id(&mut self.rb.clone(), &id, &is_subscribed)
             .await?;
         Ok(())
+    }
+    async fn subscribed_telegram_ids(&self) -> DResult<Vec<u64>> {
+        Ok(Author::select_subscribed_telegram_ids(&self.rb).await?)
     }
 }
