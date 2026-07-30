@@ -54,6 +54,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>()
     #[cfg(feature = "ssr")]
     let sitemap_handler = sitemap_handler;
 
+    #[cfg(not(feature = "ssr"))]
+    let robots_handler = not_found_fallback_handler;
+    #[cfg(feature = "ssr")]
+    let robots_handler = robots_handler;
+
     #[cfg(not(feature = "yandex"))]
     let yandex_handler = api_not_found_fallback_handler;
     #[cfg(feature = "yandex")]
@@ -246,6 +251,11 @@ pub fn make_router<Extensions: ExtensionsProviderType>()
             route::first::Route::with_method(&hyper::Method::GET)
                 .and_path("/sitemap.xml")
                 .and_handler(sitemap_handler),
+        )
+        .route(
+            route::first::Route::with_method(&hyper::Method::GET)
+                .and_path("/robots.txt")
+                .and_handler(robots_handler),
         )
     })
 }

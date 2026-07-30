@@ -32,7 +32,28 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<dyn PostService>>>(
         .map(|p| p.posts)
         .unwrap_or_else(|_| vec![]);
 
-    let mut urls = posts
+    let now = DateTime::from_naive_utc_and_offset(
+        chrono::Utc::now().naive_utc(),
+        FixedOffset::east_opt(0).unwrap(),
+    );
+
+    // Static listing pages are otherwise absent from the sitemap.
+    let mut urls = vec![
+        Url::builder(format!("{site_url}/", site_url = &*crate::SITE_URL))
+            .last_modified(now)
+            .change_frequency(ChangeFrequency::Daily)
+            .priority(1.0)
+            .build()
+            .unwrap(),
+        Url::builder(format!("{site_url}/authors", site_url = &*crate::SITE_URL))
+            .last_modified(now)
+            .change_frequency(ChangeFrequency::Weekly)
+            .priority(0.7)
+            .build()
+            .unwrap(),
+    ];
+
+    urls.extend(posts
         .into_iter()
         .map(|post| {
             Url::builder(format!(
@@ -47,12 +68,12 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<dyn PostService>>>(
                     .naive_utc(),
                 FixedOffset::east_opt(0).unwrap(),
             ))
-            .change_frequency(ChangeFrequency::Daily)
+            .change_frequency(ChangeFrequency::Weekly)
             .priority(1.0)
             .build()
             .unwrap()
         })
-        .collect::<Vec<Url>>();
+        .collect::<Vec<Url>>());
     urls.truncate(RECORDS_LIMIT);
 
     let url_set: UrlSet = UrlSet::new(urls).unwrap();

@@ -19,6 +19,8 @@ pub mod post_recommendation;
 pub mod post_update_recommended;
 pub mod posts;
 #[cfg(feature = "ssr")]
+mod robots_handler;
+#[cfg(feature = "ssr")]
 mod sitemap_handler;
 pub mod tag;
 #[cfg(feature = "telegram")]
@@ -31,5 +33,7 @@ pub mod yandex_login;
 
 #[cfg(feature = "ssr")]
 pub use client_handler::*;
+#[cfg(feature = "ssr")]
+pub use robots_handler::*;
 #[cfg(feature = "ssr")]
 pub use sitemap_handler::*;
