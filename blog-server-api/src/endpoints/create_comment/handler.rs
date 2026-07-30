@@ -1,4 +1,5 @@
 use blog_server_services::traits::author_service::Author;
+use validator::Validate;
 
 use super::request_content::CreateCommentRequestContent;
 use super::response_content_failure::CreateCommentContentFailure;
@@ -18,19 +19,9 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    if base_comment.content.is_empty() {
-        return Err(ValidationError {
-            reason: "comment should not be empty".to_owned(),
-        }
-        .into());
-    }
-
-    if base_comment.content.chars().count() > 500 {
-        return Err(ValidationError {
-            reason: "comment should not less then 500 symbols".to_owned(),
-        }
-        .into());
-    }
+    base_comment.validate().map_err(|e| ValidationError {
+        reason: e.to_string(),
+    })?;
 
     let _ = comment_service
         .create_comment(&From::from((author.id, base_comment)))

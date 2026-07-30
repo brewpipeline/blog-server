@@ -29,7 +29,7 @@ impl From<(u64, ECommonComment)> for BaseComment {
             author_id: value.0,
             created_at: time_utils::now_as_secs(),
             published: 1,
-            content: value.1.content,
+            content: html::clean_comment(&value.1.content),
         }
     }
 }

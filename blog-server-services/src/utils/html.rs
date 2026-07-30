@@ -26,6 +26,10 @@ pub fn clean(src: &str) -> String {
         .to_string()
 }
 
+pub fn clean_comment(src: &str) -> String {
+    ammonia::Builder::default().clean(src).to_string()
+}
+
 pub fn to_plain(src: &str) -> String {
     html2text::from_read(src.as_bytes(), usize::MAX)
 }
@@ -41,6 +45,26 @@ mod tests {
         assert!(!cleaned.contains("script"));
         assert!(cleaned.contains("<video"));
         assert!(cleaned.contains("article-img"));
+    }
+
+    #[test]
+    fn clean_comment_keeps_basic_markup() {
+        let cleaned = clean_comment("<p>keep <b>bold</b> and <i>italic</i></p>");
+        assert_eq!(cleaned, "<p>keep <b>bold</b> and <i>italic</i></p>");
+    }
+
+    #[test]
+    fn clean_comment_drops_what_clean_allows_for_posts() {
+        for input in [
+            "<div style=\"background:url(javascript:alert(1))\">x</div>",
+            "<iframe src=\"https://example.com\"></iframe>",
+            "<video controls src=\"v.mp4\"></video>",
+        ] {
+            let cleaned = clean_comment(input);
+            assert!(!cleaned.contains("style="), "style survived: {cleaned}");
+            assert!(!cleaned.contains("<iframe"), "iframe survived: {cleaned}");
+            assert!(!cleaned.contains("<video"), "video survived: {cleaned}");
+        }
     }
 
     #[test]
