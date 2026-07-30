@@ -246,10 +246,9 @@ impl RbatisPostService {
     #[py_sql(
         "
         SELECT \
-            post.*,
+            post.*
         if search_query != null:
-            ts_rank_cd(textsearch, query) AS rank,
-        COUNT(*) OVER() AS total_count \
+            , ts_rank_cd(textsearch, query) AS rank
         FROM post
         if tag_id != null:
             JOIN post_tag ON post.id = post_tag.post_id
@@ -284,7 +283,41 @@ impl RbatisPostService {
         ts_config: &str,
         offset: &u64,
         limit: &u64,
-    ) -> rbatis::Result<Vec<PostAndTotalCount>> {
+    ) -> rbatis::Result<Vec<Post>> {
+        impled!()
+    }
+
+    #[py_sql(
+        "
+        SELECT COUNT(1) \
+        FROM post
+        if tag_id != null:
+            JOIN post_tag ON post.id = post_tag.post_id
+        if search_query != null:
+            , plainto_tsquery(#{ts_config}::regconfig, LOWER(#{search_query})) query \
+            , to_tsvector(#{ts_config}::regconfig, LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content)) textsearch
+        where:
+            if search_query != null:
+                and textsearch @@ query
+            if author_id != null:
+                and post.author_id = #{author_id}
+            if tag_id != null:
+                and post_tag.tag_id = #{tag_id}
+            if publish_type != null:
+                and post.publish_type = #{publish_type}
+            if lang != '':
+                and (post.lang = #{lang} OR post.lang IS NULL)
+    "
+    )]
+    async fn count_posts(
+        rb: &RBatis,
+        search_query: Option<&String>,
+        author_id: Option<&u64>,
+        tag_id: Option<&u64>,
+        publish_type: Option<&PublishType>,
+        lang: &str,
+        ts_config: &str,
+    ) -> rbatis::Result<u64> {
         impled!()
     }
 
@@ -332,14 +365,6 @@ impl RbatisPostService {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-struct PostAndTotalCount {
-    #[serde(flatten)]
-    pub origin: Post,
-    pub total_count: u64,
-}
-
 #[async_trait]
 impl PostService for RbatisPostService {
     async fn posts<'q, 'a, 't, 'p, 'o, 'l>(
@@ -347,28 +372,30 @@ impl PostService for RbatisPostService {
         query: PostsQuery<'q, 'a, 't, 'p, 'o, 'l>,
     ) -> DResult<PostsQueryAnswer> {
         let lang = BasePost::current_lang().unwrap_or_default();
+        let ts_config = BasePost::current_text_search_config();
 
-        let posts_with_total_count = RbatisPostService::select_posts(
-            &self.rb,
-            query.search_query,
-            query.author_id,
-            query.tag_id,
-            query.publish_type,
-            &lang,
-            BasePost::current_text_search_config(),
-            query.offset,
-            query.limit,
-        )
-        .await?;
-
-        let total_count = posts_with_total_count
-            .first()
-            .map(|p| p.total_count)
-            .unwrap_or(0);
-        let posts = posts_with_total_count
-            .into_iter()
-            .map(|p| p.origin)
-            .collect();
+        let (posts, total_count) = tokio::try_join!(
+            RbatisPostService::select_posts(
+                &self.rb,
+                query.search_query,
+                query.author_id,
+                query.tag_id,
+                query.publish_type,
+                &lang,
+                ts_config,
+                query.offset,
+                query.limit,
+            ),
+            RbatisPostService::count_posts(
+                &self.rb,
+                query.search_query,
+                query.author_id,
+                query.tag_id,
+                query.publish_type,
+                &lang,
+                ts_config,
+            ),
+        )?;
 
         let posts_with_tags = self.saturate_posts_with_tags(posts).await?;
 
