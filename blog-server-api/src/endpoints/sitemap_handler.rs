@@ -37,7 +37,6 @@ pub async fn sitemap_handler<Extensions: Resolve<Arc<dyn PostService>>>(
         FixedOffset::east_opt(0).unwrap(),
     );
 
-    // Static listing pages are otherwise absent from the sitemap.
     let mut urls = vec![
         Url::builder(format!("{site_url}/", site_url = &*crate::SITE_URL))
             .last_modified(now)
