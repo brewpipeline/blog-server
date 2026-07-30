@@ -67,7 +67,7 @@ impl PostTag {
     "
     )]
     async fn delete_by_post_id_and_tag_ids(
-        rb: &RBatis,
+        rb: &mut RBatisTxExecutorGuard,
         post_id: u64,
         tag_ids: Vec<u64>,
     ) -> rbatis::Result<ExecResult> {
@@ -505,7 +505,14 @@ impl PostService for RbatisPostService {
             set
         });
 
-        let existing_tags_map = PostTag::select_all_by_post_id(&mut self.rb.clone(), post_id)
+        let tx = self.rb.acquire_begin().await?;
+        let mut tx = tx.defer_async(|tx| async move {
+            if !tx.done() {
+                let _ = tx.rollback().await;
+            }
+        });
+
+        let existing_tags_map = PostTag::select_all_by_post_id(&tx, post_id)
             .await?
             .into_iter()
             .fold(HashSet::new(), |mut set, post_tag| {
@@ -527,12 +534,13 @@ impl PostService for RbatisPostService {
             .collect();
 
         if !to_insert.is_empty() {
-            PostTag::insert_batch(&mut self.rb.clone(), &to_insert, to_insert.len() as u64).await?;
+            PostTag::insert_batch(&tx, &to_insert, to_insert.len() as u64).await?;
         }
         if !to_delete.is_empty() {
-            PostTag::delete_by_post_id_and_tag_ids(&self.rb, *post_id, to_delete).await?;
+            PostTag::delete_by_post_id_and_tag_ids(&mut tx, *post_id, to_delete).await?;
         }
 
+        tx.commit().await?;
         Ok(())
     }
 }
