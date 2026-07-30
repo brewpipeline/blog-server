@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::traits::comment_service::{BaseComment, Comment, CommentService};
 use rbatis::rbatis::RBatis;
+use rbatis::rbdc::db::ExecResult;
 use screw_components::dyn_result::DResult;
 
 pub fn create_rbatis_comment_service(rb: RBatis) -> Arc<dyn CommentService> {
@@ -49,7 +50,7 @@ impl Comment {
         WHERE id = #{id}
     "
     )]
-    async fn mark_deleted_by_id(rb: &RBatis, id: &u64) -> rbatis::Result<()> {
+    async fn mark_deleted_by_id(rb: &RBatis, id: &u64) -> rbatis::Result<ExecResult> {
         impled!()
     }
 }
