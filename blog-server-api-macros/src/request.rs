@@ -119,15 +119,21 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 bounds.push(quote! { crate::extensions::Resolve<#ty> });
                 quote! { origin_content.extensions.resolve() }
             }
-            Source::Data => {
-                let Some(inner) = inner_of(ty, "DResult") else {
-                    return syn::Error::new_spanned(field, "a data field must be a `DResult<T>`")
-                        .to_compile_error()
-                        .into();
-                };
-                data_type = Some(inner);
-                quote! { origin_content.data_result }
-            }
+            Source::Data => match inner_of(ty, "DResult") {
+                Some(inner) => {
+                    data_type = Some(inner);
+                    quote! { origin_content.data_result }
+                }
+                None => {
+                    data_type = Some(ty.clone());
+                    fallible = true;
+                    quote! {
+                        origin_content
+                            .data_result
+                            .map_err(crate::utils::body_rejection::BodyRejection)?
+                    }
+                }
+            },
             Source::Path(key) => {
                 let segment = quote! {
                     origin_content.path.get(#key).map(|n| n.to_owned()).unwrap_or_default()

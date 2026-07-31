@@ -10,15 +10,11 @@ pub async fn http_handler(
     (
         author,
         CreateCommentRequestContent {
-            new_comment_data,
+            new_comment_data: base_comment,
             comment_service,
         },
     ): (Author, CreateCommentRequestContent),
 ) -> Result<CreateCommentContentSuccess, CreateCommentContentFailure> {
-    let base_comment = new_comment_data.map_err(|e| ValidationError {
-        reason: e.to_string(),
-    })?;
-
     base_comment.validate().map_err(|e| ValidationError {
         reason: e.to_string(),
     })?;

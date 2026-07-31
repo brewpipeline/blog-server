@@ -39,9 +39,7 @@ pub async fn http_handler(
         photo_url,
         auth_date,
         hash,
-    } = login_telegram_question.map_err(|e| ParamsDecodeError {
-        reason: e.to_string(),
-    })?;
+    } = login_telegram_question;
 
     let secret_key = sha256(crate::TELEGRAM_BOT_TOKEN.as_str());
     let check_string = {

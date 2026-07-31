@@ -12,17 +12,13 @@ pub async fn http_handler(
     (
         author,
         CreatePostRequestContent {
-            new_post_data,
+            new_post_data: base_post,
             post_service,
             entity_post_service,
             new_post_service,
         },
     ): (Author, CreatePostRequestContent),
 ) -> Result<CreatePostContentSuccess, CreatePostContentFailure> {
-    let base_post = new_post_data.map_err(|e| ValidationError {
-        reason: e.to_string(),
-    })?;
-
     if let Some(err) = base_post.validate().err() {
         return Err(ValidationError {
             reason: err.to_string(),

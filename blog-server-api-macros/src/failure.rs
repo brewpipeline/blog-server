@@ -6,6 +6,7 @@ struct Spec {
     auth: bool,
     database: bool,
     incorrect_id: bool,
+    body: bool,
     status: Option<Ident>,
     reason: Option<String>,
     debug_reason: Option<String>,
@@ -17,6 +18,7 @@ impl Spec {
             auth: false,
             database: false,
             incorrect_id: false,
+            body: false,
             status: None,
             reason: None,
             debug_reason: None,
@@ -83,8 +85,14 @@ fn parse_spec(variant: &Variant) -> syn::Result<Spec> {
                         Some("database error: {reason}"),
                     )
                 }
-                "validation" => spec.sugar("BAD_REQUEST", "validation error: {reason}", None),
-                "params" => spec.sugar("BAD_REQUEST", "params error: {reason}", None),
+                "validation" => {
+                    spec.body = true;
+                    spec.sugar("BAD_REQUEST", "validation error: {reason}", None)
+                }
+                "params" => {
+                    spec.body = true;
+                    spec.sugar("BAD_REQUEST", "params error: {reason}", None)
+                }
                 "token" => spec.sugar(
                     "INTERNAL_SERVER_ERROR",
                     "internal token generating error",
@@ -152,6 +160,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let mut auth_variant = None;
     let mut database_variant = None;
     let mut incorrect_id_variant = None;
+    let mut body_variant: Option<(Ident, Ident)> = None;
 
     for variant in &data.variants {
         let spec = match parse_spec(variant) {
@@ -181,17 +190,29 @@ pub fn derive(input: TokenStream) -> TokenStream {
             Self::#variant_name #ignore => #identifier
         });
 
-        if spec.database || spec.incorrect_id {
-            match single_named_field(variant) {
-                Ok(field_name) => {
-                    let target = (variant_name.clone(), field_name);
-                    if spec.database {
-                        database_variant = Some(target);
-                    } else {
-                        incorrect_id_variant = Some(target);
-                    }
-                }
+        if spec.database || spec.incorrect_id || spec.body {
+            let field_name = match single_named_field(variant) {
+                Ok(field_name) => field_name,
                 Err(error) => return error.to_compile_error().into(),
+            };
+            let target = (variant_name.clone(), field_name);
+            if spec.database {
+                database_variant = Some(target);
+            } else if spec.incorrect_id {
+                incorrect_id_variant = Some(target);
+            } else {
+                if let Some((existing, _)) = &body_variant {
+                    return syn::Error::new_spanned(
+                        variant,
+                        format!(
+                            "`validation` and `params` both receive a rejected body, so only one \
+                             of them may appear; `{existing}` already claimed it"
+                        ),
+                    )
+                    .to_compile_error()
+                    .into();
+                }
+                body_variant = Some(target);
             }
         }
 
@@ -244,6 +265,16 @@ pub fn derive(input: TokenStream) -> TokenStream {
         }
     });
 
+    let from_body = body_variant.map(|(variant_name, field_name)| {
+        quote! {
+            impl From<crate::utils::body_rejection::BodyRejection> for #name {
+                fn from(value: crate::utils::body_rejection::BodyRejection) -> Self {
+                    Self::#variant_name { #field_name: value.0.to_string() }
+                }
+            }
+        }
+    });
+
     let from_incorrect_id = incorrect_id_variant.map(|(variant_name, field_name)| {
         quote! {
             impl From<std::num::ParseIntError> for #name {
@@ -273,6 +304,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
         #from_auth
         #from_database
         #from_incorrect_id
+        #from_body
     }
     .into()
 }

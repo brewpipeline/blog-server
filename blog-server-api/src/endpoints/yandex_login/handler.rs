@@ -33,9 +33,7 @@ pub async fn http_handler(
         access_token,
         token_type: _,
         expires_in: _,
-    } = login_yandex_question.map_err(|e| ParamsDecodeError {
-        reason: e.to_string(),
-    })?;
+    } = login_yandex_question;
 
     let yandex_login_response = reqwest::Client::new()
         .get("https://login.yandex.ru/info")

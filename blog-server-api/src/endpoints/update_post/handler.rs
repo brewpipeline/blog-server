@@ -13,7 +13,7 @@ pub async fn http_handler(
         author,
         UpdatePostRequestContent {
             id,
-            updated_post_data,
+            updated_post_data: base_post,
             post_service,
             entity_post_service,
             new_post_service,
@@ -33,10 +33,6 @@ pub async fn http_handler(
     if existing_post.base.publish_type.is_published() && author.base.editor == 0 {
         return Err(EditingForbidden);
     }
-
-    let base_post = updated_post_data.map_err(|e| ValidationError {
-        reason: e.to_string(),
-    })?;
 
     if let Some(err) = base_post.validate().err() {
         return Err(ValidationError {
