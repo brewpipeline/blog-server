@@ -2,7 +2,6 @@ use blog_generic::entities::{CommentsContainer, TotalOffsetLimitContainer};
 
 use super::request_content::CommentsRequestContent;
 use super::response_content_failure::CommentsResponseContentFailure;
-use super::response_content_failure::CommentsResponseContentFailure::*;
 use super::response_content_success::CommentsResponseContentSuccess;
 
 pub async fn http_handler(
@@ -14,9 +13,7 @@ pub async fn http_handler(
         entity_comment_service,
     },): (CommentsRequestContent,),
 ) -> Result<CommentsResponseContentSuccess, CommentsResponseContentFailure> {
-    let post_id = post_id.parse::<u64>().map_err(|e| IncorrectIdFormat {
-        reason: e.to_string(),
-    })?;
+    let post_id = post_id?;
 
     let offset = offset.unwrap_or(0).max(0);
     let limit = limit.unwrap_or(200).max(0).min(200);

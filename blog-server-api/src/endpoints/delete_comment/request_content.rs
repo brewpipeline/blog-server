@@ -5,7 +5,7 @@ use std::sync::Arc;
 #[derive(ApiRequest)]
 pub struct DeleteCommentRequestContent {
     #[request(path = "id")]
-    pub(super) id: String,
+    pub(super) id: Result<u64, std::num::ParseIntError>,
     #[request(extension)]
     pub(super) comment_service: Arc<dyn CommentService>,
 }

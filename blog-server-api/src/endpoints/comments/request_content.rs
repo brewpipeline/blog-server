@@ -6,7 +6,7 @@ use std::sync::Arc;
 #[derive(ApiRequest)]
 pub struct CommentsRequestContent {
     #[request(path = "post_id")]
-    pub(super) post_id: String,
+    pub(super) post_id: Result<u64, std::num::ParseIntError>,
     #[request(query = "offset")]
     pub(super) offset: Option<u64>,
     #[request(query = "limit")]

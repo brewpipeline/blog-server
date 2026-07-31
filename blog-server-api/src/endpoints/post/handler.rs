@@ -20,9 +20,7 @@ pub async fn http_handler(
         },
     ): (Option<Author>, PostRequestContent),
 ) -> Result<PostResponseContentSuccess, PostResponseContentFailure> {
-    let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
-        reason: e.to_string(),
-    })?;
+    let id = id?;
 
     let post = post_service.post_by_id(&id).await?.ok_or(NotFound)?;
 
@@ -47,14 +45,14 @@ pub async fn http_handler(
 
 #[cfg_attr(not(feature = "ssr"), allow(dead_code))]
 pub async fn direct_handler(
-    id: String,
+    id: u64,
     post_service: Arc<dyn PostService>,
     entity_post_service: Arc<dyn EntityPostService>,
 ) -> Option<PostContainer> {
     http_handler((
         None,
         PostRequestContent {
-            id,
+            id: Ok(id),
             post_service,
             entity_post_service,
         },

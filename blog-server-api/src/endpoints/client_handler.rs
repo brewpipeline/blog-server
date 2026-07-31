@@ -183,7 +183,7 @@ where
         Some(Route::Post { slug, id }) => {
             let content = encoded(
                 async {
-                    post::direct_handler(id.to_string(), ext.resolve(), ext.resolve())
+                    post::direct_handler(id, ext.resolve(), ext.resolve())
                         .await
                         .filter(|c| c.post.id == id && c.post.slug == slug)
                 },
@@ -199,7 +199,7 @@ where
         Some(Route::Tag { slug, id }) => {
             let content = encoded(
                 async {
-                    tag::direct_handler(id.to_string(), ext.resolve())
+                    tag::direct_handler(id, ext.resolve())
                         .await
                         .filter(|c| c.tag.id == id && c.tag.slug == slug)
                 },

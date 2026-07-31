@@ -109,12 +109,18 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 data_type = Some(inner);
                 quote! { origin_content.data_result }
             }
-            Source::Path(key) => match inner_of(ty, "Option") {
-                Some(_) => quote! { origin_content.path.get(#key).map(|n| n.to_owned()) },
-                None => quote! {
+            Source::Path(key) => {
+                let segment = quote! {
                     origin_content.path.get(#key).map(|n| n.to_owned()).unwrap_or_default()
-                },
-            },
+                };
+                if inner_of(ty, "Result").is_some() {
+                    quote! { #segment.parse() }
+                } else if inner_of(ty, "Option").is_some() {
+                    quote! { origin_content.path.get(#key).map(|n| n.to_owned()) }
+                } else {
+                    segment
+                }
+            }
             Source::Query(key) => {
                 let inner = inner_of(ty, "Option");
                 match inner {

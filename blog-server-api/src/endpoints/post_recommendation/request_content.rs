@@ -7,7 +7,7 @@ use std::sync::Arc;
 #[derive(ApiRequest)]
 pub struct PostRecommendationRequestContent {
     #[request(path = "id")]
-    pub(super) id: String,
+    pub(super) id: Result<u64, std::num::ParseIntError>,
     #[request(extension)]
     pub(super) post_service: Arc<dyn PostService>,
     #[request(extension)]

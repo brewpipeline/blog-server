@@ -26,9 +26,7 @@ async fn http_handler(
     }: AuthorSubscribeRequestContent,
     subscribe: u8,
 ) -> Result<AuthorSubscribeRequestContentSuccess, AuthorSubscribeResponseContentFailure> {
-    let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
-        reason: e.to_string(),
-    })?;
+    let id = id?;
 
     let is_same_user = logged_in_author.id == id;
     let is_user_admin = logged_in_author.base.editor == 1;

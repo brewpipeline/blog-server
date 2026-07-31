@@ -9,7 +9,7 @@ use std::sync::Arc;
 #[derive(ApiRequest)]
 pub struct UpdatePostRequestContent {
     #[request(path = "id")]
-    pub(super) id: String,
+    pub(super) id: Result<u64, std::num::ParseIntError>,
     #[request(data)]
     pub(super) updated_post_data: DResult<CommonPost>,
     #[request(extension)]

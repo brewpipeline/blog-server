@@ -6,7 +6,7 @@ use std::sync::Arc;
 #[derive(ApiRequest)]
 pub struct AuthorSubscribeRequestContent {
     #[request(path = "id")]
-    pub(super) id: String,
+    pub(super) id: Result<u64, std::num::ParseIntError>,
     #[request(extension)]
     pub(super) social_service: Arc<dyn SocialService>,
     #[request(extension)]

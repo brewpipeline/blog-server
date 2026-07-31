@@ -5,6 +5,7 @@ use syn::{Data, DeriveInput, Fields, Ident, LitStr, Variant, parse_macro_input};
 struct Spec {
     auth: bool,
     database: bool,
+    incorrect_id: bool,
     status: Option<Ident>,
     reason: Option<String>,
     debug_reason: Option<String>,
@@ -15,6 +16,7 @@ impl Spec {
         Self {
             auth: false,
             database: false,
+            incorrect_id: false,
             status: None,
             reason: None,
             debug_reason: None,
@@ -37,6 +39,23 @@ fn upper_snake(name: &str) -> String {
         out.extend(character.to_uppercase());
     }
     out
+}
+
+fn single_named_field(variant: &Variant) -> syn::Result<Ident> {
+    let Fields::Named(named) = &variant.fields else {
+        return Err(syn::Error::new_spanned(
+            variant,
+            "this shorthand needs a struct variant with one named field holding the reason",
+        ));
+    };
+    let mut fields = named.named.iter();
+    match (fields.next(), fields.next()) {
+        (Some(field), None) => Ok(field.ident.clone().unwrap()),
+        _ => Err(syn::Error::new_spanned(
+            variant,
+            "this shorthand needs exactly one named field",
+        )),
+    }
 }
 
 fn parse_spec(variant: &Variant) -> syn::Result<Spec> {
@@ -81,6 +100,7 @@ fn parse_spec(variant: &Variant) -> syn::Result<Spec> {
                 }
                 "incorrect_id" => {
                     let entity: LitStr = meta.value()?.parse()?;
+                    spec.incorrect_id = true;
                     spec.sugar(
                         "BAD_REQUEST",
                         &format!(
@@ -131,6 +151,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let mut reason_arms = Vec::new();
     let mut auth_variant = None;
     let mut database_variant = None;
+    let mut incorrect_id_variant = None;
 
     for variant in &data.variants {
         let spec = match parse_spec(variant) {
@@ -160,28 +181,17 @@ pub fn derive(input: TokenStream) -> TokenStream {
             Self::#variant_name #ignore => #identifier
         });
 
-        if spec.database {
-            let Fields::Named(named) = &variant.fields else {
-                return syn::Error::new_spanned(
-                    variant,
-                    "a database variant needs a single named field holding the reason",
-                )
-                .to_compile_error()
-                .into();
-            };
-            let mut fields = named.named.iter();
-            match (fields.next(), fields.next()) {
-                (Some(field), None) => {
-                    database_variant = Some((variant_name.clone(), field.ident.clone().unwrap()))
+        if spec.database || spec.incorrect_id {
+            match single_named_field(variant) {
+                Ok(field_name) => {
+                    let target = (variant_name.clone(), field_name);
+                    if spec.database {
+                        database_variant = Some(target);
+                    } else {
+                        incorrect_id_variant = Some(target);
+                    }
                 }
-                _ => {
-                    return syn::Error::new_spanned(
-                        variant,
-                        "a database variant needs exactly one named field",
-                    )
-                    .to_compile_error()
-                    .into();
-                }
+                Err(error) => return error.to_compile_error().into(),
             }
         }
 
@@ -234,6 +244,16 @@ pub fn derive(input: TokenStream) -> TokenStream {
         }
     });
 
+    let from_incorrect_id = incorrect_id_variant.map(|(variant_name, field_name)| {
+        quote! {
+            impl From<std::num::ParseIntError> for #name {
+                fn from(value: std::num::ParseIntError) -> Self {
+                    Self::#variant_name { #field_name: value.to_string() }
+                }
+            }
+        }
+    });
+
     quote! {
         impl screw_api::response::ApiResponseContentBase for #name {
             fn status_code(&self) -> hyper::StatusCode {
@@ -252,6 +272,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
         #from_auth
         #from_database
+        #from_incorrect_id
     }
     .into()
 }

@@ -10,9 +10,7 @@ pub async fn http_handler(
         entity_post_service,
     },): (PostRecommendationRequestContent,),
 ) -> Result<PostRecommendationResponseContentSuccess, PostRecommendationResponseContentFailure> {
-    let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
-        reason: e.to_string(),
-    })?;
+    let id = id?;
 
     let post = post_service
         .random_recommended_post(&id)

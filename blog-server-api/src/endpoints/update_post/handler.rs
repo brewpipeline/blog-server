@@ -20,9 +20,7 @@ pub async fn http_handler(
         },
     ): (Author, UpdatePostRequestContent),
 ) -> Result<UpdatePostContentSuccess, UpdatePostContentFailure> {
-    let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
-        reason: e.to_string(),
-    })?;
+    let id = id?;
 
     let existing_post = post_service.post_by_id(&id).await?.ok_or(NotFound)?;
 
