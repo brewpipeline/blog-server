@@ -6,6 +6,7 @@ use blog_server_services::traits::{
 };
 use hyper::header::{ACCEPT_LANGUAGE, USER_AGENT};
 use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
+use screw_api::response::ApiResponseContentFailure;
 use screw_components::dyn_result::DResult;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -18,15 +19,18 @@ pub struct ChatGptRequestContent {
     pub(super) chat_session_id: DResult<Uuid>,
 }
 
-impl<Extensions> ApiRequestContent<Extensions> for ChatGptRequestContent
+impl<Extensions, Failure> ApiRequestContent<Extensions, Failure> for ChatGptRequestContent
 where
     Extensions: Resolve<Arc<dyn PostService>>
         + Resolve<Arc<dyn EntityPostService>>
         + Resolve<Arc<dyn AuthorService>>,
+    Failure: ApiResponseContentFailure,
 {
     type Data = ChatQuestion;
 
-    fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
+    fn create(
+        origin_content: ApiRequestOriginContent<Self::Data, Extensions>,
+    ) -> Result<Self, Failure> {
         let headers = &origin_content.http_parts.headers;
         let ip = headers
             .get("X-Forwarded-For")
@@ -54,12 +58,12 @@ where
             },
             None => Err("Chat-Session-Id header is required".into()),
         };
-        Self {
+        Ok(Self {
             question: origin_content.data_result,
             post_service: origin_content.extensions.resolve(),
             entity_post_service: origin_content.extensions.resolve(),
             session_key: format!("{}|{}|{}", ip, ua, lang),
             chat_session_id,
-        }
+        })
     }
 }

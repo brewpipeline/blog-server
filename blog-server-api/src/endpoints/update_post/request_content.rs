@@ -7,9 +7,10 @@ use screw_components::dyn_result::DResult;
 use std::sync::Arc;
 
 #[derive(ApiRequest)]
+#[request(failure = super::response_content_failure::UpdatePostContentFailure)]
 pub struct UpdatePostRequestContent {
     #[request(path = "id")]
-    pub(super) id: Result<u64, std::num::ParseIntError>,
+    pub(super) id: u64,
     #[request(data)]
     pub(super) updated_post_data: DResult<CommonPost>,
     #[request(extension)]

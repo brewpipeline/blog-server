@@ -15,8 +15,6 @@ pub async fn http_handler(
         },
     ): (Author, DeletePostRequestContent),
 ) -> Result<DeletePostResponseContentSuccess, DeletePostResponseContentFailure> {
-    let id = id?;
-
     let post = post_service.post_by_id(&id).await?.ok_or(NotFound)?;
 
     if !(post.base.author_id == author.id || author.base.editor == 1) {

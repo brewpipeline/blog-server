@@ -11,8 +11,6 @@ use super::response_content_success::TagResponseContentSuccess;
 pub async fn http_handler(
     (TagRequestContent { id, post_service },): (TagRequestContent,),
 ) -> Result<TagResponseContentSuccess, TagResponseContentFailure> {
-    let id = id?;
-
     let tag = post_service.tag_by_id(&id).await?.ok_or(NotFound)?;
 
     Ok(tag.into())
@@ -20,11 +18,8 @@ pub async fn http_handler(
 
 #[cfg_attr(not(feature = "ssr"), allow(dead_code))]
 pub async fn direct_handler(id: u64, post_service: Arc<dyn PostService>) -> Option<TagContainer> {
-    http_handler((TagRequestContent {
-        id: Ok(id),
-        post_service,
-    },))
-    .await
-    .ok()
-    .map(|s| s.container)
+    http_handler((TagRequestContent { id, post_service },))
+        .await
+        .ok()
+        .map(|s| s.container)
 }

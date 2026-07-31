@@ -88,22 +88,26 @@ pub struct AuthApiRequestContent<Content> {
     inner: Content,
 }
 
-impl<Content, Extensions> ApiRequestContent<Extensions> for AuthApiRequestContent<Content>
+impl<Content, Extensions, Failure> ApiRequestContent<Extensions, Failure>
+    for AuthApiRequestContent<Content>
 where
-    Content: ApiRequestContent<Extensions>,
+    Content: ApiRequestContent<Extensions, Failure>,
     Extensions: Resolve<Arc<dyn AuthorService>>,
+    Failure: ApiResponseContentFailure,
 {
     type Data = Content::Data;
 
-    fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
+    fn create(
+        origin_content: ApiRequestOriginContent<Self::Data, Extensions>,
+    ) -> Result<Self, Failure> {
         let auth_author_future: DFuture<Result<Author, auth::Error>> = Box::pin(auth::author(
             &origin_content.http_parts,
             origin_content.extensions.resolve(),
         ));
-        Self {
+        Ok(Self {
             auth_author_future,
-            inner: Content::create(origin_content),
-        }
+            inner: Content::create(origin_content)?,
+        })
     }
 }
 
@@ -134,8 +138,8 @@ impl<Content, Extensions, Success, Failure>
     Middleware<AuthorizedApiRequest<Content, Extensions>, ApiResponse<Success, Failure>>
     for AuthApiMiddleware
 where
-    Content: ApiRequestContent<Extensions> + Send + 'static,
-    <Content as ApiRequestContent<Extensions>>::Data: Sync + Send + 'static,
+    Content: ApiRequestContent<Extensions, Failure> + Send + 'static,
+    <Content as ApiRequestContent<Extensions, Failure>>::Data: Sync + Send + 'static,
     Extensions: Resolve<Arc<dyn AuthorService>> + Sync + Send + 'static,
     Success: ApiResponseContentSuccess + Send + 'static,
     Failure: ApiResponseContentFailure + From<AuthRejection> + Send + 'static,
@@ -192,8 +196,8 @@ impl<Content, Extensions, Success, Failure>
     Middleware<MaybeAuthorizedApiRequest<Content, Extensions>, ApiResponse<Success, Failure>>
     for OptionalAuthApiMiddleware
 where
-    Content: ApiRequestContent<Extensions> + Send + 'static,
-    <Content as ApiRequestContent<Extensions>>::Data: Sync + Send + 'static,
+    Content: ApiRequestContent<Extensions, Failure> + Send + 'static,
+    <Content as ApiRequestContent<Extensions, Failure>>::Data: Sync + Send + 'static,
     Extensions: Resolve<Arc<dyn AuthorService>> + Sync + Send + 'static,
     Success: ApiResponseContentSuccess + Send + 'static,
     Failure: ApiResponseContentFailure + Send + 'static,

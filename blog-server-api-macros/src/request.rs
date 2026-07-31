@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{Data, DeriveInput, Fields, LitStr, parse_macro_input};
+use syn::{Data, DeriveInput, Fields, LitStr, Path, parse_macro_input};
 
 enum Source {
     Extension,
@@ -50,9 +50,28 @@ pub fn derive(input: TokenStream) -> TokenStream {
         }
     };
 
+    let mut declared_failure: Option<Path> = None;
+    for attr in &input.attrs {
+        if !attr.path().is_ident("request") {
+            continue;
+        }
+        let parsed = attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("failure") {
+                declared_failure = Some(meta.value()?.parse()?);
+                Ok(())
+            } else {
+                Err(meta.error("the only struct level option is `failure = ...`"))
+            }
+        });
+        if let Err(error) = parsed {
+            return error.to_compile_error().into();
+        }
+    }
+
     let mut assignments = Vec::new();
     let mut bounds = Vec::new();
     let mut data_type = None;
+    let mut fallible = false;
 
     for field in &fields {
         let field_name = field.ident.as_ref().unwrap();
@@ -113,12 +132,13 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 let segment = quote! {
                     origin_content.path.get(#key).map(|n| n.to_owned()).unwrap_or_default()
                 };
-                if inner_of(ty, "Result").is_some() {
-                    quote! { #segment.parse() }
-                } else if inner_of(ty, "Option").is_some() {
+                if inner_of(ty, "Option").is_some() {
                     quote! { origin_content.path.get(#key).map(|n| n.to_owned()) }
-                } else {
+                } else if is_string(ty) {
                     segment
+                } else {
+                    fallible = true;
+                    quote! { #segment.parse()? }
                 }
             }
             Source::Query(key) => {
@@ -145,18 +165,40 @@ pub fn derive(input: TokenStream) -> TokenStream {
     }
 
     let data_type = data_type.map(|ty| quote! { #ty }).unwrap_or(quote! { () });
-    let where_clause = (!bounds.is_empty()).then(|| quote! { where Extensions: #(#bounds)+* });
+
+    let (generics, failure, mut predicates) = match (fallible, declared_failure) {
+        (true, Some(failure)) => (quote! { <Extensions> }, quote! { #failure }, Vec::new()),
+        (true, None) => {
+            return syn::Error::new_spanned(
+                name,
+                "a content with a parsed path field needs #[request(failure = ...)] naming the \
+                 failure type its endpoint answers with",
+            )
+            .to_compile_error()
+            .into();
+        }
+        (false, Some(failure)) => (quote! { <Extensions> }, quote! { #failure }, Vec::new()),
+        (false, None) => (
+            quote! { <Extensions, Failure> },
+            quote! { Failure },
+            vec![quote! { Failure: screw_api::response::ApiResponseContentFailure }],
+        ),
+    };
+    if !bounds.is_empty() {
+        predicates.push(quote! { Extensions: #(#bounds)+* });
+    }
+    let where_clause = (!predicates.is_empty()).then(|| quote! { where #(#predicates),* });
 
     quote! {
-        impl<Extensions> screw_api::request::ApiRequestContent<Extensions> for #name
+        impl #generics screw_api::request::ApiRequestContent<Extensions, #failure> for #name
         #where_clause
         {
             type Data = #data_type;
 
             fn create(
                 origin_content: screw_api::request::ApiRequestOriginContent<Self::Data, Extensions>,
-            ) -> Self {
-                Self { #(#assignments),* }
+            ) -> Result<Self, #failure> {
+                Ok(Self { #(#assignments),* })
             }
         }
     }

@@ -20,8 +20,6 @@ pub async fn http_handler(
         },
     ): (Option<Author>, PostRequestContent),
 ) -> Result<PostResponseContentSuccess, PostResponseContentFailure> {
-    let id = id?;
-
     let post = post_service.post_by_id(&id).await?.ok_or(NotFound)?;
 
     if !post.base.publish_type.is_published() {
@@ -52,7 +50,7 @@ pub async fn direct_handler(
     http_handler((
         None,
         PostRequestContent {
-            id: Ok(id),
+            id,
             post_service,
             entity_post_service,
         },

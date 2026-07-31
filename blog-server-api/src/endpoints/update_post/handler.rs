@@ -20,8 +20,6 @@ pub async fn http_handler(
         },
     ): (Author, UpdatePostRequestContent),
 ) -> Result<UpdatePostContentSuccess, UpdatePostContentFailure> {
-    let id = id?;
-
     let existing_post = post_service.post_by_id(&id).await?.ok_or(NotFound)?;
 
     if !(existing_post.base.author_id == author.id || author.base.editor == 1) {

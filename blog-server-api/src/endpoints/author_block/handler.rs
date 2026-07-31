@@ -20,8 +20,6 @@ async fn http_handler(
     AuthorBlockRequestContent { id, author_service }: AuthorBlockRequestContent,
     is_blocked: u8,
 ) -> Result<AuthorBlockResponseContentSuccess, AuthorBlockResponseContentFailure> {
-    let id = id?;
-
     author_service
         .set_author_blocked_by_id(&id, &is_blocked)
         .await?;

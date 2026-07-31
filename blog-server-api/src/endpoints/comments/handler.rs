@@ -13,8 +13,6 @@ pub async fn http_handler(
         entity_comment_service,
     },): (CommentsRequestContent,),
 ) -> Result<CommentsResponseContentSuccess, CommentsResponseContentFailure> {
-    let post_id = post_id?;
-
     let offset = offset.unwrap_or(0).max(0);
     let limit = limit.unwrap_or(200).max(0).min(200);
 

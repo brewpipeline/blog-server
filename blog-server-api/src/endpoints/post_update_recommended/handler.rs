@@ -23,8 +23,6 @@ async fn http_handler(
     recommended: u8,
 ) -> Result<PostUpdateRecommendedResponseContentSuccess, PostUpdateRecommendedResponseContentFailure>
 {
-    let id = id?;
-
     post_service
         .set_post_recommended_by_id(&id, &recommended)
         .await?;

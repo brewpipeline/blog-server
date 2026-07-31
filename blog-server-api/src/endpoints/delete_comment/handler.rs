@@ -14,8 +14,6 @@ pub async fn http_handler(
         },
     ): (Author, DeleteCommentRequestContent),
 ) -> Result<DeleteCommentResponseContentSuccess, DeleteCommentResponseContentFailure> {
-    let id = id?;
-
     let comment = comment_service.comment_by_id(&id).await?.ok_or(NotFound)?;
 
     if !(comment.base.author_id == author.id || author.base.editor == 1) {
