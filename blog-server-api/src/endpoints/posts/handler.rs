@@ -87,20 +87,9 @@ async fn handler(
         .author_id(Option::from(&filter.author_id))
         .tag_id(Option::from(&filter.tag_id));
 
-    let PostsQueryAnswer { total_count, posts } =
-        post_service
-            .posts(posts_query)
-            .await
-            .map_err(|e| DatabaseError {
-                reason: e.to_string(),
-            })?;
+    let PostsQueryAnswer { total_count, posts } = post_service.posts(posts_query).await?;
 
-    let posts_entities = entity_post_service
-        .posts_entities(posts)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+    let posts_entities = entity_post_service.posts_entities(posts).await?;
 
     Ok(PostsContainer {
         posts: posts_entities,

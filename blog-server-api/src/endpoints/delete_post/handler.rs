@@ -19,13 +19,7 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    let post = post_service
-        .post_by_id(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
-        .ok_or(NotFound)?;
+    let post = post_service.post_by_id(&id).await?.ok_or(NotFound)?;
 
     if !(post.base.author_id == author.id || author.base.editor == 1) {
         return Err(if post.base.publish_type.is_published() {
@@ -39,19 +33,9 @@ pub async fn http_handler(
         return Err(EditingForbidden);
     }
 
-    comment_service
-        .delete_by_post_id(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+    comment_service.delete_by_post_id(&id).await?;
 
-    post_service
-        .delete_post_by_id(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+    post_service.delete_post_by_id(&id).await?;
 
     Ok(DeletePostResponseContentSuccess)
 }

@@ -26,20 +26,11 @@ pub async fn http_handler(
         comment_service.comments_count_by_post_id(&post_id),
     );
 
-    let comments = comments_result.map_err(|e| DatabaseError {
-        reason: e.to_string(),
-    })?;
+    let comments = comments_result?;
 
-    let total = total_result.map_err(|e| DatabaseError {
-        reason: e.to_string(),
-    })?;
+    let total = total_result?;
 
-    let comments_entities = entity_comment_service
-        .comments_entities(comments)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+    let comments_entities = entity_comment_service.comments_entities(comments).await?;
 
     Ok(CommentsContainer {
         comments: comments_entities,

@@ -24,13 +24,7 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    let existing_post = post_service
-        .post_by_id(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
-        .ok_or(NotFound)?;
+    let existing_post = post_service.post_by_id(&id).await?.ok_or(NotFound)?;
 
     if !(existing_post.base.author_id == author.id || author.base.editor == 1) {
         return Err(if existing_post.base.publish_type.is_published() {
@@ -71,41 +65,19 @@ pub async fn http_handler(
             &From::from((author.id, base_post)),
             &is_published_changed,
         )
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
-    let post_tags = post_service
-        .create_tags(tag_titles)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+    let post_tags = post_service.create_tags(tag_titles).await?;
 
-    post_service
-        .merge_post_tags(&id, post_tags)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+    post_service.merge_post_tags(&id, post_tags).await?;
 
-    let updated_post = post_service
-        .post_by_id(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
-        .ok_or(NotFound)?;
+    let updated_post = post_service.post_by_id(&id).await?.ok_or(NotFound)?;
 
     let is_visible_published = updated_post.base.publish_type == PublishType::Published;
 
     let updated_post_entity = entity_post_service
         .posts_entities(vec![updated_post])
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
+        .await?
         .remove(0);
 
     if !existing_post.base.publish_type.is_published() && is_visible_published {

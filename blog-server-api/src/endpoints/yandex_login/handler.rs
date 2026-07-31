@@ -74,10 +74,7 @@ pub async fn http_handler(
 
     let yandex_author = social_service
         .process_auth_by_id(&SocialId::YandexId(yandex_id), &yandex_base_minimal_author)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
     let token = auth::token(yandex_author).map_err(|e| TokenGeneratingError {
         reason: e.to_string(),

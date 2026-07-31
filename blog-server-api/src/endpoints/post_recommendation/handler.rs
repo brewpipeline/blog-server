@@ -16,18 +16,12 @@ pub async fn http_handler(
 
     let post = post_service
         .random_recommended_post(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
+        .await?
         .ok_or(NotFound {})?;
 
     let post_entity = entity_post_service
         .posts_entities(vec![post])
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
+        .await?
         .remove(0);
 
     Ok(post_entity.into())

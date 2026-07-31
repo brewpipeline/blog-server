@@ -20,10 +20,7 @@ pub async fn http_handler(
 
     let author = author_service
         .author_by_slug(&slug)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
+        .await?
         .ok_or(NotFound)?;
 
     Ok(author.into())

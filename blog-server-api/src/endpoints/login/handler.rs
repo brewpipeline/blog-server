@@ -30,10 +30,7 @@ pub async fn http_handler(
 
     let author = author_service
         .author_by_slug(&slug)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
+        .await?
         .ok_or(NotFound)?;
 
     let mut login_try_storage = LOGIN_TRY_STORAGE.lock().await;

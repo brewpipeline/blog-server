@@ -92,10 +92,7 @@ pub async fn http_handler(
 
     let telegram_author = social_service
         .process_auth_by_id(&SocialId::TelegramId(id), &telegram_base_minimal_author)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
     let token = auth::token(telegram_author).map_err(|e| TokenGeneratingError {
         reason: e.to_string(),

@@ -30,10 +30,7 @@ async fn http_handler(
 
     post_service
         .set_post_recommended_by_id(&id, &recommended)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
     Ok(PostUpdateRecommendedResponseContentSuccess)
 }

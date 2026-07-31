@@ -5,7 +5,6 @@ use blog_server_services::traits::author_service::AuthorService;
 
 use super::request_content::AuthorsRequestContent;
 use super::response_content_failure::AuthorsResponseContentFailure;
-use super::response_content_failure::AuthorsResponseContentFailure::*;
 use super::response_content_success::AuthorsResponseContentSuccess;
 
 pub async fn http_handler(
@@ -31,17 +30,9 @@ pub async fn http_handler(
         )
     };
 
-    let authors = authors_result
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
-        .into_iter()
-        .map(|a| a.into())
-        .collect();
+    let authors = authors_result?.into_iter().map(|a| a.into()).collect();
 
-    let total = total_result.map_err(|e| DatabaseError {
-        reason: e.to_string(),
-    })?;
+    let total = total_result?;
 
     Ok(AuthorsContainer {
         authors,

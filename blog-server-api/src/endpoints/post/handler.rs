@@ -24,13 +24,7 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    let post = post_service
-        .post_by_id(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
-        .ok_or(NotFound)?;
+    let post = post_service.post_by_id(&id).await?.ok_or(NotFound)?;
 
     if !post.base.publish_type.is_published() {
         let have_access = if let Some(author) = author {
@@ -45,10 +39,7 @@ pub async fn http_handler(
 
     let post_entity = entity_post_service
         .posts_entities(vec![post])
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
+        .await?
         .remove(0);
 
     Ok(post_entity.into())

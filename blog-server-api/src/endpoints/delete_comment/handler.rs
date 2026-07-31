@@ -18,24 +18,13 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    let comment = comment_service
-        .comment_by_id(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
-        .ok_or(NotFound)?;
+    let comment = comment_service.comment_by_id(&id).await?.ok_or(NotFound)?;
 
     if !(comment.base.author_id == author.id || author.base.editor == 1) {
         return Err(EditingForbidden);
     }
 
-    comment_service
-        .mark_deleted_by_id(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+    comment_service.mark_deleted_by_id(&id).await?;
 
     Ok(DeleteCommentResponseContentSuccess)
 }

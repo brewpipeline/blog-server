@@ -25,10 +25,7 @@ pub async fn http_handler(
 
     let _ = comment_service
         .create_comment(&From::from((author.id, base_comment)))
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
     Ok(CreateCommentContentSuccess)
 }

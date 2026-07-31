@@ -15,13 +15,7 @@ pub async fn http_handler(
         reason: e.to_string(),
     })?;
 
-    let tag = post_service
-        .tag_by_id(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
-        .ok_or(NotFound)?;
+    let tag = post_service.tag_by_id(&id).await?.ok_or(NotFound)?;
 
     Ok(tag.into())
 }

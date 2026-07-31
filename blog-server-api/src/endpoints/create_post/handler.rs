@@ -41,39 +41,22 @@ pub async fn http_handler(
 
     let inserted_id = post_service
         .create_post(&From::from((author.id, base_post)))
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
-    let post_tags = post_service
-        .create_tags(tag_titles)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+    let post_tags = post_service.create_tags(tag_titles).await?;
 
     post_service
         .merge_post_tags(&inserted_id, post_tags)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
     let created_post = post_service
         .post_by_id(&inserted_id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
+        .await?
         .ok_or(InsertFailed)?;
 
     let created_post_entity = entity_post_service
         .posts_entities(vec![created_post])
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
+        .await?
         .remove(0);
 
     if created_post_entity.publish_type == PublishType::Published {

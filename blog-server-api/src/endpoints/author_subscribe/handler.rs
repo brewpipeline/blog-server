@@ -37,20 +37,14 @@ async fn http_handler(
         (true, _) => logged_in_author,
         (false, true) => author_service
             .author_by_id(&id)
-            .await
-            .map_err(|e| DatabaseError {
-                reason: e.to_string(),
-            })?
+            .await?
             .ok_or_else(|| NotFound)?,
         (false, false) => Err(Forbidden)?,
     };
 
     social_service
         .set_subscribe_for_author(&subscriber_author, &subscribe)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
     Ok(AuthorSubscribeRequestContentSuccess)
 }

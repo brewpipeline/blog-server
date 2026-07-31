@@ -4,6 +4,7 @@ use syn::{Data, DeriveInput, Fields, Ident, LitStr, Variant, parse_macro_input};
 
 struct Spec {
     auth: bool,
+    database: bool,
     status: Option<Ident>,
     reason: Option<String>,
     debug_reason: Option<String>,
@@ -13,6 +14,7 @@ impl Spec {
     fn empty() -> Self {
         Self {
             auth: false,
+            database: false,
             status: None,
             reason: None,
             debug_reason: None,
@@ -54,11 +56,14 @@ fn parse_spec(variant: &Variant) -> syn::Result<Spec> {
                 .to_string();
             match key.as_str() {
                 "auth" => spec.auth = true,
-                "database" => spec.sugar(
-                    "INTERNAL_SERVER_ERROR",
-                    "internal database error",
-                    Some("database error: {reason}"),
-                ),
+                "database" => {
+                    spec.database = true;
+                    spec.sugar(
+                        "INTERNAL_SERVER_ERROR",
+                        "internal database error",
+                        Some("database error: {reason}"),
+                    )
+                }
                 "validation" => spec.sugar("BAD_REQUEST", "validation error: {reason}", None),
                 "params" => spec.sugar("BAD_REQUEST", "params error: {reason}", None),
                 "token" => spec.sugar(
@@ -125,6 +130,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let mut identifier_arms = Vec::new();
     let mut reason_arms = Vec::new();
     let mut auth_variant = None;
+    let mut database_variant = None;
 
     for variant in &data.variants {
         let spec = match parse_spec(variant) {
@@ -153,6 +159,31 @@ pub fn derive(input: TokenStream) -> TokenStream {
         identifier_arms.push(quote! {
             Self::#variant_name #ignore => #identifier
         });
+
+        if spec.database {
+            let Fields::Named(named) = &variant.fields else {
+                return syn::Error::new_spanned(
+                    variant,
+                    "a database variant needs a single named field holding the reason",
+                )
+                .to_compile_error()
+                .into();
+            };
+            let mut fields = named.named.iter();
+            match (fields.next(), fields.next()) {
+                (Some(field), None) => {
+                    database_variant = Some((variant_name.clone(), field.ident.clone().unwrap()))
+                }
+                _ => {
+                    return syn::Error::new_spanned(
+                        variant,
+                        "a database variant needs exactly one named field",
+                    )
+                    .to_compile_error()
+                    .into();
+                }
+            }
+        }
 
         let bindings = match &variant.fields {
             Fields::Unit => quote! {},
@@ -193,6 +224,16 @@ pub fn derive(input: TokenStream) -> TokenStream {
         }
     });
 
+    let from_database = database_variant.map(|(variant_name, field_name)| {
+        quote! {
+            impl From<screw_components::dyn_result::DError> for #name {
+                fn from(value: screw_components::dyn_result::DError) -> Self {
+                    Self::#variant_name { #field_name: value.to_string() }
+                }
+            }
+        }
+    });
+
     quote! {
         impl screw_api::response::ApiResponseContentBase for #name {
             fn status_code(&self) -> hyper::StatusCode {
@@ -210,6 +251,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
         }
 
         #from_auth
+        #from_database
     }
     .into()
 }

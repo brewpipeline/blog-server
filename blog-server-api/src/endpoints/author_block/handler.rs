@@ -27,10 +27,7 @@ async fn http_handler(
 
     author_service
         .set_author_blocked_by_id(&id, &is_blocked)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
     Ok(AuthorBlockResponseContentSuccess)
 }
