@@ -1,0 +1,2090 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Blog API",
+    "version": "1.0.0",
+    "summary": "Posts, authors and comments of the blog.",
+    "description": "Every response is wrapped in a single-key envelope: `success` with `identifier`, `description` and `data`, or `failure` with `identifier` and `reason`. Successful responses always answer `200 OK`; the `identifier` tells reads (`FOUND`), creations (`CREATED`) and other actions (`OK`) apart. Authenticated endpoints take a raw JWT in the `Token` header, obtained from one of the login endpoints.",
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
+  "tags": [
+    {
+      "name": "posts",
+      "description": "Reading and editing posts."
+    },
+    {
+      "name": "authors",
+      "description": "Reading and editing author profiles."
+    },
+    {
+      "name": "comments",
+      "description": "Reading and writing post comments."
+    },
+    {
+      "name": "auth",
+      "description": "Obtaining an authentication token."
+    },
+    {
+      "name": "chat",
+      "description": "Question answering over the blog content."
+    }
+  ],
+  "paths": {
+    "/posts": {
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "List published posts",
+        "operationId": "listPosts",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SearchQuery"
+          },
+          {
+            "$ref": "#/components/parameters/AuthorId"
+          },
+          {
+            "$ref": "#/components/parameters/TagId"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Posts"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/posts/unpublished": {
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "List unpublished posts visible to the caller",
+        "operationId": "listUnpublishedPosts",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SearchQuery"
+          },
+          {
+            "$ref": "#/components/parameters/AuthorId"
+          },
+          {
+            "$ref": "#/components/parameters/TagId"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Posts"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/posts/hidden": {
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "List hidden posts visible to the caller",
+        "operationId": "listHiddenPosts",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SearchQuery"
+          },
+          {
+            "$ref": "#/components/parameters/AuthorId"
+          },
+          {
+            "$ref": "#/components/parameters/TagId"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Posts"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/post": {
+      "post": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "Create a post",
+        "operationId": "createPost",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommonPost"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Post"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/post/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/PostId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "Read one post",
+        "description": "Readable anonymously. A valid `Token` additionally exposes posts that are not published, when the caller is allowed to see them.",
+        "operationId": "getPost",
+        "security": [
+          {},
+          {
+            "TokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Post"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "404": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "Update a post",
+        "operationId": "updatePost",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommonPost"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Post"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "404": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "Delete a post",
+        "operationId": "deletePost",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "404": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/post/{id}/recommendation": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/PostId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "Read the post recommended after this one",
+        "operationId": "getPostRecommendation",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Post"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "404": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/post/{id}/recommended/true": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/PostId"
+        }
+      ],
+      "patch": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "Mark a post as recommended",
+        "operationId": "markPostRecommended",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/post/{id}/recommended/false": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/PostId"
+        }
+      ],
+      "patch": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "Clear the recommended flag of a post",
+        "operationId": "unmarkPostRecommended",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/tag/{id}": {
+      "get": {
+        "tags": [
+          "posts"
+        ],
+        "summary": "Read one tag",
+        "operationId": "getTag",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Tag id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tag found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "404": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/authors": {
+      "get": {
+        "tags": [
+          "authors"
+        ],
+        "summary": "List authors",
+        "operationId": "listAuthors",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Offset"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Authors"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/authors/search/{query}": {
+      "get": {
+        "tags": [
+          "authors"
+        ],
+        "summary": "Search authors",
+        "operationId": "searchAuthors",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Free text matched against author names and slugs."
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Authors"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/author/slug/{slug}": {
+      "get": {
+        "tags": [
+          "authors"
+        ],
+        "summary": "Read one author by slug",
+        "operationId": "getAuthorBySlug",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Author slug as it appears in profile URLs."
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Author"
+          },
+          "404": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/author/me": {
+      "get": {
+        "tags": [
+          "authors"
+        ],
+        "summary": "Read the signed-in author",
+        "operationId": "getOwnAuthor",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Author"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/author/minimal": {
+      "patch": {
+        "tags": [
+          "authors"
+        ],
+        "summary": "Update slug, name and image of the signed-in author",
+        "operationId": "updateOwnMinimalAuthor",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommonMinimalAuthor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/author/secondary": {
+      "patch": {
+        "tags": [
+          "authors"
+        ],
+        "summary": "Update contacts and status of the signed-in author",
+        "operationId": "updateOwnSecondaryAuthor",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommonSecondaryAuthor"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/author/reset_override_social_data": {
+      "patch": {
+        "tags": [
+          "authors"
+        ],
+        "summary": "Let social login data overwrite the profile again",
+        "operationId": "resetOwnSocialDataOverride",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/author/id/{id}/subscribe": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/AuthorPathId"
+        }
+      ],
+      "patch": {
+        "tags": [
+          "authors"
+        ],
+        "summary": "Subscribe to an author's new posts",
+        "operationId": "subscribeToAuthor",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "404": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/author/id/{id}/unsubscribe": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/AuthorPathId"
+        }
+      ],
+      "patch": {
+        "tags": [
+          "authors"
+        ],
+        "summary": "Unsubscribe from an author's new posts",
+        "operationId": "unsubscribeFromAuthor",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "404": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/author/id/{id}/block": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/AuthorPathId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "authors"
+        ],
+        "summary": "Block an author",
+        "description": "Requires editor rights.",
+        "operationId": "blockAuthor",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "404": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/author/id/{id}/unblock": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/AuthorPathId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "authors"
+        ],
+        "summary": "Unblock an author",
+        "description": "Requires editor rights.",
+        "operationId": "unblockAuthor",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "404": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/comments/{post_id}": {
+      "get": {
+        "tags": [
+          "comments"
+        ],
+        "summary": "List the comments of a post",
+        "operationId": "listComments",
+        "parameters": [
+          {
+            "name": "post_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Post id."
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comments returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentsSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/comment": {
+      "post": {
+        "tags": [
+          "comments"
+        ],
+        "summary": "Write a comment",
+        "operationId": "createComment",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommonComment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/comment/{id}": {
+      "delete": {
+        "tags": [
+          "comments"
+        ],
+        "summary": "Delete a comment",
+        "operationId": "deleteComment",
+        "security": [
+          {
+            "TokenAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comment id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "403": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "404": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Exchange slug and password for a token",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginQuestion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Login"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/ylogin": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Exchange a Yandex OAuth token for a token",
+        "operationId": "loginWithYandex",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginYandexQuestion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Login"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/tlogin": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Exchange a Telegram login payload for a token",
+        "operationId": "loginWithTelegram",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginTelegramQuestion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Login"
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "401": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    },
+    "/chatgpt": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Ask a question about the blog content",
+        "operationId": "askChat",
+        "parameters": [
+          {
+            "name": "Chat-Session-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Caller-generated UUID that groups the messages of one conversation."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatQuestion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Answer produced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "429": {
+            "$ref": "#/components/responses/Failure"
+          },
+          "500": {
+            "$ref": "#/components/responses/Failure"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "TokenAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Token",
+        "description": "The raw JWT returned by a login endpoint, with no scheme prefix."
+      }
+    },
+    "parameters": {
+      "Offset": {
+        "name": "offset",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 0
+        },
+        "description": "Records to skip. Defaults to 0."
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1
+        },
+        "description": "Maximum records to return."
+      },
+      "SearchQuery": {
+        "name": "search_query",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Free text matched against post titles and content."
+      },
+      "AuthorId": {
+        "name": "author_id",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "description": "Keep only the posts of this author."
+      },
+      "TagId": {
+        "name": "tag_id",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "description": "Keep only the posts carrying this tag."
+      },
+      "PostId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Post id."
+      },
+      "AuthorPathId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Author id."
+      }
+    },
+    "responses": {
+      "Post": {
+        "description": "One post.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/PostSuccess"
+            }
+          }
+        }
+      },
+      "Posts": {
+        "description": "A page of posts.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/PostsSuccess"
+            }
+          }
+        }
+      },
+      "Author": {
+        "description": "One author.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AuthorSuccess"
+            }
+          }
+        }
+      },
+      "Authors": {
+        "description": "A page of authors.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AuthorsSuccess"
+            }
+          }
+        }
+      },
+      "Login": {
+        "description": "An authentication token.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LoginSuccess"
+            }
+          }
+        }
+      },
+      "Empty": {
+        "description": "The action was carried out.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/EmptySuccess"
+            }
+          }
+        }
+      },
+      "Failure": {
+        "description": "The request was rejected. `identifier` names the reason in SCREAMING_SNAKE.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Failure"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "SuccessBody": {
+        "type": "object",
+        "required": [
+          "identifier",
+          "description",
+          "data"
+        ],
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "description": "`FOUND` for reads, `CREATED` for creation, `OK` for every other action."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Failure": {
+        "type": "object",
+        "required": [
+          "failure"
+        ],
+        "properties": {
+          "failure": {
+            "type": "object",
+            "required": [
+              "identifier",
+              "reason"
+            ],
+            "properties": {
+              "identifier": {
+                "type": "string"
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "PostSuccess": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "success": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SuccessBody"
+              }
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/PostContainer"
+              }
+            }
+          }
+        }
+      },
+      "PostsSuccess": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "success": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SuccessBody"
+              }
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/PostsContainer"
+              }
+            }
+          }
+        }
+      },
+      "AuthorSuccess": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "success": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SuccessBody"
+              }
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/AuthorContainer"
+              }
+            }
+          }
+        }
+      },
+      "AuthorsSuccess": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "success": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SuccessBody"
+              }
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/AuthorsContainer"
+              }
+            }
+          }
+        }
+      },
+      "TagSuccess": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "success": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SuccessBody"
+              }
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/TagContainer"
+              }
+            }
+          }
+        }
+      },
+      "CommentsSuccess": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "success": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SuccessBody"
+              }
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/CommentsContainer"
+              }
+            }
+          }
+        }
+      },
+      "LoginSuccess": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "success": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SuccessBody"
+              }
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/LoginAnswer"
+              }
+            }
+          }
+        }
+      },
+      "ChatSuccess": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "success": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SuccessBody"
+              }
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/ChatAnswer"
+              }
+            }
+          }
+        }
+      },
+      "EmptySuccess": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "success": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SuccessBody"
+              }
+            ],
+            "properties": {
+              "data": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "required": [
+          "total",
+          "offset",
+          "limit"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PostContainer": {
+        "type": "object",
+        "required": [
+          "post"
+        ],
+        "properties": {
+          "post": {
+            "$ref": "#/components/schemas/Post"
+          }
+        }
+      },
+      "PostsContainer": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        ],
+        "required": [
+          "posts"
+        ],
+        "properties": {
+          "posts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Post"
+            }
+          }
+        }
+      },
+      "AuthorContainer": {
+        "type": "object",
+        "required": [
+          "author"
+        ],
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/Author"
+          }
+        }
+      },
+      "AuthorsContainer": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        ],
+        "required": [
+          "authors"
+        ],
+        "properties": {
+          "authors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Author"
+            }
+          }
+        }
+      },
+      "TagContainer": {
+        "type": "object",
+        "required": [
+          "tag"
+        ],
+        "properties": {
+          "tag": {
+            "$ref": "#/components/schemas/Tag"
+          }
+        }
+      },
+      "CommentsContainer": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        ],
+        "required": [
+          "comments"
+        ],
+        "properties": {
+          "comments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Comment"
+            }
+          }
+        }
+      },
+      "PublishType": {
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "description": "0 unpublished, 1 published, 2 hidden."
+      },
+      "Flag": {
+        "type": "integer",
+        "enum": [
+          0,
+          1
+        ],
+        "description": "0 false, 1 true."
+      },
+      "ProcessedImageUrls": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        },
+        "description": "Signed image URLs by size key. Empty when the images processor is not configured."
+      },
+      "Post": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "slug",
+          "summary",
+          "publishType",
+          "recommended",
+          "createdAt",
+          "author",
+          "tags",
+          "processedImageUrls",
+          "noindex"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Together with `id` this forms the page URL `/post/{slug}/{id}`."
+          },
+          "summary": {
+            "type": "string"
+          },
+          "publishType": {
+            "$ref": "#/components/schemas/PublishType"
+          },
+          "recommended": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Milliseconds since the Unix epoch."
+          },
+          "content": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Sanitized HTML. Absent in list responses."
+          },
+          "author": {
+            "$ref": "#/components/schemas/Author"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "processedImageUrls": {
+            "$ref": "#/components/schemas/ProcessedImageUrls"
+          },
+          "noindex": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Author": {
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "registeredAt",
+          "processedImageUrls",
+          "editor",
+          "blocked",
+          "overrideSocialData"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Forms the profile URL `/author/{slug}`."
+          },
+          "firstName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "middleName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lastName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mobile": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "registeredAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Milliseconds since the Unix epoch."
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "processedImageUrls": {
+            "$ref": "#/components/schemas/ProcessedImageUrls"
+          },
+          "editor": {
+            "$ref": "#/components/schemas/Flag"
+          },
+          "blocked": {
+            "$ref": "#/components/schemas/Flag"
+          },
+          "notificationSubscribed": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Flag"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Present only when the request was authenticated."
+          },
+          "overrideSocialData": {
+            "$ref": "#/components/schemas/Flag"
+          }
+        }
+      },
+      "Tag": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "slug"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        }
+      },
+      "Comment": {
+        "type": "object",
+        "required": [
+          "id",
+          "postId",
+          "createdAt",
+          "author"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "postId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Milliseconds since the Unix epoch."
+          },
+          "content": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "author": {
+            "$ref": "#/components/schemas/Author"
+          }
+        }
+      },
+      "CommonPost": {
+        "type": "object",
+        "required": [
+          "title",
+          "publishType",
+          "summary",
+          "tags"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 75
+          },
+          "publishType": {
+            "$ref": "#/components/schemas/PublishType"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 50,
+            "maxLength": 255
+          },
+          "content": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 50,
+            "description": "HTML. Sanitized on the server before it is stored."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 15
+            },
+            "description": "Alphanumeric tag titles."
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "maxLength": 150
+          }
+        }
+      },
+      "CommonComment": {
+        "type": "object",
+        "required": [
+          "postId",
+          "content"
+        ],
+        "properties": {
+          "postId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      },
+      "CommonMinimalAuthor": {
+        "type": "object",
+        "required": [
+          "slug"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 30,
+            "description": "Alphanumeric characters and underscores."
+          },
+          "firstName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 2,
+            "maxLength": 50
+          },
+          "lastName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 2,
+            "maxLength": 50
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "maxLength": 255
+          }
+        }
+      },
+      "CommonSecondaryAuthor": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "email",
+            "maxLength": 50
+          },
+          "mobile": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 50
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          }
+        }
+      },
+      "LoginQuestion": {
+        "type": "object",
+        "required": [
+          "slug",
+          "password"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginYandexQuestion": {
+        "type": "object",
+        "required": [
+          "accessToken",
+          "tokenType",
+          "expiresIn"
+        ],
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "tokenType": {
+            "type": "string"
+          },
+          "expiresIn": {
+            "type": "string"
+          }
+        },
+        "description": "The snake_case spellings `access_token`, `token_type` and `expires_in` are accepted as well."
+      },
+      "LoginTelegramQuestion": {
+        "type": "object",
+        "required": [
+          "id",
+          "auth_date",
+          "hash"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "first_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "photo_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "auth_date": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hash": {
+            "type": "string",
+            "description": "Telegram's signature over the other fields, checked with the bot token."
+          }
+        }
+      },
+      "LoginAnswer": {
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Send this back in the `Token` header."
+          }
+        }
+      },
+      "ChatQuestion": {
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "properties": {
+          "question": {
+            "type": "string"
+          }
+        }
+      },
+      "ChatAnswer": {
+        "type": "object",
+        "required": [
+          "answer"
+        ],
+        "properties": {
+          "answer": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
