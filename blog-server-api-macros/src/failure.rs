@@ -272,6 +272,12 @@ pub fn derive(input: TokenStream) -> TokenStream {
                     Self::#variant_name { #field_name: value.0.to_string() }
                 }
             }
+
+            impl From<crate::utils::header_rejection::HeaderRejection> for #name {
+                fn from(value: crate::utils::header_rejection::HeaderRejection) -> Self {
+                    Self::#variant_name { #field_name: value.0 }
+                }
+            }
         }
     });
 

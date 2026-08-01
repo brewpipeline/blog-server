@@ -118,17 +118,17 @@ pub async fn http_handler(
         question,
         post_service,
         entity_post_service,
-        session_key,
+        ip,
+        user_agent,
+        accept_language,
         chat_session_id,
     },): (ChatGptRequestContent,),
 ) -> Result<ChatResponseContentSuccess, ChatResponseContentFailure> {
     let _ = &*START_CLEANUP;
 
-    let chat_input = question.map_err(|e| ParamsDecodeError {
-        reason: e.to_string(),
-    })?;
+    let session_key = format!("{ip}|{user_agent}|{accept_language}");
 
-    let user_question = chat_input.question.trim();
+    let user_question = question.question.trim();
     if user_question.is_empty() {
         return Err(ParamsDecodeError {
             reason: "question must not be empty".to_string(),
@@ -146,10 +146,6 @@ pub async fn http_handler(
         }
         .into());
     }
-    let chat_session_id = chat_session_id.map_err(|e| ParamsDecodeError {
-        reason: e.to_string(),
-    })?;
-
     {
         let mut usage = OPENAI_USAGE.lock().await;
         let entry = usage.entry(session_key.clone()).or_insert(UsageEntry {

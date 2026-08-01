@@ -7,6 +7,7 @@ enum Source {
     Data,
     Path(String),
     Query(String),
+    Header(String),
 }
 
 fn inner_of(ty: &syn::Type, wrapper: &str) -> Option<syn::Type> {
@@ -76,6 +77,8 @@ pub fn derive(input: TokenStream) -> TokenStream {
     for field in &fields {
         let field_name = field.ident.as_ref().unwrap();
         let mut source = None;
+        let mut fallbacks: Vec<String> = Vec::new();
+        let mut default: Option<String> = None;
 
         for attr in &field.attrs {
             if !attr.path().is_ident("request") {
@@ -94,6 +97,11 @@ pub fn derive(input: TokenStream) -> TokenStream {
                     "query" => {
                         source = Some(Source::Query(meta.value()?.parse::<LitStr>()?.value()))
                     }
+                    "header" => {
+                        source = Some(Source::Header(meta.value()?.parse::<LitStr>()?.value()))
+                    }
+                    "or" => fallbacks.push(meta.value()?.parse::<LitStr>()?.value()),
+                    "default" => default = Some(meta.value()?.parse::<LitStr>()?.value()),
                     other => return Err(meta.error(format!("unknown request option `{other}`"))),
                 }
                 Ok(())
@@ -112,6 +120,15 @@ pub fn derive(input: TokenStream) -> TokenStream {
             .to_compile_error()
             .into();
         };
+
+        if !matches!(source, Source::Header(_)) && (!fallbacks.is_empty() || default.is_some()) {
+            return syn::Error::new_spanned(
+                field,
+                "`or` and `default` only mean something for a `header` field",
+            )
+            .to_compile_error()
+            .into();
+        }
 
         let ty = &field.ty;
         let expression = match source {
@@ -163,6 +180,60 @@ pub fn derive(input: TokenStream) -> TokenStream {
                         )
                         .to_compile_error()
                         .into();
+                    }
+                }
+            }
+            Source::Header(name) => {
+                let names = std::iter::once(&name).chain(fallbacks.iter());
+                let value = quote! {
+                    None #( .or_else(|| origin_content.http_parts.headers.get(#names)) )*
+                        .and_then(|value| value.to_str().ok())
+                        .map(str::trim)
+                        .filter(|value| !value.is_empty())
+                };
+                match (inner_of(ty, "Option"), default) {
+                    (Some(inner), _) if is_string(&inner) => {
+                        quote! { #value.map(str::to_owned) }
+                    }
+                    (Some(_), _) => {
+                        return syn::Error::new_spanned(
+                            field,
+                            "an optional header field must be an `Option<String>`; a parsed \
+                             header is required, so that a value nobody can read is refused \
+                             rather than silently dropped",
+                        )
+                        .to_compile_error()
+                        .into();
+                    }
+                    (None, Some(default)) if is_string(ty) => {
+                        quote! { #value.unwrap_or(#default).to_owned() }
+                    }
+                    (None, Some(_)) => {
+                        return syn::Error::new_spanned(
+                            field,
+                            "`default` only means something for a `String` header",
+                        )
+                        .to_compile_error()
+                        .into();
+                    }
+                    (None, None) => {
+                        fallible = true;
+                        let missing = quote! {
+                            #value.ok_or_else(|| {
+                                crate::utils::header_rejection::HeaderRejection::missing(#name)
+                            })?
+                        };
+                        if is_string(ty) {
+                            quote! { #missing.to_owned() }
+                        } else {
+                            quote! {
+                                #missing.parse().map_err(|error| {
+                                    crate::utils::header_rejection::HeaderRejection::unparsed(
+                                        #name, error,
+                                    )
+                                })?
+                            }
+                        }
                     }
                 }
             }
