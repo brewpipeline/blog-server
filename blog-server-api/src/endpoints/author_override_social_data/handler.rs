@@ -25,5 +25,5 @@ async fn http_handler(
         .set_author_override_social_data_by_id(&author.id, &override_social_data)
         .await?;
 
-    Ok(().into())
+    Ok(AuthorOverrideSocialDataResponseContentSuccess)
 }

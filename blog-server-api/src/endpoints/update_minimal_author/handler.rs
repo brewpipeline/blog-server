@@ -25,5 +25,5 @@ pub async fn http_handler(
         .update_minimal_custom_author_by_id(&author.id, &From::from(base_minimal_author))
         .await?;
 
-    Ok(().into())
+    Ok(UpdateMinimalAuthorContentSuccess)
 }

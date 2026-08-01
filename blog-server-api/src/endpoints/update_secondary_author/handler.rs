@@ -25,5 +25,5 @@ pub async fn http_handler(
         .update_secondary_author_by_id(&author.id, &From::from(base_secondary_author))
         .await?;
 
-    Ok(().into())
+    Ok(UpdateSecondaryAuthorContentSuccess)
 }

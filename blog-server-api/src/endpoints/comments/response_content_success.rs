@@ -6,9 +6,3 @@ use blog_server_api_macros::ApiSuccess;
 pub struct CommentsResponseContentSuccess {
     pub(super) container: CommentsContainer,
 }
-
-impl From<CommentsContainer> for CommentsResponseContentSuccess {
-    fn from(value: CommentsContainer) -> Self {
-        CommentsResponseContentSuccess { container: value }
-    }
-}
