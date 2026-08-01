@@ -22,12 +22,12 @@ pub struct PostsRequestContent {
 
 impl<Extensions, Failure> ApiRequestContent<Extensions, Failure> for PostsRequestContent
 where
-    Extensions: Resolve<Arc<dyn PostService>> + Resolve<Arc<dyn EntityPostService>>,
+    Extensions: Send + Sync + Resolve<Arc<dyn PostService>> + Resolve<Arc<dyn EntityPostService>>,
     Failure: ApiResponseContentFailure,
 {
     type Data = ();
 
-    fn create(
+    async fn create(
         origin_content: ApiRequestOriginContent<Self::Data, Extensions>,
     ) -> Result<Self, Failure> {
         Ok(Self {

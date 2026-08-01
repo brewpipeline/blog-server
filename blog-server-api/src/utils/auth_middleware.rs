@@ -92,12 +92,13 @@ impl<Content, Extensions, Failure> ApiRequestContent<Extensions, Failure>
     for AuthApiRequestContent<Content>
 where
     Content: ApiRequestContent<Extensions, Failure>,
-    Extensions: Resolve<Arc<dyn AuthorService>>,
+    Content::Data: Send,
+    Extensions: Send + Sync + Resolve<Arc<dyn AuthorService>>,
     Failure: ApiResponseContentFailure,
 {
     type Data = Content::Data;
 
-    fn create(
+    async fn create(
         origin_content: ApiRequestOriginContent<Self::Data, Extensions>,
     ) -> Result<Self, Failure> {
         let auth_author_future: DFuture<Result<Author, auth::Error>> = Box::pin(auth::author(
@@ -106,7 +107,7 @@ where
         ));
         Ok(Self {
             auth_author_future,
-            inner: Content::create(origin_content)?,
+            inner: Content::create(origin_content).await?,
         })
     }
 }

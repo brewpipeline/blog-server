@@ -190,9 +190,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
             vec![quote! { Failure: screw_api::response::ApiResponseContentFailure }],
         ),
     };
-    if !bounds.is_empty() {
-        predicates.push(quote! { Extensions: #(#bounds)+* });
-    }
+    predicates.push(quote! { Extensions: Send + Sync #(+ #bounds)* });
     let where_clause = (!predicates.is_empty()).then(|| quote! { where #(#predicates),* });
 
     quote! {
@@ -201,7 +199,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
         {
             type Data = #data_type;
 
-            fn create(
+            async fn create(
                 origin_content: screw_api::request::ApiRequestOriginContent<Self::Data, Extensions>,
             ) -> Result<Self, #failure> {
                 Ok(Self { #(#assignments),* })

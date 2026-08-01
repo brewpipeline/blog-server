@@ -21,14 +21,16 @@ pub struct ChatGptRequestContent {
 
 impl<Extensions, Failure> ApiRequestContent<Extensions, Failure> for ChatGptRequestContent
 where
-    Extensions: Resolve<Arc<dyn PostService>>
+    Extensions: Send
+        + Sync
+        + Resolve<Arc<dyn PostService>>
         + Resolve<Arc<dyn EntityPostService>>
         + Resolve<Arc<dyn AuthorService>>,
     Failure: ApiResponseContentFailure,
 {
     type Data = ChatQuestion;
 
-    fn create(
+    async fn create(
         origin_content: ApiRequestOriginContent<Self::Data, Extensions>,
     ) -> Result<Self, Failure> {
         let headers = &origin_content.http_parts.headers;
