@@ -21,77 +21,35 @@ pub trait Resolve<T>: Send + Sync {
     fn resolve(&self) -> T;
 }
 
-pub trait ExtensionsProviderType:
-    Resolve<Arc<dyn AuthorService>>
-    + Resolve<Arc<dyn PostService>>
-    + Resolve<Arc<dyn CommentService>>
-    + Resolve<Arc<dyn EntityCommentService>>
-    + Resolve<Arc<dyn EntityPostService>>
-    + Resolve<Arc<dyn Publish<NewPostPublished>>>
-    + Resolve<Arc<dyn Publish<SubscriptionStateChanged>>>
-    + Resolve<Arc<dyn SocialService>>
-{
+macro_rules! extensions {
+    ($($field:ident: $service:ty,)*) => {
+        pub trait ExtensionsProviderType: $(Resolve<Arc<$service>> +)* {}
+
+        struct ExtensionsProvider {
+            $($field: Arc<$service>,)*
+        }
+
+        impl ExtensionsProviderType for ExtensionsProvider {}
+
+        $(
+            impl Resolve<Arc<$service>> for ExtensionsProvider {
+                fn resolve(&self) -> Arc<$service> {
+                    self.$field.clone()
+                }
+            }
+        )*
+    };
 }
 
-struct ExtensionsProvider {
-    author_service: Arc<dyn AuthorService>,
-    post_service: Arc<dyn PostService>,
-    comment_service: Arc<dyn CommentService>,
-    entity_comment_service: Arc<dyn EntityCommentService>,
-    entity_post_service: Arc<dyn EntityPostService>,
-    new_post_published_service: Arc<dyn Publish<NewPostPublished>>,
-    subscription_state_changed_service: Arc<dyn Publish<SubscriptionStateChanged>>,
-    social_service: Arc<dyn SocialService>,
-}
-
-impl ExtensionsProviderType for ExtensionsProvider {}
-
-impl Resolve<Arc<dyn AuthorService>> for ExtensionsProvider {
-    fn resolve(&self) -> Arc<dyn AuthorService> {
-        self.author_service.clone()
-    }
-}
-
-impl Resolve<Arc<dyn PostService>> for ExtensionsProvider {
-    fn resolve(&self) -> Arc<dyn PostService> {
-        self.post_service.clone()
-    }
-}
-
-impl Resolve<Arc<dyn CommentService>> for ExtensionsProvider {
-    fn resolve(&self) -> Arc<dyn CommentService> {
-        self.comment_service.clone()
-    }
-}
-
-impl Resolve<Arc<dyn EntityCommentService>> for ExtensionsProvider {
-    fn resolve(&self) -> Arc<dyn EntityCommentService> {
-        self.entity_comment_service.clone()
-    }
-}
-
-impl Resolve<Arc<dyn EntityPostService>> for ExtensionsProvider {
-    fn resolve(&self) -> Arc<dyn EntityPostService> {
-        self.entity_post_service.clone()
-    }
-}
-
-impl Resolve<Arc<dyn SocialService>> for ExtensionsProvider {
-    fn resolve(&self) -> Arc<dyn SocialService> {
-        self.social_service.clone()
-    }
-}
-
-impl Resolve<Arc<dyn Publish<NewPostPublished>>> for ExtensionsProvider {
-    fn resolve(&self) -> Arc<dyn Publish<NewPostPublished>> {
-        self.new_post_published_service.clone()
-    }
-}
-
-impl Resolve<Arc<dyn Publish<SubscriptionStateChanged>>> for ExtensionsProvider {
-    fn resolve(&self) -> Arc<dyn Publish<SubscriptionStateChanged>> {
-        self.subscription_state_changed_service.clone()
-    }
+extensions! {
+    author_service: dyn AuthorService,
+    post_service: dyn PostService,
+    comment_service: dyn CommentService,
+    entity_comment_service: dyn EntityCommentService,
+    entity_post_service: dyn EntityPostService,
+    new_post_published_service: dyn Publish<NewPostPublished>,
+    subscription_state_changed_service: dyn Publish<SubscriptionStateChanged>,
+    social_service: dyn SocialService,
 }
 
 pub fn make_extensions<U>(
