@@ -274,8 +274,8 @@ impl RbatisPostService {
         if tag_id != null:
             JOIN post_tag ON post.id = post_tag.post_id
         if search_query != null:
-            , plainto_tsquery(#{ts_config}::regconfig, LOWER(#{search_query})) query \
-            , LATERAL (SELECT setweight(to_tsvector(#{ts_config}::regconfig, LOWER(post.title)), 'A') || setweight(to_tsvector(#{ts_config}::regconfig, LOWER(post.summary)), 'B') || setweight(to_tsvector(#{ts_config}::regconfig, LOWER(COALESCE(post.plain_text_content, ''))), 'C') AS vector) textsearch
+            , plainto_tsquery('${ts_config}'::regconfig, LOWER(#{search_query})) query \
+            , LATERAL (SELECT setweight(to_tsvector('${ts_config}'::regconfig, LOWER(post.title)), 'A') || setweight(to_tsvector('${ts_config}'::regconfig, LOWER(post.summary)), 'B') || setweight(to_tsvector('${ts_config}'::regconfig, LOWER(COALESCE(post.plain_text_content, ''))), 'C') AS vector) textsearch
         where:
             if search_query != null:
                 and textsearch.vector @@ query
@@ -315,8 +315,8 @@ impl RbatisPostService {
         if tag_id != null:
             JOIN post_tag ON post.id = post_tag.post_id
         if search_query != null:
-            , plainto_tsquery(#{ts_config}::regconfig, LOWER(#{search_query})) query \
-            , LATERAL (SELECT setweight(to_tsvector(#{ts_config}::regconfig, LOWER(post.title)), 'A') || setweight(to_tsvector(#{ts_config}::regconfig, LOWER(post.summary)), 'B') || setweight(to_tsvector(#{ts_config}::regconfig, LOWER(COALESCE(post.plain_text_content, ''))), 'C') AS vector) textsearch
+            , plainto_tsquery('${ts_config}'::regconfig, LOWER(#{search_query})) query \
+            , LATERAL (SELECT setweight(to_tsvector('${ts_config}'::regconfig, LOWER(post.title)), 'A') || setweight(to_tsvector('${ts_config}'::regconfig, LOWER(post.summary)), 'B') || setweight(to_tsvector('${ts_config}'::regconfig, LOWER(COALESCE(post.plain_text_content, ''))), 'C') AS vector) textsearch
         where:
             if search_query != null:
                 and textsearch.vector @@ query
