@@ -1,6 +1,17 @@
-use screw_components::dyn_result::DResult;
+use screw_components::dyn_result::{DError, DResult};
 
 use super::author_service::*;
+
+pub enum SubscribeRejection {
+    NoNotificationChannel,
+    Other(DError),
+}
+
+impl From<DError> for SubscribeRejection {
+    fn from(error: DError) -> Self {
+        SubscribeRejection::Other(error)
+    }
+}
 
 pub enum SocialId {
     TelegramId(u64),
@@ -24,7 +35,11 @@ impl SocialId {
 
 #[async_trait]
 pub trait SocialService: Send + Sync {
-    async fn set_subscribe_for_author(&self, author: &Author, subscribe: &u8) -> DResult<()>;
+    async fn set_subscribe_for_author(
+        &self,
+        author: &Author,
+        subscribe: &u8,
+    ) -> Result<(), SubscribeRejection>;
     async fn process_auth_by_id(
         &self,
         social_id: &SocialId,
