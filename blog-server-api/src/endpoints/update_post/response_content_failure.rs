@@ -1,6 +1,7 @@
 use blog_server_api_macros::ApiFailure;
 
 use crate::utils::auth_middleware::AuthRejection;
+use crate::utils::post_access;
 
 #[derive(ApiFailure)]
 pub enum UpdatePostContentFailure {
@@ -16,4 +17,13 @@ pub enum UpdatePostContentFailure {
     IncorrectIdFormat { reason: String },
     #[failure(status = FORBIDDEN, reason = "insufficient rights to edit post")]
     EditingForbidden,
+}
+
+impl From<post_access::Rejection> for UpdatePostContentFailure {
+    fn from(value: post_access::Rejection) -> Self {
+        match value {
+            post_access::Rejection::NotFound => Self::NotFound,
+            post_access::Rejection::Forbidden => Self::EditingForbidden,
+        }
+    }
 }

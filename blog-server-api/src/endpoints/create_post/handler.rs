@@ -26,7 +26,7 @@ pub async fn http_handler(
         .into());
     }
 
-    if author.base.editor == 0 && base_post.publish_type.is_published() {
+    if !author.is_editor() && base_post.publish_type.is_published() {
         return Err(ValidationError {
             reason: "publishing not allowed for you".to_owned(),
         }

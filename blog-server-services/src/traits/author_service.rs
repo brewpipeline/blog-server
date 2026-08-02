@@ -74,6 +74,20 @@ pub struct Author {
     pub base: BaseAuthor,
 }
 
+impl Author {
+    pub fn is_editor(&self) -> bool {
+        self.base.editor == 1
+    }
+
+    pub fn owns(&self, author_id: u64) -> bool {
+        self.id == author_id
+    }
+
+    pub fn may_edit(&self, author_id: u64) -> bool {
+        self.owns(author_id) || self.is_editor()
+    }
+}
+
 impl From<Author> for EAuthor {
     fn from(value: Author) -> Self {
         use crate::utils::image_signer::{ImageVariant, processed_image_urls};

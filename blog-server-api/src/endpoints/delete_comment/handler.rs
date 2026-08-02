@@ -16,7 +16,7 @@ pub async fn http_handler(
 ) -> Result<DeleteCommentResponseContentSuccess, DeleteCommentResponseContentFailure> {
     let comment = comment_service.comment_by_id(&id).await?.ok_or(NotFound)?;
 
-    if !(comment.base.author_id == author.id || author.base.editor == 1) {
+    if !author.may_edit(comment.base.author_id) {
         return Err(EditingForbidden);
     }
 

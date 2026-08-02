@@ -23,11 +23,7 @@ pub async fn http_handler(
     let post = post_service.post_by_id(&id).await?.ok_or(NotFound)?;
 
     if !post.base.publish_type.is_published() {
-        let have_access = if let Some(author) = author {
-            post.base.author_id == author.id || author.base.editor == 1
-        } else {
-            false
-        };
+        let have_access = author.is_some_and(|author| author.may_edit(post.base.author_id));
         if !have_access {
             return Err(NotFound.into());
         }

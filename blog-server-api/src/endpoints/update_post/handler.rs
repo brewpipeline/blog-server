@@ -3,6 +3,8 @@ use blog_generic::events::NewPostPublished;
 use blog_server_services::traits::author_service::Author;
 use validator::Validate;
 
+use crate::utils::post_access;
+
 use super::request_content::UpdatePostRequestContent;
 use super::response_content_failure::UpdatePostContentFailure;
 use super::response_content_failure::UpdatePostContentFailure::*;
@@ -22,17 +24,7 @@ pub async fn http_handler(
 ) -> Result<UpdatePostContentSuccess, UpdatePostContentFailure> {
     let existing_post = post_service.post_by_id(&id).await?.ok_or(NotFound)?;
 
-    if !(existing_post.base.author_id == author.id || author.base.editor == 1) {
-        return Err(if existing_post.base.publish_type.is_published() {
-            EditingForbidden
-        } else {
-            NotFound.into()
-        });
-    }
-
-    if existing_post.base.publish_type.is_published() && author.base.editor == 0 {
-        return Err(EditingForbidden);
-    }
+    post_access::may_edit(&author, &existing_post)?;
 
     if let Some(err) = base_post.validate().err() {
         return Err(ValidationError {
@@ -41,7 +33,7 @@ pub async fn http_handler(
         .into());
     }
 
-    if author.base.editor == 0 && base_post.publish_type.is_published() {
+    if !author.is_editor() && base_post.publish_type.is_published() {
         return Err(ValidationError {
             reason: "publishing not allowed for you".to_owned(),
         }

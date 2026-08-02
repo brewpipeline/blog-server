@@ -27,7 +27,7 @@ async fn http_handler(
     subscribe: u8,
 ) -> Result<AuthorSubscribeRequestContentSuccess, AuthorSubscribeResponseContentFailure> {
     let is_same_user = logged_in_author.id == id;
-    let is_user_admin = logged_in_author.base.editor == 1;
+    let is_user_admin = logged_in_author.is_editor();
 
     let subscriber_author = match (is_same_user, is_user_admin) {
         (true, _) => logged_in_author,

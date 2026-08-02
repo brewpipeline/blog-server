@@ -71,7 +71,7 @@ async fn handler(
     let publish_type = match handler_type {
         HandlerType::Published => PublishType::Published,
         HandlerType::AuthRequired { inner_type, author } => {
-            if !(filter.author_id == Some(author.id) || author.base.editor == 1) {
+            if !(filter.author_id == Some(author.id) || author.is_editor()) {
                 return Err(Forbidden);
             }
             match inner_type {

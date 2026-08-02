@@ -5,3 +5,4 @@ pub mod body_rejection;
 pub mod header_rejection;
 pub mod jwt;
 pub mod password;
+pub mod post_access;
