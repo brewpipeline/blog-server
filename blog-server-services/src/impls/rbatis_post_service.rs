@@ -1,8 +1,8 @@
 use crate::traits::post_service::{BasePost, Post, PostService, PostsQuery, PostsQueryAnswer, Tag};
 use crate::utils::{string_filter, transliteration};
+use blog_generic::entities::PublishType;
 use rbatis::executor::RBatisTxExecutorGuard;
 use rbatis::{rbatis::RBatis, rbdc::db::ExecResult};
-use rbs::{Value, value};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -37,12 +37,12 @@ pub struct TagDto {
     title: String,
 }
 
-impl Into<Tag> for TagDto {
-    fn into(self) -> Tag {
+impl From<TagDto> for Tag {
+    fn from(value: TagDto) -> Self {
         Tag {
-            id: self.id,
-            title: self.title,
-            slug: self.slug,
+            id: value.id,
+            title: value.title,
+            slug: value.slug,
         }
     }
 }
@@ -67,7 +67,7 @@ impl PostTag {
     "
     )]
     async fn delete_by_post_id_and_tag_ids(
-        rb: &RBatis,
+        rb: &mut RBatisTxExecutorGuard,
         post_id: u64,
         tag_ids: Vec<u64>,
     ) -> rbatis::Result<ExecResult> {
@@ -182,7 +182,10 @@ impl RbatisPostService {
         RETURNING id
     "
     )]
-    async fn insert_new_post(rb: &RBatis, post: &BasePost) -> rbatis::Result<u64> {
+    async fn insert_new_post(
+        rb: &mut RBatisTxExecutorGuard,
+        post: &BasePost,
+    ) -> rbatis::Result<u64> {
         impled!()
     }
 
@@ -205,7 +208,7 @@ impl RbatisPostService {
     "
     )]
     async fn update_post_by_id(
-        rb: &RBatis,
+        rb: &mut RBatisTxExecutorGuard,
         post_id: &u64,
         post_data: &BasePost,
         update_created_at: &bool,
@@ -227,7 +230,25 @@ impl RbatisPostService {
                 ) \
     "
     )]
-    async fn get_tags_by_titles(rb: &RBatis, titles: &Vec<String>) -> rbatis::Result<Vec<Tag>> {
+    async fn get_tags_by_titles(
+        rb: &mut RBatisTxExecutorGuard,
+        titles: &Vec<String>,
+    ) -> rbatis::Result<Vec<Tag>> {
+        impled!()
+    }
+    #[py_sql(
+        "
+        INSERT INTO tag (title, slug) \
+        VALUES
+        trim ',': for _,tag in tags:
+            (#{tag.title}, #{tag.slug}),
+        ON CONFLICT (title) DO NOTHING
+    "
+    )]
+    async fn insert_tags_ignoring_conflicts(
+        rb: &mut RBatisTxExecutorGuard,
+        tags: &Vec<NewTag>,
+    ) -> rbatis::Result<ExecResult> {
         impled!()
     }
     #[py_sql(
@@ -241,6 +262,163 @@ impl RbatisPostService {
         id: &u64,
     ) -> rbatis::Result<ExecResult> {
         impled!()
+    }
+
+    #[py_sql(
+        "
+        SELECT \
+            post.*
+        if search_query != null:
+            , ts_rank_cd(textsearch, query) AS rank
+        FROM post
+        if tag_id != null:
+            JOIN post_tag ON post.id = post_tag.post_id
+        if search_query != null:
+            , plainto_tsquery(#{ts_config}::regconfig, LOWER(#{search_query})) query \
+            , to_tsvector(#{ts_config}::regconfig, LOWER(post.title || ' ' || post.summary || ' ' || COALESCE(post.plain_text_content, ''))) textsearch
+        where:
+            if search_query != null:
+                and textsearch @@ query
+            if author_id != null:
+                and post.author_id = #{author_id}
+            if tag_id != null:
+                and post_tag.tag_id = #{tag_id}
+            if publish_type != null:
+                and post.publish_type = #{publish_type}
+            if lang != '':
+                and (post.lang = #{lang} OR post.lang IS NULL)
+        ORDER BY
+        if search_query != null:
+            rank DESC,
+        post.id DESC \
+        LIMIT #{limit} OFFSET #{offset}
+    "
+    )]
+    async fn select_posts(
+        rb: &RBatis,
+        search_query: Option<&String>,
+        author_id: Option<&u64>,
+        tag_id: Option<&u64>,
+        publish_type: Option<&PublishType>,
+        lang: &str,
+        ts_config: &str,
+        offset: &u64,
+        limit: &u64,
+    ) -> rbatis::Result<Vec<Post>> {
+        impled!()
+    }
+
+    #[py_sql(
+        "
+        SELECT COUNT(1) \
+        FROM post
+        if tag_id != null:
+            JOIN post_tag ON post.id = post_tag.post_id
+        if search_query != null:
+            , plainto_tsquery(#{ts_config}::regconfig, LOWER(#{search_query})) query \
+            , to_tsvector(#{ts_config}::regconfig, LOWER(post.title || ' ' || post.summary || ' ' || COALESCE(post.plain_text_content, ''))) textsearch
+        where:
+            if search_query != null:
+                and textsearch @@ query
+            if author_id != null:
+                and post.author_id = #{author_id}
+            if tag_id != null:
+                and post_tag.tag_id = #{tag_id}
+            if publish_type != null:
+                and post.publish_type = #{publish_type}
+            if lang != '':
+                and (post.lang = #{lang} OR post.lang IS NULL)
+    "
+    )]
+    async fn count_posts(
+        rb: &RBatis,
+        search_query: Option<&String>,
+        author_id: Option<&u64>,
+        tag_id: Option<&u64>,
+        publish_type: Option<&PublishType>,
+        lang: &str,
+        ts_config: &str,
+    ) -> rbatis::Result<u64> {
+        impled!()
+    }
+
+    async fn begin(&self) -> DResult<RBatisTxExecutorGuard> {
+        let tx = self.rb.acquire_begin().await?;
+        Ok(tx.defer_async(|tx| async move {
+            if !tx.done() {
+                let _ = tx.rollback().await;
+            }
+        }))
+    }
+
+    async fn create_tags(
+        tx: &mut RBatisTxExecutorGuard,
+        tag_titles: Vec<String>,
+    ) -> DResult<Vec<Tag>> {
+        if tag_titles.is_empty() {
+            return Ok(vec![]);
+        }
+        let tag_titles: Vec<String> = tag_titles
+            .into_iter()
+            .collect::<HashSet<String>>()
+            .into_iter()
+            .collect();
+        let search_titles = tag_titles.clone();
+
+        let to_insert: Vec<NewTag> =
+            transliteration::ru_to_latin(tag_titles, transliteration::TranslitOption::ToLowerCase)
+                .into_iter()
+                .map(|r| NewTag {
+                    slug: string_filter::remove_non_latin_or_number_chars(&r.transliterated),
+                    title: r.original,
+                })
+                .collect();
+
+        RbatisPostService::insert_tags_ignoring_conflicts(tx, &to_insert).await?;
+
+        let all_tags = RbatisPostService::get_tags_by_titles(tx, &search_titles).await?;
+        Ok(all_tags)
+    }
+
+    async fn merge_post_tags(
+        tx: &mut RBatisTxExecutorGuard,
+        post_id: &u64,
+        tags: Vec<Tag>,
+    ) -> DResult<()> {
+        let new_tags_map: HashSet<u64> = tags.into_iter().fold(HashSet::new(), |mut set, tag| {
+            set.insert(tag.id);
+            set
+        });
+
+        let existing_tags_map = PostTag::select_all_by_post_id(&*tx, post_id)
+            .await?
+            .into_iter()
+            .fold(HashSet::new(), |mut set, post_tag| {
+                set.insert(post_tag.tag_id);
+                set
+            });
+
+        let to_insert: Vec<PostTag> = new_tags_map
+            .iter()
+            .filter(|new| !existing_tags_map.contains(new))
+            .map(|to_insert| PostTag {
+                post_id: *post_id,
+                tag_id: *to_insert,
+            })
+            .collect();
+        let to_delete: Vec<u64> = existing_tags_map
+            .into_iter()
+            .filter(|existing| !new_tags_map.contains(&existing))
+            .collect();
+
+        if !to_insert.is_empty() {
+            PostTag::insert_batch(&*tx, &to_insert, to_insert.len() as u64).await?;
+        }
+        if !to_delete.is_empty() {
+            PostTag::delete_by_post_id_and_tag_ids(tx, *post_id, to_delete).await?;
+        }
+
+        Ok(())
     }
 
     async fn saturate_with_tags(&self, post_option: Option<Post>) -> DResult<Option<Post>> {
@@ -287,112 +465,39 @@ impl RbatisPostService {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-struct PostAndTotalCount {
-    #[serde(flatten)]
-    pub origin: Post,
-    pub total_count: u64,
-}
-
 #[async_trait]
 impl PostService for RbatisPostService {
     async fn posts<'q, 'a, 't, 'p, 'o, 'l>(
         &self,
         query: PostsQuery<'q, 'a, 't, 'p, 'o, 'l>,
     ) -> DResult<PostsQueryAnswer> {
-        let mut args: Vec<Value> = vec![];
-        let query = vec![
-            {
-                let mut select_parts = vec!["post.*"];
-                if let Some(_) = query.search_query {
-                    select_parts.push("ts_rank_cd(textsearch, query) AS rank");
-                }
-                select_parts.push("COUNT(*) OVER() AS total_count");
-                Some(format!("SELECT {}", select_parts.join(", ")))
-            },
-            {
-                let mut from_parts = vec!["post"];
-                if let Some(search_query) = query.search_query {
-                    from_parts.push("plainto_tsquery('russian', LOWER(?)) query");
-                    args.push(value!(search_query));
-                    from_parts.push("to_tsvector('russian', LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content)) textsearch");
-                }
-                Some(format!("FROM {}", from_parts.join(", ")))
-            },
-            {
-                let mut join_parts = vec![];
-                if let Some(_) = query.tag_id {
-                    join_parts.push("post_tag ON post.id = post_tag.post_id");
-                }
-                if join_parts.is_empty() {
-                    None
-                } else {
-                    Some(format!("JOIN {}", join_parts.join(", ")))
-                }
-            },
-            {
-                let mut where_parts = vec![];
-                if let Some(_) = query.search_query {
-                    where_parts.push("textsearch @@ query");
-                }
-                if let Some(author_id) = query.author_id {
-                    where_parts.push("author_id = ?");
-                    args.push(value!(author_id));
-                }
-                if let Some(tag_id) = query.tag_id {
-                    where_parts.push("post_tag.tag_id = ?");
-                    args.push(value!(tag_id));
-                }
-                if let Some(publish_type) = query.publish_type {
-                    where_parts.push("publish_type = ?");
-                    args.push(value!(publish_type));
-                }
-                if let Some(lang) = BasePost::current_lang() {
-                    where_parts.push("(post.lang = ? OR post.lang IS NULL)");
-                    args.push(value!(lang));
-                }
-                if where_parts.is_empty() {
-                    None
-                } else {
-                    Some(format!("WHERE {}", where_parts.join(" AND ")))
-                }
-            },
-            {
-                let mut order_by_parts = vec![];
-                if let Some(_) = query.search_query {
-                    order_by_parts.push("rank");
-                }
-                order_by_parts.push("post.id DESC");
-                Some(format!("ORDER BY {}", order_by_parts.join(", ")))
-            },
-            {
-                args.push(value!(query.limit));
-                Some("LIMIT ?".to_string())
-            },
-            {
-                args.push(value!(query.offset));
-                Some("OFFSET ?".to_string())
-            }
-        ]
-            .into_iter()
-            .filter_map(|x| x)
-            .collect::<Vec<String>>()
-            .join(" ");
+        let lang = BasePost::current_lang().unwrap_or_default();
+        let ts_config = BasePost::current_text_search_config();
 
-        let posts_with_total_count: Vec<PostAndTotalCount> =
-            self.rb.query_decode(query.as_str(), args).await?;
+        let (posts, total_count) = tokio::try_join!(
+            RbatisPostService::select_posts(
+                &self.rb,
+                query.search_query,
+                query.author_id,
+                query.tag_id,
+                query.publish_type,
+                &lang,
+                ts_config,
+                query.offset,
+                query.limit,
+            ),
+            RbatisPostService::count_posts(
+                &self.rb,
+                query.search_query,
+                query.author_id,
+                query.tag_id,
+                query.publish_type,
+                &lang,
+                ts_config,
+            ),
+        )?;
 
-        let total_count = posts_with_total_count
-            .first()
-            .map(|p| p.total_count)
-            .unwrap_or(0);
-        let posts = posts_with_total_count
-            .into_iter()
-            .map(|p| p.origin)
-            .collect();
-
-        let posts_with_tags = RbatisPostService::saturate_posts_with_tags(&self, posts).await?;
+        let posts_with_tags = self.saturate_posts_with_tags(posts).await?;
 
         Ok(PostsQueryAnswer {
             total_count,
@@ -405,8 +510,12 @@ impl PostService for RbatisPostService {
         RbatisPostService::saturate_with_tags(&self, post_option).await
     }
 
-    async fn create_post(&self, post: &BasePost) -> DResult<u64> {
-        let inserted_id = RbatisPostService::insert_new_post(&self.rb, post).await?;
+    async fn create_post(&self, post: &BasePost, tag_titles: Vec<String>) -> DResult<u64> {
+        let mut tx = self.begin().await?;
+        let inserted_id = RbatisPostService::insert_new_post(&mut tx, post).await?;
+        let tags = RbatisPostService::create_tags(&mut tx, tag_titles).await?;
+        RbatisPostService::merge_post_tags(&mut tx, &inserted_id, tags).await?;
+        tx.commit().await?;
         Ok(inserted_id)
     }
 
@@ -415,18 +524,18 @@ impl PostService for RbatisPostService {
         id: &u64,
         post_data: &BasePost,
         update_created_at: &bool,
+        tag_titles: Vec<String>,
     ) -> DResult<()> {
-        RbatisPostService::update_post_by_id(&self.rb, id, post_data, update_created_at).await?;
+        let mut tx = self.begin().await?;
+        RbatisPostService::update_post_by_id(&mut tx, id, post_data, update_created_at).await?;
+        let tags = RbatisPostService::create_tags(&mut tx, tag_titles).await?;
+        RbatisPostService::merge_post_tags(&mut tx, id, tags).await?;
+        tx.commit().await?;
         Ok(())
     }
 
     async fn delete_post_by_id(&self, id: &u64) -> DResult<()> {
-        let tx = self.rb.acquire_begin().await?;
-        let mut tx = tx.defer_async(|tx| async move {
-            if !tx.done() {
-                let _ = tx.rollback().await;
-            }
-        });
+        let mut tx = self.begin().await?;
         PostTag::delete_by_post_id(&mut tx, id).await?;
         RbatisPostService::delete_post_by_id(&mut tx, id).await?;
         tx.commit().await?;
@@ -447,87 +556,5 @@ impl PostService for RbatisPostService {
     async fn tag_by_id(&self, id: &u64) -> DResult<Option<Tag>> {
         let tag = Tag::select_by_id(&mut self.rb.clone(), id).await?;
         Ok(tag)
-    }
-    async fn create_tags(&self, tag_titles: Vec<String>) -> DResult<Vec<Tag>> {
-        if tag_titles.is_empty() {
-            return Ok(vec![]);
-        }
-        let tag_titles: Vec<String> = tag_titles
-            .into_iter()
-            .collect::<HashSet<String>>()
-            .into_iter()
-            .collect();
-        let search_titles = tag_titles.clone();
-
-        let existing_by_titles =
-            RbatisPostService::get_tags_by_titles(&self.rb, &search_titles).await?;
-
-        let existing_map =
-            existing_by_titles
-                .iter()
-                .fold(HashSet::new(), |mut set: HashSet<String>, tag| {
-                    set.insert(tag.title.clone());
-                    set
-                });
-
-        let fresh_tags: Vec<NewTag> =
-            transliteration::ru_to_latin(tag_titles, transliteration::TranslitOption::ToLowerCase)
-                .into_iter()
-                .map(|r| NewTag {
-                    slug: string_filter::remove_non_latin_or_number_chars(&r.transliterated),
-                    title: r.original,
-                })
-                .collect();
-
-        let to_insert: Vec<NewTag> = fresh_tags
-            .into_iter()
-            .filter(|t| !existing_map.contains(&t.title))
-            .collect();
-
-        if to_insert.is_empty() {
-            return Ok(existing_by_titles);
-        }
-
-        NewTag::insert_batch(&mut self.rb.clone(), &to_insert, to_insert.len() as u64).await?;
-
-        let all_tags = RbatisPostService::get_tags_by_titles(&self.rb, &search_titles).await?;
-        Ok(all_tags)
-    }
-
-    async fn merge_post_tags(&self, post_id: &u64, tags: Vec<Tag>) -> DResult<()> {
-        let new_tags_map: HashSet<u64> = tags.into_iter().fold(HashSet::new(), |mut set, tag| {
-            set.insert(tag.id);
-            set
-        });
-
-        let existing_tags_map = PostTag::select_all_by_post_id(&mut self.rb.clone(), post_id)
-            .await?
-            .into_iter()
-            .fold(HashSet::new(), |mut set, post_tag| {
-                set.insert(post_tag.tag_id);
-                set
-            });
-
-        let to_insert: Vec<PostTag> = new_tags_map
-            .iter()
-            .filter(|new| !existing_tags_map.contains(new))
-            .map(|to_insert| PostTag {
-                post_id: *post_id,
-                tag_id: *to_insert,
-            })
-            .collect();
-        let to_delete: Vec<u64> = existing_tags_map
-            .into_iter()
-            .filter(|existing| !new_tags_map.contains(&existing))
-            .collect();
-
-        if !to_insert.is_empty() {
-            PostTag::insert_batch(&mut self.rb.clone(), &to_insert, to_insert.len() as u64).await?;
-        }
-        if !to_delete.is_empty() {
-            PostTag::delete_by_post_id_and_tag_ids(&self.rb, *post_id, to_delete).await?;
-        }
-
-        Ok(())
     }
 }

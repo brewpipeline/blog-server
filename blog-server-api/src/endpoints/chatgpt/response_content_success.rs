@@ -6,9 +6,3 @@ use blog_server_api_macros::ApiSuccess;
 pub struct ChatResponseContentSuccess {
     chat_answer: ChatAnswer,
 }
-
-impl From<ChatAnswer> for ChatResponseContentSuccess {
-    fn from(chat_answer: ChatAnswer) -> Self {
-        ChatResponseContentSuccess { chat_answer }
-    }
-}

@@ -3,6 +3,7 @@ use blog_server_services::traits::{
     entity_post_service::EntityPostService, post_service::PostService,
 };
 use screw_api::request::{ApiRequestContent, ApiRequestOriginContent};
+use screw_api::response::ApiResponseContentFailure;
 use std::sync::Arc;
 
 pub struct PostsRequestContentFilter {
@@ -19,14 +20,17 @@ pub struct PostsRequestContent {
     pub(super) entity_post_service: Arc<dyn EntityPostService>,
 }
 
-impl<Extensions> ApiRequestContent<Extensions> for PostsRequestContent
+impl<Extensions, Failure> ApiRequestContent<Extensions, Failure> for PostsRequestContent
 where
-    Extensions: Resolve<Arc<dyn PostService>> + Resolve<Arc<dyn EntityPostService>>,
+    Extensions: Send + Sync + Resolve<Arc<dyn PostService>> + Resolve<Arc<dyn EntityPostService>>,
+    Failure: ApiResponseContentFailure,
 {
     type Data = ();
 
-    fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
-        Self {
+    async fn create(
+        origin_content: ApiRequestOriginContent<Self::Data, Extensions>,
+    ) -> Result<Self, Failure> {
+        Ok(Self {
             filter: PostsRequestContentFilter {
                 search_query: origin_content
                     .query
@@ -55,6 +59,6 @@ where
                 .flatten(),
             post_service: origin_content.extensions.resolve(),
             entity_post_service: origin_content.extensions.resolve(),
-        }
+        })
     }
 }

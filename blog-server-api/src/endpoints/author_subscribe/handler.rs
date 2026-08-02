@@ -26,31 +26,21 @@ async fn http_handler(
     }: AuthorSubscribeRequestContent,
     subscribe: u8,
 ) -> Result<AuthorSubscribeRequestContentSuccess, AuthorSubscribeResponseContentFailure> {
-    let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
-        reason: e.to_string(),
-    })?;
-
     let is_same_user = logged_in_author.id == id;
-    let is_user_admin = logged_in_author.base.editor == 1;
+    let is_user_admin = logged_in_author.is_editor();
 
     let subscriber_author = match (is_same_user, is_user_admin) {
         (true, _) => logged_in_author,
         (false, true) => author_service
             .author_by_id(&id)
-            .await
-            .map_err(|e| DatabaseError {
-                reason: e.to_string(),
-            })?
+            .await?
             .ok_or_else(|| NotFound)?,
         (false, false) => Err(Forbidden)?,
     };
 
     social_service
         .set_subscribe_for_author(&subscriber_author, &subscribe)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
     Ok(AuthorSubscribeRequestContentSuccess)
 }

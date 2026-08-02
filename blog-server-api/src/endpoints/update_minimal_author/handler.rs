@@ -10,15 +10,11 @@ pub async fn http_handler(
     (
         author,
         UpdateMinimalAuthorRequestContent {
-            updated_minimal_author_data,
+            updated_minimal_author_data: base_minimal_author,
             author_service,
         },
     ): (Author, UpdateMinimalAuthorRequestContent),
 ) -> Result<UpdateMinimalAuthorContentSuccess, UpdateMinimalAuthorContentFailure> {
-    let base_minimal_author = updated_minimal_author_data.map_err(|e| ValidationError {
-        reason: e.to_string(),
-    })?;
-
     base_minimal_author
         .validate()
         .map_err(|e| ValidationError {
@@ -27,10 +23,7 @@ pub async fn http_handler(
 
     author_service
         .update_minimal_custom_author_by_id(&author.id, &From::from(base_minimal_author))
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
-    Ok(().into())
+    Ok(UpdateMinimalAuthorContentSuccess)
 }

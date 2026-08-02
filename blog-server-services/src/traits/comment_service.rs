@@ -22,6 +22,12 @@ pub struct Comment {
     pub base: BaseComment,
 }
 
+impl crate::traits::Authored for Comment {
+    fn author_id(&self) -> u64 {
+        self.base.author_id
+    }
+}
+
 impl From<(u64, ECommonComment)> for BaseComment {
     fn from(value: (u64, ECommonComment)) -> Self {
         BaseComment {

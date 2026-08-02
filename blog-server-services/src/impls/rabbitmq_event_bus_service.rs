@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::sync::Arc;
 
 use amqprs::{
@@ -8,34 +9,10 @@ use amqprs::{
     error::Error,
 };
 use blog_generic::events::{NewPostPublished, SubscriptionStateChanged};
+use screw_components::dyn_result::DResult;
 use serde::Serialize;
 
 use crate::traits::Publish;
-
-enum EventBusError {
-    SerializationError,
-    PublishingError,
-}
-
-struct SendParametersDto {
-    bytes_payload: Result<Vec<u8>, EventBusError>,
-    routing_header_value: String,
-    channel: Option<Channel>,
-}
-
-impl SendParametersDto {
-    fn new(
-        bytes_payload: Result<Vec<u8>, EventBusError>,
-        routing_header_value: String,
-        channel: Option<Channel>,
-    ) -> SendParametersDto {
-        SendParametersDto {
-            bytes_payload,
-            routing_header_value,
-            channel,
-        }
-    }
-}
 
 pub async fn create_rabbit_event_bus_service(
     connection_string: &str,
@@ -53,10 +30,22 @@ pub async fn create_rabbit_event_bus_service(
     Ok(Arc::new(service))
 }
 
-const ROUTING_KEY: &'static str = "blog.events";
-const EXCHANGE_NAME: &'static str = "blog.events";
-const QUEUE_NAME: &'static str = "blog.events";
-const ROUTING_HEADER_KEY: &'static str = "blog.events.type";
+const ROUTING_KEY: &str = "blog.events";
+const EXCHANGE_NAME: &str = "blog.events";
+const QUEUE_NAME: &str = "blog.events";
+const ROUTING_HEADER_KEY: &str = "blog.events.type";
+
+trait BusEvent: Serialize + Debug {
+    const ROUTING_TYPE: &'static str;
+}
+
+impl BusEvent for SubscriptionStateChanged {
+    const ROUTING_TYPE: &'static str = "subscriptionstatechanged";
+}
+
+impl BusEvent for NewPostPublished {
+    const ROUTING_TYPE: &'static str = "newpostpublished";
+}
 
 struct RabbitEventBusService {
     connection_configuration: OpenConnectionArguments,
@@ -93,12 +82,12 @@ impl Connect for RabbitEventBusService {
             .register_callback(DefaultConnectionCallback)
             .await?;
 
-        let channel = new_connection.open_channel(None).await.unwrap();
+        let channel = new_connection.open_channel(None).await?;
         channel.register_callback(DefaultChannelCallback).await?;
 
         channel
             .queue_bind(QueueBindArguments::new(
-                &QUEUE_NAME,
+                QUEUE_NAME,
                 EXCHANGE_NAME,
                 ROUTING_KEY,
             ))
@@ -112,69 +101,57 @@ impl Connect for RabbitEventBusService {
 }
 
 #[async_trait]
-impl Publish<SubscriptionStateChanged> for RabbitEventBusService {
-    async fn publish(&self, event: SubscriptionStateChanged) -> () {
-        println!(
-            "event published: {}, {}",
-            event.blog_user_id, event.user_telegram_id
-        );
-        let send_parameters = SendParametersDto::new(
-            to_bytes_payload(event),
-            String::from("subscriptionstatechanged"),
-            self.channel.clone(),
-        );
-        publish(send_parameters).await;
-    }
-}
-
-#[async_trait]
-impl Publish<NewPostPublished> for RabbitEventBusService {
-    async fn publish(&self, event: NewPostPublished) -> () {
-        println!("event published: {}", event.blog_user_id);
-
-        let send_parameters = SendParametersDto::new(
-            to_bytes_payload(event),
-            String::from("newpostpublished"),
-            self.channel.clone(),
-        );
-        publish(send_parameters).await;
-    }
-}
-
-async fn publish(parameters: SendParametersDto) -> () {
-    if let (Ok(payload), Some(channel)) = (parameters.bytes_payload, parameters.channel) {
-        let res = internal_publish(payload, &channel, parameters.routing_header_value).await;
-        if res.is_err() {
-            println!("Error while publishing message");
+impl<E> Publish<E> for RabbitEventBusService
+where
+    E: BusEvent + Send + Sync + 'static,
+{
+    async fn publish(&self, event: E) {
+        match self.send(&event).await {
+            Ok(()) => println!("event published: {} {event:?}", E::ROUTING_TYPE),
+            Err(error) => println!(
+                "event not published: {} {event:?}: {error}",
+                E::ROUTING_TYPE
+            ),
         }
-    } else {
-        println!("Error while parsing event");
     }
 }
 
-fn to_bytes_payload<T: Serialize>(event: T) -> Result<Vec<u8>, EventBusError> {
-    match serde_json::to_string(&event) {
-        Ok(json_string) => Ok(json_string.into_bytes()),
-        Err(_) => Err(EventBusError::SerializationError),
+impl RabbitEventBusService {
+    //TODO add publisher confirms
+    async fn send<E: BusEvent>(&self, event: &E) -> DResult<()> {
+        let channel = self.channel.as_ref().ok_or("event bus is not connected")?;
+
+        let mut field_table = FieldTable::new();
+        let header_key = ROUTING_HEADER_KEY
+            .try_into()
+            .map_err(|_| format!("{ROUTING_HEADER_KEY} is not a header name"))?;
+        field_table.insert(header_key, E::ROUTING_TYPE.to_owned().into());
+
+        let mut props = BasicProperties::default();
+        props.with_headers(field_table);
+
+        channel
+            .basic_publish(
+                props,
+                serde_json::to_vec(event)?,
+                BasicPublishArguments::new(EXCHANGE_NAME, ROUTING_KEY),
+            )
+            .await?;
+
+        Ok(())
     }
 }
 
-//TODO add publisher confirms
-async fn internal_publish(
-    payload: Vec<u8>,
-    channel: &Channel,
-    routing_value: String,
-) -> Result<(), EventBusError> {
-    let args = BasicPublishArguments::new(EXCHANGE_NAME, ROUTING_KEY);
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let mut props = BasicProperties::default();
-    let mut field_table = FieldTable::new();
-    let header_key = ROUTING_HEADER_KEY.try_into().unwrap();
-    field_table.insert(header_key, routing_value.into());
-    props.with_headers(field_table);
-
-    match channel.basic_publish(props, payload, args).await {
-        Ok(_) => Ok(()),
-        Err(_) => Err(EventBusError::PublishingError),
+    #[test]
+    fn the_routing_types_are_the_ones_consumers_match_on() {
+        assert_eq!(
+            SubscriptionStateChanged::ROUTING_TYPE,
+            "subscriptionstatechanged"
+        );
+        assert_eq!(NewPostPublished::ROUTING_TYPE, "newpostpublished");
     }
 }

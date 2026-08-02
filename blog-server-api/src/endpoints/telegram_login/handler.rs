@@ -39,9 +39,7 @@ pub async fn http_handler(
         photo_url,
         auth_date,
         hash,
-    } = login_telegram_question.map_err(|e| ParamsDecodeError {
-        reason: e.to_string(),
-    })?;
+    } = login_telegram_question;
 
     let secret_key = sha256(crate::TELEGRAM_BOT_TOKEN.as_str());
     let check_string = {
@@ -92,10 +90,7 @@ pub async fn http_handler(
 
     let telegram_author = social_service
         .process_auth_by_id(&SocialId::TelegramId(id), &telegram_base_minimal_author)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
     let token = auth::token(telegram_author).map_err(|e| TokenGeneratingError {
         reason: e.to_string(),

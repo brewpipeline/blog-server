@@ -10,15 +10,11 @@ pub async fn http_handler(
     (
         author,
         UpdateSecondaryAuthorRequestContent {
-            updated_secondary_author_data,
+            updated_secondary_author_data: base_secondary_author,
             author_service,
         },
     ): (Author, UpdateSecondaryAuthorRequestContent),
 ) -> Result<UpdateSecondaryAuthorContentSuccess, UpdateSecondaryAuthorContentFailure> {
-    let base_secondary_author = updated_secondary_author_data.map_err(|e| ValidationError {
-        reason: e.to_string(),
-    })?;
-
     base_secondary_author
         .validate()
         .map_err(|e| ValidationError {
@@ -27,10 +23,7 @@ pub async fn http_handler(
 
     author_service
         .update_secondary_author_by_id(&author.id, &From::from(base_secondary_author))
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
-    Ok(().into())
+    Ok(UpdateSecondaryAuthorContentSuccess)
 }

@@ -6,9 +6,3 @@ use blog_server_api_macros::ApiSuccess;
 pub struct AuthorsResponseContentSuccess {
     pub(super) container: AuthorsContainer,
 }
-
-impl From<AuthorsContainer> for AuthorsResponseContentSuccess {
-    fn from(value: AuthorsContainer) -> Self {
-        AuthorsResponseContentSuccess { container: value }
-    }
-}

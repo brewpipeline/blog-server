@@ -74,34 +74,48 @@ pub struct Author {
     pub base: BaseAuthor,
 }
 
-impl Into<EAuthor> for Author {
-    fn into(self) -> EAuthor {
+impl Author {
+    pub fn is_editor(&self) -> bool {
+        self.base.editor == 1
+    }
+
+    pub fn owns(&self, author_id: u64) -> bool {
+        self.id == author_id
+    }
+
+    pub fn may_edit(&self, author_id: u64) -> bool {
+        self.owns(author_id) || self.is_editor()
+    }
+}
+
+impl From<Author> for EAuthor {
+    fn from(value: Author) -> Self {
         use crate::utils::image_signer::{ImageVariant, processed_image_urls};
-        let avatar: Vec<(&str, ImageVariant)> = self
+        let avatar: Vec<(&str, ImageVariant)> = value
             .base
             .image_url
             .as_deref()
-            .filter(|_| self.base.blocked == 0)
+            .filter(|_| value.base.blocked == 0)
             .map(|u| (u, ImageVariant::Small))
             .into_iter()
             .collect();
         let processed_image_urls = processed_image_urls(&avatar, None);
         EAuthor {
-            id: self.id,
-            slug: self.base.slug,
-            first_name: self.base.first_name.filter(|_| self.base.blocked == 0),
-            last_name: self.base.last_name.filter(|_| self.base.blocked == 0),
-            middle_name: self.base.middle_name.filter(|_| self.base.blocked == 0),
-            mobile: self.base.mobile.filter(|_| self.base.blocked == 0),
-            email: self.base.email.filter(|_| self.base.blocked == 0),
-            registered_at: self.base.registered_at,
-            status: self.base.status.filter(|_| self.base.blocked == 0),
-            image_url: self.base.image_url.filter(|_| self.base.blocked == 0),
+            id: value.id,
+            slug: value.base.slug,
+            first_name: value.base.first_name.filter(|_| value.base.blocked == 0),
+            last_name: value.base.last_name.filter(|_| value.base.blocked == 0),
+            middle_name: value.base.middle_name.filter(|_| value.base.blocked == 0),
+            mobile: value.base.mobile.filter(|_| value.base.blocked == 0),
+            email: value.base.email.filter(|_| value.base.blocked == 0),
+            registered_at: value.base.registered_at,
+            status: value.base.status.filter(|_| value.base.blocked == 0),
+            image_url: value.base.image_url.filter(|_| value.base.blocked == 0),
             processed_image_urls,
-            editor: self.base.editor,
-            blocked: self.base.blocked,
-            notification_subscribed: self.base.notification_subscribed,
-            override_social_data: self.base.override_social_data,
+            editor: value.base.editor,
+            blocked: value.base.blocked,
+            notification_subscribed: value.base.notification_subscribed,
+            override_social_data: value.base.override_social_data,
         }
     }
 }
@@ -152,4 +166,5 @@ pub trait AuthorService: Send + Sync {
     ) -> DResult<u64>;
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()>;
     async fn set_author_subscription_by_id(&self, id: &u64, is_subscribed: &u8) -> DResult<()>;
+    async fn subscribed_telegram_ids(&self) -> DResult<Vec<u64>>;
 }

@@ -20,9 +20,7 @@ pub async fn http_handler(
         author_service,
     },): (LoginRequestContent,),
 ) -> Result<LoginResponseContentSuccess, LoginResponseContentFailure> {
-    let LoginQuestion { slug, password } = login_question.map_err(|e| ParamsDecodeError {
-        reason: e.to_string(),
-    })?;
+    let LoginQuestion { slug, password } = login_question;
 
     if slug.is_empty() {
         return Err(SlugEmpty);
@@ -30,10 +28,7 @@ pub async fn http_handler(
 
     let author = author_service
         .author_by_slug(&slug)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
+        .await?
         .ok_or(NotFound)?;
 
     let mut login_try_storage = LOGIN_TRY_STORAGE.lock().await;
@@ -199,6 +194,10 @@ mod tests {
         ) -> DResult<()> {
             unimplemented!()
         }
+
+        async fn subscribed_telegram_ids(&self) -> DResult<Vec<u64>> {
+            unimplemented!()
+        }
     }
 
     fn sample_author(password_hash: Option<String>) -> Author {
@@ -236,10 +235,10 @@ mod tests {
             behavior: MockBehavior::Success(None),
         });
         let result = http_handler((LoginRequestContent {
-            login_question: Ok(LoginQuestion {
+            login_question: LoginQuestion {
                 slug: String::new(),
                 password: String::new(),
-            }),
+            },
             author_service: service,
         },))
         .await;
@@ -253,10 +252,10 @@ mod tests {
             behavior: MockBehavior::Success(None),
         });
         let result = http_handler((LoginRequestContent {
-            login_question: Ok(LoginQuestion {
+            login_question: LoginQuestion {
                 slug: "missing".into(),
                 password: "pwd".into(),
-            }),
+            },
             author_service: service,
         },))
         .await;
@@ -270,10 +269,10 @@ mod tests {
             behavior: MockBehavior::Error,
         });
         let result = http_handler((LoginRequestContent {
-            login_question: Ok(LoginQuestion {
+            login_question: LoginQuestion {
                 slug: "john".into(),
                 password: "pwd".into(),
-            }),
+            },
             author_service: service,
         },))
         .await;
@@ -288,10 +287,10 @@ mod tests {
             behavior: MockBehavior::Success(Some(sample_author(Some(hash)))),
         });
         let result = http_handler((LoginRequestContent {
-            login_question: Ok(LoginQuestion {
+            login_question: LoginQuestion {
                 slug: "john".into(),
                 password: "wrong".into(),
-            }),
+            },
             author_service: service,
         },))
         .await;
@@ -307,10 +306,10 @@ mod tests {
             behavior: MockBehavior::Success(Some(sample_author(Some(hash.clone())))),
         });
         let result = http_handler((LoginRequestContent {
-            login_question: Ok(LoginQuestion {
+            login_question: LoginQuestion {
                 slug: "john".into(),
                 password: "secret".into(),
-            }),
+            },
             author_service: service,
         },))
         .await;

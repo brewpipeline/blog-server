@@ -5,6 +5,14 @@ pub mod entity_post_service;
 pub mod post_service;
 pub mod social_service;
 
+pub trait Authored {
+    fn author_id(&self) -> u64;
+}
+
+pub trait FromAuthored<T> {
+    fn from_authored(item: T, author: author_service::Author) -> Self;
+}
+
 #[async_trait]
 pub trait Publish<E>: Send + Sync {
     async fn publish(&self, event: E) -> ();

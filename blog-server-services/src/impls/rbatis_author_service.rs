@@ -1,4 +1,5 @@
 use rbatis::rbatis::RBatis;
+use rbatis::rbdc::db::ExecResult;
 use screw_components::dyn_result::DResult;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -68,7 +69,11 @@ impl Author {
         WHERE id = #{id}
     "
     )]
-    async fn set_blocked_by_id(rb: &RBatis, id: &u64, is_blocked: &u8) -> rbatis::Result<()> {
+    async fn set_blocked_by_id(
+        rb: &RBatis,
+        id: &u64,
+        is_blocked: &u8,
+    ) -> rbatis::Result<ExecResult> {
         impled!()
     }
     #[py_sql(
@@ -83,7 +88,7 @@ impl Author {
         rb: &RBatis,
         id: &u64,
         is_subscribed: &u8,
-    ) -> rbatis::Result<()> {
+    ) -> rbatis::Result<ExecResult> {
         impled!()
     }
     #[py_sql(
@@ -98,7 +103,19 @@ impl Author {
         rb: &RBatis,
         id: &u64,
         override_social_data: &u8,
-    ) -> rbatis::Result<()> {
+    ) -> rbatis::Result<ExecResult> {
+        impled!()
+    }
+    #[py_sql(
+        "
+        SELECT telegram_id \
+        FROM author \
+        WHERE \
+            notification_subscribed <> 0 \
+            AND telegram_id IS NOT NULL
+    "
+    )]
+    async fn select_subscribed_telegram_ids(rb: &RBatis) -> rbatis::Result<Vec<u64>> {
         impled!()
     }
 }
@@ -255,9 +272,8 @@ impl AuthorService for RbatisAuthorService {
         id: &u64,
         override_social_data: &u8,
     ) -> DResult<()> {
-        let _ =
-            Author::set_override_social_data_by_id(&mut self.rb.clone(), &id, override_social_data)
-                .await;
+        Author::set_override_social_data_by_id(&mut self.rb.clone(), &id, override_social_data)
+            .await?;
         Ok(())
     }
     async fn update_minimal_custom_author_by_id(
@@ -320,13 +336,15 @@ impl AuthorService for RbatisAuthorService {
         Ok(updated_id)
     }
     async fn set_author_blocked_by_id(&self, id: &u64, is_blocked: &u8) -> DResult<()> {
-        let _ = Author::set_blocked_by_id(&mut self.rb.clone(), &id, &is_blocked).await;
+        Author::set_blocked_by_id(&mut self.rb.clone(), &id, &is_blocked).await?;
         Ok(())
     }
     async fn set_author_subscription_by_id(&self, id: &u64, is_subscribed: &u8) -> DResult<()> {
-        let _ =
-            Author::set_notification_subscribed_by_id(&mut self.rb.clone(), &id, &is_subscribed)
-                .await;
+        Author::set_notification_subscribed_by_id(&mut self.rb.clone(), &id, &is_subscribed)
+            .await?;
         Ok(())
+    }
+    async fn subscribed_telegram_ids(&self) -> DResult<Vec<u64>> {
+        Ok(Author::select_subscribed_telegram_ids(&self.rb).await?)
     }
 }

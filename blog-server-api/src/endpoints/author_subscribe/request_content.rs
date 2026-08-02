@@ -4,9 +4,10 @@ use blog_server_services::traits::social_service::SocialService;
 use std::sync::Arc;
 
 #[derive(ApiRequest)]
+#[request(failure = super::response_content_failure::AuthorSubscribeResponseContentFailure)]
 pub struct AuthorSubscribeRequestContent {
     #[request(path = "id")]
-    pub(super) id: String,
+    pub(super) id: u64,
     #[request(extension)]
     pub(super) social_service: Arc<dyn SocialService>,
     #[request(extension)]

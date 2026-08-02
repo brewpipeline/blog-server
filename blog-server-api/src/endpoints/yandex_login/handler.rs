@@ -1,6 +1,7 @@
 use blog_generic::*;
 use blog_server_services::traits::author_service::BaseMinimalAuthor;
 use blog_server_services::traits::social_service::SocialId;
+use blog_server_services::utils::http_client;
 use blog_server_services::utils::time_utils;
 use serde::Deserialize;
 
@@ -12,19 +13,11 @@ use super::response_content_success::LoginYandexResponseContentSuccess;
 use crate::utils::*;
 
 #[derive(Clone, Debug, Deserialize)]
-struct YandexLoginPhoneResponse {
-    id: u64,
-    number: String,
-}
-
-#[derive(Clone, Debug, Deserialize)]
 struct YandexLoginResponse {
     id: String,
     first_name: Option<String>,
     last_name: Option<String>,
     login: String,
-    default_email: Option<String>,
-    default_phone: Option<YandexLoginPhoneResponse>,
     #[serde(default)]
     is_avatar_empty: bool,
     #[serde(default)]
@@ -41,11 +34,9 @@ pub async fn http_handler(
         access_token,
         token_type: _,
         expires_in: _,
-    } = login_yandex_question.map_err(|e| ParamsDecodeError {
-        reason: e.to_string(),
-    })?;
+    } = login_yandex_question;
 
-    let yandex_login_response = reqwest::Client::new()
+    let yandex_login_response = http_client::shared()
         .get("https://login.yandex.ru/info")
         .header("Authorization", format!("OAuth {access_token}"))
         .send()
@@ -82,10 +73,7 @@ pub async fn http_handler(
 
     let yandex_author = social_service
         .process_auth_by_id(&SocialId::YandexId(yandex_id), &yandex_base_minimal_author)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
     let token = auth::token(yandex_author).map_err(|e| TokenGeneratingError {
         reason: e.to_string(),

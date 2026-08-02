@@ -2,7 +2,6 @@ use blog_server_services::traits::author_service::Author;
 
 use super::request_content::PostUpdateRecommendedRequestContent;
 use super::response_content_failure::PostUpdateRecommendedResponseContentFailure;
-use super::response_content_failure::PostUpdateRecommendedResponseContentFailure::*;
 use super::response_content_success::PostUpdateRecommendedResponseContentSuccess;
 
 pub async fn http_handler_true(
@@ -24,16 +23,9 @@ async fn http_handler(
     recommended: u8,
 ) -> Result<PostUpdateRecommendedResponseContentSuccess, PostUpdateRecommendedResponseContentFailure>
 {
-    let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
-        reason: e.to_string(),
-    })?;
-
     post_service
         .set_post_recommended_by_id(&id, &recommended)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+        .await?;
 
     Ok(PostUpdateRecommendedResponseContentSuccess)
 }

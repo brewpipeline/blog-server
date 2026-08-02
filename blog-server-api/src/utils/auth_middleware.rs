@@ -1,14 +1,12 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use hyper::StatusCode;
 use screw_api::request::{ApiRequest, ApiRequestContent, ApiRequestOriginContent};
-use screw_api::response::{
-    ApiResponse, ApiResponseContentBase, ApiResponseContentFailure, ApiResponseContentSuccess,
-};
+use screw_api::response::{ApiResponse, ApiResponseContentFailure, ApiResponseContentSuccess};
 use screw_components::dyn_fn::{DFnOnce, DFuture};
 use screw_core::routing::middleware::Middleware;
 
+use blog_server_api_macros::ApiFailure;
 use blog_server_services::traits::author_service::{Author, AuthorService};
 
 use crate::extensions::Resolve;
@@ -27,14 +25,14 @@ impl AuthPolicy {
             AuthPolicy::Authenticated => Ok(()),
             AuthPolicy::NotBlocked => {
                 if author.base.blocked == 1 {
-                    Err(AuthRejection::Blocked)
+                    Err(AuthRejection::AuthorBlocked)
                 } else {
                     Ok(())
                 }
             }
             AuthPolicy::Editor => {
                 if author.base.editor == 0 {
-                    Err(AuthRejection::NotEditor)
+                    Err(AuthRejection::EditorRightsRequired)
                 } else {
                     Ok(())
                 }
@@ -43,44 +41,18 @@ impl AuthPolicy {
     }
 }
 
+#[derive(ApiFailure)]
 pub enum AuthRejection {
-    Unauthorized(auth::Error),
-    Blocked,
-    NotEditor,
-}
-
-impl ApiResponseContentBase for AuthRejection {
-    fn status_code(&self) -> StatusCode {
-        match self {
-            AuthRejection::Unauthorized(_) => StatusCode::UNAUTHORIZED,
-            AuthRejection::Blocked => StatusCode::FORBIDDEN,
-            AuthRejection::NotEditor => StatusCode::FORBIDDEN,
-        }
-    }
-}
-
-impl ApiResponseContentFailure for AuthRejection {
-    fn identifier(&self) -> &'static str {
-        match self {
-            AuthRejection::Unauthorized(_) => "UNAUTHORIZED",
-            AuthRejection::Blocked => "AUTHOR_BLOCKED",
-            AuthRejection::NotEditor => "EDITOR_RIGHTS_REQUIRED",
-        }
-    }
-
-    fn reason(&self) -> Option<String> {
-        Some(match self {
-            AuthRejection::Unauthorized(e) => {
-                if cfg!(debug_assertions) {
-                    format!("unauthorized error: {}", e)
-                } else {
-                    "unauthorized error".to_string()
-                }
-            }
-            AuthRejection::Blocked => "author is blocked".to_string(),
-            AuthRejection::NotEditor => "insufficient rights".to_string(),
-        })
-    }
+    #[failure(
+        status = UNAUTHORIZED,
+        reason = "unauthorized error",
+        debug_reason = "unauthorized error: {reason}"
+    )]
+    Unauthorized { reason: auth::Error },
+    #[failure(status = FORBIDDEN, reason = "author is blocked")]
+    AuthorBlocked,
+    #[failure(status = FORBIDDEN, reason = "insufficient rights")]
+    EditorRightsRequired,
 }
 
 pub struct AuthApiRequestContent<Content> {
@@ -88,22 +60,27 @@ pub struct AuthApiRequestContent<Content> {
     inner: Content,
 }
 
-impl<Content, Extensions> ApiRequestContent<Extensions> for AuthApiRequestContent<Content>
+impl<Content, Extensions, Failure> ApiRequestContent<Extensions, Failure>
+    for AuthApiRequestContent<Content>
 where
-    Content: ApiRequestContent<Extensions>,
-    Extensions: Resolve<Arc<dyn AuthorService>>,
+    Content: ApiRequestContent<Extensions, Failure>,
+    Content::Data: Send,
+    Extensions: Send + Sync + Resolve<Arc<dyn AuthorService>>,
+    Failure: ApiResponseContentFailure,
 {
     type Data = Content::Data;
 
-    fn create(origin_content: ApiRequestOriginContent<Self::Data, Extensions>) -> Self {
+    async fn create(
+        origin_content: ApiRequestOriginContent<Self::Data, Extensions>,
+    ) -> Result<Self, Failure> {
         let auth_author_future: DFuture<Result<Author, auth::Error>> = Box::pin(auth::author(
             &origin_content.http_parts,
             origin_content.extensions.resolve(),
         ));
-        Self {
+        Ok(Self {
             auth_author_future,
-            inner: Content::create(origin_content),
-        }
+            inner: Content::create(origin_content).await?,
+        })
     }
 }
 
@@ -134,8 +111,8 @@ impl<Content, Extensions, Success, Failure>
     Middleware<AuthorizedApiRequest<Content, Extensions>, ApiResponse<Success, Failure>>
     for AuthApiMiddleware
 where
-    Content: ApiRequestContent<Extensions> + Send + 'static,
-    <Content as ApiRequestContent<Extensions>>::Data: Sync + Send + 'static,
+    Content: ApiRequestContent<Extensions, Failure> + Send + 'static,
+    <Content as ApiRequestContent<Extensions, Failure>>::Data: Sync + Send + 'static,
     Extensions: Resolve<Arc<dyn AuthorService>> + Sync + Send + 'static,
     Success: ApiResponseContentSuccess + Send + 'static,
     Failure: ApiResponseContentFailure + From<AuthRejection> + Send + 'static,
@@ -155,7 +132,9 @@ where
 
         let author = match auth_author_future.await {
             Ok(author) => author,
-            Err(e) => return ApiResponse::failure(AuthRejection::Unauthorized(e).into()),
+            Err(e) => {
+                return ApiResponse::failure(AuthRejection::Unauthorized { reason: e }.into());
+            }
         };
 
         if let Err(rejection) = self.policy.check(&author) {
@@ -192,8 +171,8 @@ impl<Content, Extensions, Success, Failure>
     Middleware<MaybeAuthorizedApiRequest<Content, Extensions>, ApiResponse<Success, Failure>>
     for OptionalAuthApiMiddleware
 where
-    Content: ApiRequestContent<Extensions> + Send + 'static,
-    <Content as ApiRequestContent<Extensions>>::Data: Sync + Send + 'static,
+    Content: ApiRequestContent<Extensions, Failure> + Send + 'static,
+    <Content as ApiRequestContent<Extensions, Failure>>::Data: Sync + Send + 'static,
     Extensions: Resolve<Arc<dyn AuthorService>> + Sync + Send + 'static,
     Success: ApiResponseContentSuccess + Send + 'static,
     Failure: ApiResponseContentFailure + Send + 'static,
@@ -227,6 +206,8 @@ where
 mod tests {
     use super::*;
     use blog_server_services::traits::author_service::BaseAuthor;
+    use hyper::StatusCode;
+    use screw_api::response::ApiResponseContentBase;
 
     fn author(editor: u8, blocked: u8) -> Author {
         Author {

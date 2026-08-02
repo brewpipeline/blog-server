@@ -16,12 +16,12 @@ pub struct Tag {
     pub title: String,
 }
 
-impl Into<ETag> for Tag {
-    fn into(self) -> ETag {
+impl From<Tag> for ETag {
+    fn from(value: Tag) -> Self {
         ETag {
-            id: self.id,
-            title: self.title,
-            slug: self.slug,
+            id: value.id,
+            title: value.title,
+            slug: value.slug,
         }
     }
 }
@@ -53,6 +53,19 @@ impl BasePost {
         }
         #[allow(unreachable_code)]
         None
+    }
+
+    pub fn current_text_search_config() -> &'static str {
+        #[cfg(feature = "lang_ru")]
+        {
+            return "russian";
+        }
+        #[cfg(feature = "lang_en")]
+        {
+            return "english";
+        }
+        #[allow(unreachable_code)]
+        "simple"
     }
 }
 
@@ -92,6 +105,12 @@ pub struct Post {
     pub tags: Vec<Tag>,
     #[serde(flatten)]
     pub base: BasePost,
+}
+
+impl crate::traits::Authored for Post {
+    fn author_id(&self) -> u64 {
+        self.base.author_id
+    }
 }
 
 pub struct PostsQuery<'q, 'a, 't, 'p, 'o, 'l> {
@@ -145,12 +164,13 @@ pub trait PostService: Send + Sync {
     ) -> DResult<PostsQueryAnswer>;
 
     async fn post_by_id(&self, id: &u64) -> DResult<Option<Post>>;
-    async fn create_post(&self, post: &BasePost) -> DResult<u64>;
+    async fn create_post(&self, post: &BasePost, tag_titles: Vec<String>) -> DResult<u64>;
     async fn update_post_by_id(
         &self,
         id: &u64,
         post: &BasePost,
         update_created_at: &bool,
+        tag_titles: Vec<String>,
     ) -> DResult<()>;
     async fn delete_post_by_id(&self, id: &u64) -> DResult<()>;
 
@@ -158,6 +178,4 @@ pub trait PostService: Send + Sync {
     async fn set_post_recommended_by_id(&self, id: &u64, recommended: &u8) -> DResult<()>;
 
     async fn tag_by_id(&self, id: &u64) -> DResult<Option<Tag>>;
-    async fn create_tags(&self, tag_titles: Vec<String>) -> DResult<Vec<Tag>>;
-    async fn merge_post_tags(&self, post_id: &u64, tags: Vec<Tag>) -> DResult<()>;
 }

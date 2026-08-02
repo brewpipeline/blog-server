@@ -20,24 +20,10 @@ pub async fn http_handler(
         },
     ): (Option<Author>, PostRequestContent),
 ) -> Result<PostResponseContentSuccess, PostResponseContentFailure> {
-    let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
-        reason: e.to_string(),
-    })?;
-
-    let post = post_service
-        .post_by_id(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
-        .ok_or(NotFound)?;
+    let post = post_service.post_by_id(&id).await?.ok_or(NotFound)?;
 
     if !post.base.publish_type.is_published() {
-        let have_access = if let Some(author) = author {
-            post.base.author_id == author.id || author.base.editor == 1
-        } else {
-            false
-        };
+        let have_access = author.is_some_and(|author| author.may_edit(post.base.author_id));
         if !have_access {
             return Err(NotFound.into());
         }
@@ -45,17 +31,15 @@ pub async fn http_handler(
 
     let post_entity = entity_post_service
         .posts_entities(vec![post])
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
+        .await?
         .remove(0);
 
     Ok(post_entity.into())
 }
 
+#[cfg_attr(not(feature = "ssr"), allow(dead_code))]
 pub async fn direct_handler(
-    id: String,
+    id: u64,
     post_service: Arc<dyn PostService>,
     entity_post_service: Arc<dyn EntityPostService>,
 ) -> Option<PostContainer> {

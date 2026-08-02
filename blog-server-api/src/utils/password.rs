@@ -5,6 +5,7 @@ use argon2::{
     },
 };
 
+#[cfg_attr(not(feature = "lang_ru"), allow(dead_code))]
 pub fn hash(password: &String) -> Result<String> {
     let salt = SaltString::generate(&mut OsRng);
 

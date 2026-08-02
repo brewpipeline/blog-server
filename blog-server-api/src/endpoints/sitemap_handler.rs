@@ -1,4 +1,4 @@
-use chrono::{DateTime, FixedOffset, NaiveDateTime};
+use chrono::{DateTime, FixedOffset};
 use sitemap_rs::url::{ChangeFrequency, Url};
 use sitemap_rs::url_set::UrlSet;
 use std::sync::Arc;

@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{Data, DeriveInput, Fields, LitStr, parse_macro_input};
+use syn::{Data, DeriveInput, Fields, LitStr, Path, parse_macro_input};
 
 pub fn derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -14,6 +14,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
     let mut identifier = None;
     let mut description = None;
+    let mut convert_from: Option<Path> = None;
 
     for attr in &input.attrs {
         if !attr.path().is_ident("success") {
@@ -32,6 +33,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 "description" => {
                     description = Some(meta.value()?.parse::<LitStr>()?.value());
                 }
+                "from" => convert_from = Some(meta.value()?.parse()?),
                 other => return Err(meta.error(format!("unknown success option `{other}`"))),
             }
             Ok(())
@@ -55,13 +57,43 @@ pub fn derive(input: TokenStream) -> TokenStream {
             .into();
     };
 
-    let (data_type, data_body) = match &data.fields {
-        Fields::Unit => (quote! { () }, quote! { &() }),
+    let (data_type, data_body, from_impls) = match &data.fields {
+        Fields::Unit => {
+            if let Some(path) = convert_from {
+                return syn::Error::new_spanned(
+                    path,
+                    "a unit success carries no data, so there is nothing to convert into",
+                )
+                .to_compile_error()
+                .into();
+            }
+            (quote! { () }, quote! { &() }, quote! {})
+        }
         Fields::Named(named) if named.named.len() == 1 => {
             let field = named.named.first().unwrap();
             let field_name = &field.ident;
             let field_type = &field.ty;
-            (quote! { #field_type }, quote! { &self.#field_name })
+            let converted = convert_from.map(|path| {
+                quote! {
+                    impl From<#path> for #name {
+                        fn from(value: #path) -> Self {
+                            Self { #field_name: value.into() }
+                        }
+                    }
+                }
+            });
+            (
+                quote! { #field_type },
+                quote! { &self.#field_name },
+                quote! {
+                    impl From<#field_type> for #name {
+                        fn from(#field_name: #field_type) -> Self {
+                            Self { #field_name }
+                        }
+                    }
+                    #converted
+                },
+            )
         }
         _ => {
             return syn::Error::new_spanned(
@@ -92,6 +124,8 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 #data_body
             }
         }
+
+        #from_impls
     }
     .into()
 }

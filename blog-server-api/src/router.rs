@@ -43,39 +43,39 @@ async fn api_not_found_fallback_handler<Extensions>(
     ApiResponse::failure(NotFoundResponseContentFailure)
 }
 
+#[cfg(not(feature = "ssr"))]
+use self::not_found_fallback_handler as fallback_route;
+#[cfg(feature = "ssr")]
+use super::endpoints::client_handler as fallback_route;
+
+#[cfg(not(feature = "ssr"))]
+use self::not_found_fallback_handler as sitemap_route;
+#[cfg(feature = "ssr")]
+use super::endpoints::sitemap_handler as sitemap_route;
+
+#[cfg(not(feature = "ssr"))]
+use self::not_found_fallback_handler as robots_route;
+#[cfg(feature = "ssr")]
+use super::endpoints::robots_handler as robots_route;
+
+#[cfg(not(feature = "yandex"))]
+use self::api_not_found_fallback_handler as yandex_route;
+#[cfg(feature = "yandex")]
+use super::endpoints::yandex_login::http_handler as yandex_route;
+
+#[cfg(not(feature = "telegram"))]
+use self::api_not_found_fallback_handler as telegram_route;
+#[cfg(feature = "telegram")]
+use super::endpoints::telegram_login::http_handler as telegram_route;
+
+#[cfg(not(feature = "chatgpt"))]
+use self::api_not_found_fallback_handler as chatgpt_route;
+#[cfg(feature = "chatgpt")]
+use super::endpoints::chatgpt::http_handler as chatgpt_route;
+
 pub fn make_router<Extensions: ExtensionsProviderType>()
 -> router::second::Router<Request<Extensions>, Response> {
-    #[cfg(not(feature = "ssr"))]
-    let fallback_handler = not_found_fallback_handler;
-    #[cfg(feature = "ssr")]
-    let fallback_handler = client_handler;
-
-    #[cfg(not(feature = "ssr"))]
-    let sitemap_handler = not_found_fallback_handler;
-    #[cfg(feature = "ssr")]
-    let sitemap_handler = sitemap_handler;
-
-    #[cfg(not(feature = "ssr"))]
-    let robots_handler = not_found_fallback_handler;
-    #[cfg(feature = "ssr")]
-    let robots_handler = robots_handler;
-
-    #[cfg(not(feature = "yandex"))]
-    let yandex_handler = api_not_found_fallback_handler;
-    #[cfg(feature = "yandex")]
-    let yandex_handler = yandex_login::http_handler;
-
-    #[cfg(not(feature = "telegram"))]
-    let telegram_handler = api_not_found_fallback_handler;
-    #[cfg(feature = "telegram")]
-    let telegram_handler = telegram_login::http_handler;
-
-    #[cfg(not(feature = "chatgpt"))]
-    let chatgpt_handler = api_not_found_fallback_handler;
-    #[cfg(feature = "chatgpt")]
-    let chatgpt_handler = chatgpt::http_handler;
-
-    router::first::Router::with_fallback_handler(fallback_handler).and_routes(|r| {
+    router::first::Router::with_fallback_handler(fallback_route).and_routes(|r| {
         r.scoped_middleware(
             "/api",
             JsonApiMiddlewareConverter {
@@ -111,12 +111,12 @@ pub fn make_router<Extensions: ExtensionsProviderType>()
                     )
                     .middleware(AuthApiMiddleware::with_policy(AuthPolicy::Editor), |r| {
                         r.route(
-                            route::first::Route::with_method(&hyper::Method::GET)
+                            route::first::Route::with_method(&hyper::Method::PATCH)
                                 .and_path("/id/{id:[^/]*}/block")
                                 .and_handler(author_block::http_handler_block),
                         )
                         .route(
-                            route::first::Route::with_method(&hyper::Method::GET)
+                            route::first::Route::with_method(&hyper::Method::PATCH)
                                 .and_path("/id/{id:[^/]*}/unblock")
                                 .and_handler(author_block::http_handler_unblock),
                         )
@@ -261,7 +261,7 @@ pub fn make_router<Extensions: ExtensionsProviderType>()
                 .route(
                     route::first::Route::with_method(&hyper::Method::POST)
                         .and_path("/chatgpt")
-                        .and_handler(chatgpt_handler),
+                        .and_handler(chatgpt_route),
                 )
                 .route(
                     route::first::Route::with_method(&hyper::Method::POST)
@@ -271,12 +271,12 @@ pub fn make_router<Extensions: ExtensionsProviderType>()
                 .route(
                     route::first::Route::with_method(&hyper::Method::POST)
                         .and_path("/ylogin")
-                        .and_handler(yandex_handler),
+                        .and_handler(yandex_route),
                 )
                 .route(
                     route::first::Route::with_method(&hyper::Method::POST)
                         .and_path("/tlogin")
-                        .and_handler(telegram_handler),
+                        .and_handler(telegram_route),
                 )
                 .route(
                     route::first::Route::with_any_method()
@@ -288,12 +288,12 @@ pub fn make_router<Extensions: ExtensionsProviderType>()
         .route(
             route::first::Route::with_method(&hyper::Method::GET)
                 .and_path("/sitemap.xml")
-                .and_handler(sitemap_handler),
+                .and_handler(sitemap_route),
         )
         .route(
             route::first::Route::with_method(&hyper::Method::GET)
                 .and_path("/robots.txt")
-                .and_handler(robots_handler),
+                .and_handler(robots_route),
         )
         .route(
             route::first::Route::with_method(&hyper::Method::GET)

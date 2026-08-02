@@ -20,15 +20,13 @@ pub async fn http_handler(
 
     let author = author_service
         .author_by_slug(&slug)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
+        .await?
         .ok_or(NotFound)?;
 
     Ok(author.into())
 }
 
+#[cfg_attr(not(feature = "ssr"), allow(dead_code))]
 pub async fn direct_handler(
     slug: String,
     author_service: Arc<dyn AuthorService>,
@@ -161,6 +159,10 @@ mod tests {
             _id: &u64,
             _is_subscribed: &u8,
         ) -> DResult<()> {
+            unimplemented!()
+        }
+
+        async fn subscribed_telegram_ids(&self) -> DResult<Vec<u64>> {
             unimplemented!()
         }
     }

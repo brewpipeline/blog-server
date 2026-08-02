@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
-use blog_generic::entities::{PostsContainer, PublishType, TotalOffsetLimitContainer};
+use blog_generic::entities::{PostsContainer, PublishType};
+
+use crate::utils::pagination::Pagination;
 use blog_server_services::traits::author_service::Author;
 use blog_server_services::traits::entity_post_service::EntityPostService;
 use blog_server_services::traits::post_service::{PostService, PostsQuery, PostsQueryAnswer};
 
-use super::request_content::{PostsRequestContentFilter as Filter, *};
+use super::request_content::*;
 use super::response_content_failure::PostsResponseContentFailure;
 use super::response_content_failure::PostsResponseContentFailure::*;
 use super::response_content_success::PostsResponseContentSuccess;
@@ -65,13 +67,12 @@ async fn handler(
     }: PostsRequestContent,
     handler_type: HandlerType,
 ) -> Result<PostsResponseContentSuccess, PostsResponseContentFailure> {
-    let offset = offset.unwrap_or(0).max(0);
-    let limit = limit.unwrap_or(50).max(0).min(50);
+    let pagination = Pagination::new(offset, limit, 50);
 
     let publish_type = match handler_type {
         HandlerType::Published => PublishType::Published,
         HandlerType::AuthRequired { inner_type, author } => {
-            if !(filter.author_id == Some(author.id) || author.base.editor == 1) {
+            if !(filter.author_id == Some(author.id) || author.is_editor()) {
                 return Err(Forbidden);
             }
             match inner_type {
@@ -81,38 +82,24 @@ async fn handler(
         }
     };
 
-    let posts_query = PostsQuery::offset_and_limit(&offset, &limit)
+    let posts_query = PostsQuery::offset_and_limit(&pagination.offset, &pagination.limit)
         .publish_type(Some(&publish_type))
         .search_query(Option::from(&filter.search_query))
         .author_id(Option::from(&filter.author_id))
         .tag_id(Option::from(&filter.tag_id));
 
-    let PostsQueryAnswer { total_count, posts } =
-        post_service
-            .posts(posts_query)
-            .await
-            .map_err(|e| DatabaseError {
-                reason: e.to_string(),
-            })?;
+    let PostsQueryAnswer { total_count, posts } = post_service.posts(posts_query).await?;
 
-    let posts_entities = entity_post_service
-        .posts_entities(posts)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+    let posts_entities = entity_post_service.posts_entities(posts).await?;
 
     Ok(PostsContainer {
         posts: posts_entities,
-        base: TotalOffsetLimitContainer {
-            total: total_count,
-            offset,
-            limit,
-        },
+        base: pagination.with_total(total_count),
     }
     .into())
 }
 
+#[cfg_attr(not(feature = "ssr"), allow(dead_code))]
 pub async fn direct_handler(
     offset: u64,
     limit: u64,
@@ -141,13 +128,13 @@ mod tests {
     use async_trait::async_trait;
     use blog_generic::entities::Post as EPost;
     use blog_server_services::traits::{
-        author_service::{
-            Author as SAuthor, AuthorService, BaseAuthor, BaseMinimalAuthor, BaseSecondaryAuthor,
-        },
+        author_service::{Author as SAuthor, BaseAuthor},
         entity_post_service::EntityPostService,
         post_service::{Post, PostService},
     };
     use screw_components::dyn_result::DResult;
+
+    use super::super::request_content::PostsRequestContentFilter as Filter;
 
     enum PostBehavior {
         Success(u64),
@@ -180,6 +167,7 @@ mod tests {
         async fn create_post(
             &self,
             _post: &blog_server_services::traits::post_service::BasePost,
+            _tag_titles: Vec<String>,
         ) -> DResult<u64> {
             unimplemented!()
         }
@@ -189,6 +177,7 @@ mod tests {
             _id: &u64,
             _post: &blog_server_services::traits::post_service::BasePost,
             _update_created_at: &bool,
+            _tag_titles: Vec<String>,
         ) -> DResult<()> {
             unimplemented!()
         }
@@ -208,21 +197,6 @@ mod tests {
             unimplemented!()
         }
         async fn set_post_recommended_by_id(&self, _id: &u64, _recommended: &u8) -> DResult<()> {
-            unimplemented!()
-        }
-
-        async fn create_tags(
-            &self,
-            _tag_titles: Vec<String>,
-        ) -> DResult<Vec<blog_server_services::traits::post_service::Tag>> {
-            unimplemented!()
-        }
-
-        async fn merge_post_tags(
-            &self,
-            _post_id: &u64,
-            _tags: Vec<blog_server_services::traits::post_service::Tag>,
-        ) -> DResult<()> {
             unimplemented!()
         }
     }

@@ -1,5 +1,7 @@
 use blog_server_services::traits::author_service::Author;
 
+use crate::utils::post_access;
+
 use super::request_content::DeletePostRequestContent;
 use super::response_content_failure::DeletePostResponseContentFailure;
 use super::response_content_failure::DeletePostResponseContentFailure::*;
@@ -15,43 +17,13 @@ pub async fn http_handler(
         },
     ): (Author, DeletePostRequestContent),
 ) -> Result<DeletePostResponseContentSuccess, DeletePostResponseContentFailure> {
-    let id = id.parse::<u64>().map_err(|e| IncorrectIdFormat {
-        reason: e.to_string(),
-    })?;
+    let post = post_service.post_by_id(&id).await?.ok_or(NotFound)?;
 
-    let post = post_service
-        .post_by_id(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?
-        .ok_or(NotFound)?;
+    post_access::may_edit(&author, &post)?;
 
-    if !(post.base.author_id == author.id || author.base.editor == 1) {
-        return Err(if post.base.publish_type.is_published() {
-            EditingForbidden
-        } else {
-            NotFound
-        });
-    }
+    comment_service.delete_by_post_id(&id).await?;
 
-    if post.base.publish_type.is_published() && author.base.editor == 0 {
-        return Err(EditingForbidden);
-    }
-
-    comment_service
-        .delete_by_post_id(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
-
-    post_service
-        .delete_post_by_id(&id)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+    post_service.delete_post_by_id(&id).await?;
 
     Ok(DeletePostResponseContentSuccess)
 }

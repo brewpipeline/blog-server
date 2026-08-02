@@ -1,8 +1,9 @@
-use blog_generic::entities::{CommentsContainer, TotalOffsetLimitContainer};
+use blog_generic::entities::CommentsContainer;
+
+use crate::utils::pagination::Pagination;
 
 use super::request_content::CommentsRequestContent;
 use super::response_content_failure::CommentsResponseContentFailure;
-use super::response_content_failure::CommentsResponseContentFailure::*;
 use super::response_content_success::CommentsResponseContentSuccess;
 
 pub async fn http_handler(
@@ -14,40 +15,22 @@ pub async fn http_handler(
         entity_comment_service,
     },): (CommentsRequestContent,),
 ) -> Result<CommentsResponseContentSuccess, CommentsResponseContentFailure> {
-    let post_id = post_id.parse::<u64>().map_err(|e| IncorrectIdFormat {
-        reason: e.to_string(),
-    })?;
-
-    let offset = offset.unwrap_or(0).max(0);
-    let limit = limit.unwrap_or(200).max(0).min(200);
+    let pagination = Pagination::new(offset, limit, 200);
 
     let (comments_result, total_result) = tokio::join!(
-        comment_service.comments_by_post_id(&post_id, &offset, &limit),
+        comment_service.comments_by_post_id(&post_id, &pagination.offset, &pagination.limit),
         comment_service.comments_count_by_post_id(&post_id),
     );
 
-    let comments = comments_result.map_err(|e| DatabaseError {
-        reason: e.to_string(),
-    })?;
+    let comments = comments_result?;
 
-    let total = total_result.map_err(|e| DatabaseError {
-        reason: e.to_string(),
-    })?;
+    let total = total_result?;
 
-    let comments_entities = entity_comment_service
-        .comments_entities(comments)
-        .await
-        .map_err(|e| DatabaseError {
-            reason: e.to_string(),
-        })?;
+    let comments_entities = entity_comment_service.comments_entities(comments).await?;
 
     Ok(CommentsContainer {
         comments: comments_entities,
-        base: TotalOffsetLimitContainer {
-            total,
-            offset,
-            limit,
-        },
+        base: pagination.with_total(total),
     }
     .into())
 }
