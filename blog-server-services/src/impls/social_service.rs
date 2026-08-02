@@ -5,7 +5,9 @@ use std::sync::Arc;
 
 use crate::traits::Publish;
 use crate::traits::author_service::{Author, AuthorService, BaseMinimalAuthor};
-use crate::traits::social_service::{SocialId, SocialService as SocialServiceTrait};
+use crate::traits::social_service::{
+    SocialId, SocialService as SocialServiceTrait, SubscribeRejection,
+};
 
 pub fn create_social_service(
     author_service: Arc<dyn AuthorService>,
@@ -23,24 +25,29 @@ struct SocialService {
 
 #[async_trait]
 impl SocialServiceTrait for SocialService {
-    async fn set_subscribe_for_author(&self, author: &Author, subscribe: &u8) -> DResult<()> {
-        if let Some(telegram_id) = author.base.telegram_id {
-            let event = SubscriptionStateChanged {
-                blog_user_id: author.id,
-                user_telegram_id: telegram_id,
-                new_state: *subscribe,
-            };
+    async fn set_subscribe_for_author(
+        &self,
+        author: &Author,
+        subscribe: &u8,
+    ) -> Result<(), SubscribeRejection> {
+        let Some(telegram_id) = author.base.telegram_id else {
+            return Err(SubscribeRejection::NoNotificationChannel);
+        };
 
-            let subscription_state_changed_service =
-                self.subscription_state_changed_service.clone();
-            tokio::spawn(async move { subscription_state_changed_service.publish(event).await });
-        } else {
-            Err(DError::from("not supported for current author"))?
-        }
+        let event = SubscriptionStateChanged {
+            blog_user_id: author.id,
+            user_telegram_id: telegram_id,
+            new_state: *subscribe,
+        };
+
+        let subscription_state_changed_service = self.subscription_state_changed_service.clone();
+        tokio::spawn(async move { subscription_state_changed_service.publish(event).await });
 
         self.author_service
             .set_author_subscription_by_id(&author.id, &subscribe)
-            .await
+            .await?;
+
+        Ok(())
     }
     async fn process_auth_by_id(
         &self,
