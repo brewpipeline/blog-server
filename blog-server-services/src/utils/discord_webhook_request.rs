@@ -1,3 +1,4 @@
+use crate::utils::http_client;
 use crate::utils::message_sink::MessageSink;
 
 pub struct DiscordWebhookRequest {
@@ -10,7 +11,7 @@ pub struct DiscordWebhookRequest {
 #[async_trait]
 impl MessageSink for DiscordWebhookRequest {
     async fn send(&self, content: &str) {
-        let _ = reqwest::Client::new()
+        let _ = http_client::shared()
             .post(format!(
                 "https://discord.com/api/webhooks/{WEBHOOK_ID}/{WEBHOOK_TOKEN}",
                 WEBHOOK_ID = self.webhook_id,

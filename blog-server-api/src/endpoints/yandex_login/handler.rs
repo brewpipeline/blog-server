@@ -1,6 +1,7 @@
 use blog_generic::*;
 use blog_server_services::traits::author_service::BaseMinimalAuthor;
 use blog_server_services::traits::social_service::SocialId;
+use blog_server_services::utils::http_client;
 use blog_server_services::utils::time_utils;
 use serde::Deserialize;
 
@@ -35,7 +36,7 @@ pub async fn http_handler(
         expires_in: _,
     } = login_yandex_question;
 
-    let yandex_login_response = reqwest::Client::new()
+    let yandex_login_response = http_client::shared()
         .get("https://login.yandex.ru/info")
         .header("Authorization", format!("OAuth {access_token}"))
         .send()

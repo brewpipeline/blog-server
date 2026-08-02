@@ -1,3 +1,4 @@
+use crate::utils::http_client;
 use crate::utils::message_sink::MessageSink;
 
 pub struct TelegramSendMessageRequest {
@@ -6,7 +7,7 @@ pub struct TelegramSendMessageRequest {
 
 impl TelegramSendMessageRequest {
     pub async fn send(&self, chat_id: &i64, text: &str) {
-        let _ = reqwest::Client::new()
+        let _ = http_client::shared()
             .post(format!(
                 "https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
                 BOT_TOKEN = self.bot_token
