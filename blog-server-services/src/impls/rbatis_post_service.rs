@@ -289,7 +289,7 @@ impl RbatisPostService {
                 and (post.lang = #{lang} OR post.lang IS NULL)
         ORDER BY
         if search_query != null:
-            rank,
+            rank DESC,
         post.id DESC \
         LIMIT #{limit} OFFSET #{offset}
     "
