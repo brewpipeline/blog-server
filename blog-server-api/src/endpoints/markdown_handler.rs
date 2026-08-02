@@ -35,7 +35,7 @@ where
 
     match Route::recognize_path(request.path.as_str())? {
         Route::Post { slug, id } => {
-            let container = post::direct_handler(id.to_string(), ext.resolve(), ext.resolve())
+            let container = post::direct_handler(id, ext.resolve(), ext.resolve())
                 .await
                 .filter(|c| c.post.id == id && c.post.slug == slug)?;
             Some((hyper::StatusCode::OK, post_markdown(&container.post)))
