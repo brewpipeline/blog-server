@@ -1,3 +1,4 @@
+pub mod api_catalog_handler;
 pub mod author;
 pub mod author_block;
 pub mod author_me;
@@ -14,6 +15,9 @@ pub mod create_post;
 pub mod delete_comment;
 pub mod delete_post;
 pub mod login;
+#[cfg(feature = "ssr")]
+mod markdown_handler;
+pub mod openapi_handler;
 pub mod post;
 pub mod post_recommendation;
 pub mod post_update_recommended;
@@ -30,6 +34,9 @@ pub mod update_post;
 pub mod update_secondary_author;
 #[cfg(feature = "yandex")]
 pub mod yandex_login;
+
+pub use api_catalog_handler::api_catalog_handler;
+pub use openapi_handler::openapi_handler;
 
 #[cfg(feature = "ssr")]
 pub use client_handler::*;

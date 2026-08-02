@@ -295,6 +295,16 @@ pub fn make_router<Extensions: ExtensionsProviderType>()
                 .and_path("/robots.txt")
                 .and_handler(robots_route),
         )
+        .route(
+            route::first::Route::with_method(&hyper::Method::GET)
+                .and_path(api_catalog_handler::API_CATALOG_PATH)
+                .and_handler(api_catalog_handler),
+        )
+        .route(
+            route::first::Route::with_method(&hyper::Method::GET)
+                .and_path(openapi_handler::OPENAPI_PATH)
+                .and_handler(openapi_handler),
+        )
     })
 }
 
@@ -337,5 +347,68 @@ mod tests {
     #[test]
     fn router_builds_without_route_conflicts() {
         let _ = make_router::<StubExtensions>();
+    }
+
+    async fn serve() -> std::net::SocketAddr {
+        unsafe { std::env::set_var("SITE_URL", "https://example.com") };
+
+        let server_service = Arc::new(screw_core::server::ServerService::with_responder_factory(
+            screw_core::responder_factory::ResponderFactory::with_router(make_router())
+                .and_extensions(StubExtensions),
+        ));
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        tokio::spawn(async move {
+            loop {
+                let (stream, remote_addr) = listener.accept().await.unwrap();
+                let session_service = server_service.make_session_service(remote_addr);
+                tokio::spawn(async move {
+                    let _ = hyper::server::conn::http1::Builder::new()
+                        .serve_connection(hyper_util::rt::TokioIo::new(stream), session_service)
+                        .await;
+                });
+            }
+        });
+
+        addr
+    }
+
+    async fn get(addr: std::net::SocketAddr, path: &str) -> String {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        let mut stream = tokio::net::TcpStream::connect(addr).await.unwrap();
+        stream
+            .write_all(
+                format!("GET {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+                    .as_bytes(),
+            )
+            .await
+            .unwrap();
+
+        let mut response = Vec::new();
+        stream.read_to_end(&mut response).await.unwrap();
+        String::from_utf8_lossy(&response).into_owned()
+    }
+
+    #[tokio::test]
+    async fn api_catalog_is_served_from_well_known() {
+        let addr = serve().await;
+        let response = get(addr, api_catalog_handler::API_CATALOG_PATH).await;
+
+        assert!(response.starts_with("HTTP/1.1 200 OK"), "{response}");
+        assert!(response.contains("content-type: application/linkset+json"));
+        assert!(response.contains("\"anchor\":\"https://example.com/api\""));
+    }
+
+    #[tokio::test]
+    async fn openapi_document_is_served() {
+        let addr = serve().await;
+        let response = get(addr, openapi_handler::OPENAPI_PATH).await;
+
+        assert!(response.starts_with("HTTP/1.1 200 OK"), "{response}");
+        assert!(response.contains("content-type: application/vnd.oai.openapi+json;version=3.1"));
+        assert!(response.contains("\"openapi\":\"3.1.0\""));
     }
 }

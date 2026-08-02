@@ -136,7 +136,7 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "no-referrer-when-downgrade" always;
 
-    location ~* ^(?!/(?:sitemap\.xml|robots\.txt|index\.html)$).+\.[a-z0-9]+$ {
+    location ~* ^(?!/(?:sitemap\.xml|robots\.txt|openapi\.json|index\.html)$).+\.[a-z0-9]+$ {
         limit_req zone=static burst=15 nodelay;
         limit_req_status 429;
         
@@ -166,7 +166,7 @@ COPY <<'EOF' /etc/nginx/conf.d/gzip.conf
 gzip_vary on;
 gzip_proxied any;
 gzip_comp_level 6;
-gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript application/wasm image/svg+xml;
+gzip_types text/plain text/markdown text/css application/json application/linkset+json application/vnd.oai.openapi+json application/javascript text/xml application/xml application/xml+rss text/javascript application/wasm image/svg+xml;
 EOF
 
 COPY <<'EOF' /app/start.sh

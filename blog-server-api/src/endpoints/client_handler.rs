@@ -1,5 +1,6 @@
 use crate::endpoints::*;
 use crate::extensions::Resolve;
+use crate::utils::accept::prefers_markdown;
 use blog_server_services::traits::author_service::*;
 use blog_server_services::traits::entity_post_service::*;
 use blog_server_services::traits::post_service::*;
@@ -10,6 +11,17 @@ use screw_core::routing::*;
 
 use blog_generic::*;
 use blog_ui::*;
+
+use super::api_catalog_handler::{API_CATALOG_MEDIA_TYPE, API_CATALOG_PATH};
+use super::markdown_handler::{MARKDOWN_CONTENT_TYPE, markdown_page};
+use super::openapi_handler::{OPENAPI_MEDIA_TYPE, OPENAPI_PATH};
+
+static DISCOVERY_LINK_HEADER: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+    format!(
+        "<{API_CATALOG_PATH}>; rel=\"api-catalog\"; type=\"{API_CATALOG_MEDIA_TYPE}\", \
+         <{OPENAPI_PATH}>; rel=\"service-desc\"; type=\"{OPENAPI_MEDIA_TYPE}\""
+    )
+});
 
 static INDEX_HTML: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
     std::fs::read_to_string("dist/index.html")
@@ -89,6 +101,20 @@ pub async fn client_handler<
 >(
     request: router::RoutedRequest<Request<Extensions>>,
 ) -> Response {
+    if prefers_markdown(request.origin.http.headers()) {
+        if let Some((status, markdown)) = markdown_page(&request).await {
+            return Response {
+                http: hyper::Response::builder()
+                    .status(status)
+                    .header("Content-Type", MARKDOWN_CONTENT_TYPE)
+                    .header("Vary", "Accept")
+                    .header("Link", DISCOVERY_LINK_HEADER.as_str())
+                    .body(screw_core::body::full(markdown))
+                    .unwrap(),
+            };
+        }
+    }
+
     let (before, after) = INDEX_HTML.split_once(APP_TAG_PREFIX).unwrap();
 
     let (status, app_content) = resolve_page::<_, DefaultPageProcessor>(&request).await;
@@ -107,6 +133,8 @@ pub async fn client_handler<
         http: hyper::Response::builder()
             .status(status)
             .header("Content-Type", "text/html")
+            .header("Vary", "Accept")
+            .header("Link", DISCOVERY_LINK_HEADER.as_str())
             .body(screw_core::body::full(page))
             .unwrap(),
     }
