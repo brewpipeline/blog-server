@@ -52,11 +52,7 @@ impl Publish<NewPostPublished> for TelegramUserUpdatesService {
             self.telegram_send_message_request
                 .send(
                     &(author_telegram_id as i64),
-                    &format!(
-                        "{SITE_URL}{PATH}",
-                        SITE_URL = self.site_url,
-                        PATH = event.post_sub_url
-                    ),
+                    &event.absolute_url(&self.site_url),
                 )
                 .await;
         }
