@@ -1,6 +1,7 @@
 use rbatis::rbatis::RBatis;
 use rbatis::rbdc::db::ExecResult;
 use screw_components::dyn_result::DResult;
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::sync::Arc;
 
@@ -11,6 +12,12 @@ use crate::utils::time_utils;
 
 pub fn create_rbatis_author_service(rb: RBatis) -> Arc<dyn AuthorService> {
     Arc::new(RbatisAuthorService { rb })
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct TelegramIdDto {
+    telegram_id: u64,
 }
 
 impl_select!(Author {select_by_id(id: &u64) -> Option => 
@@ -115,7 +122,7 @@ impl Author {
             AND telegram_id IS NOT NULL
     "
     )]
-    async fn select_subscribed_telegram_ids(rb: &RBatis) -> rbatis::Result<Vec<u64>> {
+    async fn select_subscribed_telegram_ids(rb: &RBatis) -> rbatis::Result<Vec<TelegramIdDto>> {
         impled!()
     }
 }
@@ -345,6 +352,10 @@ impl AuthorService for RbatisAuthorService {
         Ok(())
     }
     async fn subscribed_telegram_ids(&self) -> DResult<Vec<u64>> {
-        Ok(Author::select_subscribed_telegram_ids(&self.rb).await?)
+        Ok(Author::select_subscribed_telegram_ids(&self.rb)
+            .await?
+            .into_iter()
+            .map(|dto| dto.telegram_id)
+            .collect())
     }
 }
