@@ -115,9 +115,12 @@ pub async fn client_handler<
         }
     }
 
+    let started = std::time::Instant::now();
+
     let (before, after) = INDEX_HTML.split_once(APP_TAG_PREFIX).unwrap();
 
     let (status, app_content) = resolve_page::<_, DefaultPageProcessor>(&request).await;
+    let data = started.elapsed();
 
     let rendered = server_renderer(
         render_path(request.path.as_str()),
@@ -126,8 +129,10 @@ pub async fn client_handler<
     )
     .render()
     .await;
+    let render = started.elapsed() - data;
 
     let page = update_meta(format!("{before}{APP_TAG_PREFIX}{rendered}{after}"));
+    let total = started.elapsed();
 
     Response {
         http: hyper::Response::builder()
@@ -135,9 +140,23 @@ pub async fn client_handler<
             .header("Content-Type", "text/html")
             .header("Vary", "Accept")
             .header("Link", DISCOVERY_LINK_HEADER.as_str())
+            .header("Server-Timing", server_timing(data, render, total))
             .body(screw_core::body::full(page))
             .unwrap(),
     }
+}
+
+fn server_timing(
+    data: std::time::Duration,
+    render: std::time::Duration,
+    total: std::time::Duration,
+) -> String {
+    format!(
+        "data;dur={:.1}, render;dur={:.1}, total;dur={:.1}",
+        data.as_secs_f64() * 1000.0,
+        render.as_secs_f64() * 1000.0,
+        total.as_secs_f64() * 1000.0
+    )
 }
 
 fn update_meta(mut html: String) -> String {
