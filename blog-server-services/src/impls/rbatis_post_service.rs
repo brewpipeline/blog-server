@@ -275,7 +275,7 @@ impl RbatisPostService {
             JOIN post_tag ON post.id = post_tag.post_id
         if search_query != null:
             , plainto_tsquery(#{ts_config}::regconfig, LOWER(#{search_query})) query \
-            , to_tsvector(#{ts_config}::regconfig, LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content)) textsearch
+            , to_tsvector(#{ts_config}::regconfig, LOWER(post.title || ' ' || post.summary || ' ' || COALESCE(post.plain_text_content, ''))) textsearch
         where:
             if search_query != null:
                 and textsearch @@ query
@@ -316,7 +316,7 @@ impl RbatisPostService {
             JOIN post_tag ON post.id = post_tag.post_id
         if search_query != null:
             , plainto_tsquery(#{ts_config}::regconfig, LOWER(#{search_query})) query \
-            , to_tsvector(#{ts_config}::regconfig, LOWER(post.title || ' ' || post.summary || ' ' || post.plain_text_content)) textsearch
+            , to_tsvector(#{ts_config}::regconfig, LOWER(post.title || ' ' || post.summary || ' ' || COALESCE(post.plain_text_content, ''))) textsearch
         where:
             if search_query != null:
                 and textsearch @@ query
