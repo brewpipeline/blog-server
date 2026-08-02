@@ -1,3 +1,4 @@
+pub mod authors;
 pub mod discord_webhook_request;
 pub mod html;
 pub mod image_signer;

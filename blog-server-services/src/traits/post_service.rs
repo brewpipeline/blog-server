@@ -107,6 +107,12 @@ pub struct Post {
     pub base: BasePost,
 }
 
+impl crate::traits::Authored for Post {
+    fn author_id(&self) -> u64 {
+        self.base.author_id
+    }
+}
+
 pub struct PostsQuery<'q, 'a, 't, 'p, 'o, 'l> {
     pub search_query: Option<&'q String>,
     pub author_id: Option<&'a u64>,
