@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use blog_generic::entities::{PostsContainer, PublishType, TotalOffsetLimitContainer};
+use blog_generic::entities::{PostsContainer, PublishType};
+
+use crate::utils::pagination::Pagination;
 use blog_server_services::traits::author_service::Author;
 use blog_server_services::traits::entity_post_service::EntityPostService;
 use blog_server_services::traits::post_service::{PostService, PostsQuery, PostsQueryAnswer};
@@ -65,8 +67,7 @@ async fn handler(
     }: PostsRequestContent,
     handler_type: HandlerType,
 ) -> Result<PostsResponseContentSuccess, PostsResponseContentFailure> {
-    let offset = offset.unwrap_or(0).max(0);
-    let limit = limit.unwrap_or(50).max(0).min(50);
+    let pagination = Pagination::new(offset, limit, 50);
 
     let publish_type = match handler_type {
         HandlerType::Published => PublishType::Published,
@@ -81,7 +82,7 @@ async fn handler(
         }
     };
 
-    let posts_query = PostsQuery::offset_and_limit(&offset, &limit)
+    let posts_query = PostsQuery::offset_and_limit(&pagination.offset, &pagination.limit)
         .publish_type(Some(&publish_type))
         .search_query(Option::from(&filter.search_query))
         .author_id(Option::from(&filter.author_id))
@@ -93,11 +94,7 @@ async fn handler(
 
     Ok(PostsContainer {
         posts: posts_entities,
-        base: TotalOffsetLimitContainer {
-            total: total_count,
-            offset,
-            limit,
-        },
+        base: pagination.with_total(total_count),
     }
     .into())
 }

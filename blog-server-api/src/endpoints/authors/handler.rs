@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use blog_generic::entities::{AuthorsContainer, TotalOffsetLimitContainer};
+use blog_generic::entities::AuthorsContainer;
+
+use crate::utils::pagination::Pagination;
 use blog_server_services::traits::author_service::AuthorService;
 
 use super::request_content::AuthorsRequestContent;
@@ -15,17 +17,16 @@ pub async fn http_handler(
         author_service,
     },): (AuthorsRequestContent,),
 ) -> Result<AuthorsResponseContentSuccess, AuthorsResponseContentFailure> {
-    let offset = offset.unwrap_or(0).max(0);
-    let limit = limit.unwrap_or(50).max(0).min(50);
+    let pagination = Pagination::new(offset, limit, 50);
 
     let (authors_result, total_result) = if let Some(query) = query {
         tokio::join!(
-            author_service.authors_by_query(&query, &offset, &limit),
+            author_service.authors_by_query(&query, &pagination.offset, &pagination.limit),
             author_service.authors_count_by_query(&query),
         )
     } else {
         tokio::join!(
-            author_service.authors(&offset, &limit),
+            author_service.authors(&pagination.offset, &pagination.limit),
             author_service.authors_count(),
         )
     };
@@ -36,11 +37,7 @@ pub async fn http_handler(
 
     Ok(AuthorsContainer {
         authors,
-        base: TotalOffsetLimitContainer {
-            total,
-            offset,
-            limit,
-        },
+        base: pagination.with_total(total),
     }
     .into())
 }
