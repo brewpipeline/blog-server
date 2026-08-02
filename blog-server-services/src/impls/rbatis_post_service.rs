@@ -269,16 +269,16 @@ impl RbatisPostService {
         SELECT \
             post.*
         if search_query != null:
-            , ts_rank_cd(textsearch, query) AS rank
+            , ts_rank_cd(textsearch.vector, query) AS rank
         FROM post
         if tag_id != null:
             JOIN post_tag ON post.id = post_tag.post_id
         if search_query != null:
             , plainto_tsquery(#{ts_config}::regconfig, LOWER(#{search_query})) query \
-            , to_tsvector(#{ts_config}::regconfig, LOWER(post.title || ' ' || post.summary || ' ' || COALESCE(post.plain_text_content, ''))) textsearch
+            , LATERAL (SELECT setweight(to_tsvector(#{ts_config}::regconfig, LOWER(post.title)), 'A') || setweight(to_tsvector(#{ts_config}::regconfig, LOWER(post.summary)), 'B') || setweight(to_tsvector(#{ts_config}::regconfig, LOWER(COALESCE(post.plain_text_content, ''))), 'C') AS vector) textsearch
         where:
             if search_query != null:
-                and textsearch @@ query
+                and textsearch.vector @@ query
             if author_id != null:
                 and post.author_id = #{author_id}
             if tag_id != null:
@@ -316,10 +316,10 @@ impl RbatisPostService {
             JOIN post_tag ON post.id = post_tag.post_id
         if search_query != null:
             , plainto_tsquery(#{ts_config}::regconfig, LOWER(#{search_query})) query \
-            , to_tsvector(#{ts_config}::regconfig, LOWER(post.title || ' ' || post.summary || ' ' || COALESCE(post.plain_text_content, ''))) textsearch
+            , LATERAL (SELECT setweight(to_tsvector(#{ts_config}::regconfig, LOWER(post.title)), 'A') || setweight(to_tsvector(#{ts_config}::regconfig, LOWER(post.summary)), 'B') || setweight(to_tsvector(#{ts_config}::regconfig, LOWER(COALESCE(post.plain_text_content, ''))), 'C') AS vector) textsearch
         where:
             if search_query != null:
-                and textsearch @@ query
+                and textsearch.vector @@ query
             if author_id != null:
                 and post.author_id = #{author_id}
             if tag_id != null:
