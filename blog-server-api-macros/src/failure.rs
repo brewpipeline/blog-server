@@ -158,8 +158,8 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let mut identifier_arms = Vec::new();
     let mut reason_arms = Vec::new();
     let mut auth_variant = None;
-    let mut database_variant = None;
-    let mut incorrect_id_variant = None;
+    let mut database_variant: Option<(Ident, Ident)> = None;
+    let mut incorrect_id_variant: Option<(Ident, Ident)> = None;
     let mut body_variant: Option<(Ident, Ident)> = None;
 
     for variant in &data.variants {
@@ -195,25 +195,25 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 Ok(field_name) => field_name,
                 Err(error) => return error.to_compile_error().into(),
             };
-            let target = (variant_name.clone(), field_name);
-            if spec.database {
-                database_variant = Some(target);
+            let (slot, shorthand) = if spec.database {
+                (&mut database_variant, "`database`")
             } else if spec.incorrect_id {
-                incorrect_id_variant = Some(target);
+                (&mut incorrect_id_variant, "`incorrect_id`")
             } else {
-                if let Some((existing, _)) = &body_variant {
-                    return syn::Error::new_spanned(
-                        variant,
-                        format!(
-                            "`validation` and `params` both receive a rejected body, so only one \
-                             of them may appear; `{existing}` already claimed it"
-                        ),
-                    )
-                    .to_compile_error()
-                    .into();
-                }
-                body_variant = Some(target);
+                (&mut body_variant, "`validation` and `params`")
+            };
+            if let Some((existing, _)) = slot {
+                return syn::Error::new_spanned(
+                    variant,
+                    format!(
+                        "{shorthand} generates one conversion for the whole enum, so only one \
+                         variant may claim it; `{existing}` already did"
+                    ),
+                )
+                .to_compile_error()
+                .into();
             }
+            *slot = Some((variant_name.clone(), field_name));
         }
 
         let bindings = match &variant.fields {
