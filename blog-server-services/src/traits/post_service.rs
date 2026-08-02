@@ -158,12 +158,13 @@ pub trait PostService: Send + Sync {
     ) -> DResult<PostsQueryAnswer>;
 
     async fn post_by_id(&self, id: &u64) -> DResult<Option<Post>>;
-    async fn create_post(&self, post: &BasePost) -> DResult<u64>;
+    async fn create_post(&self, post: &BasePost, tag_titles: Vec<String>) -> DResult<u64>;
     async fn update_post_by_id(
         &self,
         id: &u64,
         post: &BasePost,
         update_created_at: &bool,
+        tag_titles: Vec<String>,
     ) -> DResult<()>;
     async fn delete_post_by_id(&self, id: &u64) -> DResult<()>;
 
@@ -171,6 +172,4 @@ pub trait PostService: Send + Sync {
     async fn set_post_recommended_by_id(&self, id: &u64, recommended: &u8) -> DResult<()>;
 
     async fn tag_by_id(&self, id: &u64) -> DResult<Option<Tag>>;
-    async fn create_tags(&self, tag_titles: Vec<String>) -> DResult<Vec<Tag>>;
-    async fn merge_post_tags(&self, post_id: &u64, tags: Vec<Tag>) -> DResult<()>;
 }

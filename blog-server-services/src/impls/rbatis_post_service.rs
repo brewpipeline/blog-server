@@ -182,7 +182,10 @@ impl RbatisPostService {
         RETURNING id
     "
     )]
-    async fn insert_new_post(rb: &RBatis, post: &BasePost) -> rbatis::Result<u64> {
+    async fn insert_new_post(
+        rb: &mut RBatisTxExecutorGuard,
+        post: &BasePost,
+    ) -> rbatis::Result<u64> {
         impled!()
     }
 
@@ -205,7 +208,7 @@ impl RbatisPostService {
     "
     )]
     async fn update_post_by_id(
-        rb: &RBatis,
+        rb: &mut RBatisTxExecutorGuard,
         post_id: &u64,
         post_data: &BasePost,
         update_created_at: &bool,
@@ -227,7 +230,10 @@ impl RbatisPostService {
                 ) \
     "
     )]
-    async fn get_tags_by_titles(rb: &RBatis, titles: &Vec<String>) -> rbatis::Result<Vec<Tag>> {
+    async fn get_tags_by_titles(
+        rb: &mut RBatisTxExecutorGuard,
+        titles: &Vec<String>,
+    ) -> rbatis::Result<Vec<Tag>> {
         impled!()
     }
     #[py_sql(
@@ -240,7 +246,7 @@ impl RbatisPostService {
     "
     )]
     async fn insert_tags_ignoring_conflicts(
-        rb: &RBatis,
+        rb: &mut RBatisTxExecutorGuard,
         tags: &Vec<NewTag>,
     ) -> rbatis::Result<ExecResult> {
         impled!()
@@ -336,6 +342,85 @@ impl RbatisPostService {
         impled!()
     }
 
+    async fn begin(&self) -> DResult<RBatisTxExecutorGuard> {
+        let tx = self.rb.acquire_begin().await?;
+        Ok(tx.defer_async(|tx| async move {
+            if !tx.done() {
+                let _ = tx.rollback().await;
+            }
+        }))
+    }
+
+    async fn create_tags(
+        tx: &mut RBatisTxExecutorGuard,
+        tag_titles: Vec<String>,
+    ) -> DResult<Vec<Tag>> {
+        if tag_titles.is_empty() {
+            return Ok(vec![]);
+        }
+        let tag_titles: Vec<String> = tag_titles
+            .into_iter()
+            .collect::<HashSet<String>>()
+            .into_iter()
+            .collect();
+        let search_titles = tag_titles.clone();
+
+        let to_insert: Vec<NewTag> =
+            transliteration::ru_to_latin(tag_titles, transliteration::TranslitOption::ToLowerCase)
+                .into_iter()
+                .map(|r| NewTag {
+                    slug: string_filter::remove_non_latin_or_number_chars(&r.transliterated),
+                    title: r.original,
+                })
+                .collect();
+
+        RbatisPostService::insert_tags_ignoring_conflicts(tx, &to_insert).await?;
+
+        let all_tags = RbatisPostService::get_tags_by_titles(tx, &search_titles).await?;
+        Ok(all_tags)
+    }
+
+    async fn merge_post_tags(
+        tx: &mut RBatisTxExecutorGuard,
+        post_id: &u64,
+        tags: Vec<Tag>,
+    ) -> DResult<()> {
+        let new_tags_map: HashSet<u64> = tags.into_iter().fold(HashSet::new(), |mut set, tag| {
+            set.insert(tag.id);
+            set
+        });
+
+        let existing_tags_map = PostTag::select_all_by_post_id(&*tx, post_id)
+            .await?
+            .into_iter()
+            .fold(HashSet::new(), |mut set, post_tag| {
+                set.insert(post_tag.tag_id);
+                set
+            });
+
+        let to_insert: Vec<PostTag> = new_tags_map
+            .iter()
+            .filter(|new| !existing_tags_map.contains(new))
+            .map(|to_insert| PostTag {
+                post_id: *post_id,
+                tag_id: *to_insert,
+            })
+            .collect();
+        let to_delete: Vec<u64> = existing_tags_map
+            .into_iter()
+            .filter(|existing| !new_tags_map.contains(&existing))
+            .collect();
+
+        if !to_insert.is_empty() {
+            PostTag::insert_batch(&*tx, &to_insert, to_insert.len() as u64).await?;
+        }
+        if !to_delete.is_empty() {
+            PostTag::delete_by_post_id_and_tag_ids(tx, *post_id, to_delete).await?;
+        }
+
+        Ok(())
+    }
+
     async fn saturate_with_tags(&self, post_option: Option<Post>) -> DResult<Option<Post>> {
         match post_option {
             None => Ok(None),
@@ -425,8 +510,12 @@ impl PostService for RbatisPostService {
         RbatisPostService::saturate_with_tags(&self, post_option).await
     }
 
-    async fn create_post(&self, post: &BasePost) -> DResult<u64> {
-        let inserted_id = RbatisPostService::insert_new_post(&self.rb, post).await?;
+    async fn create_post(&self, post: &BasePost, tag_titles: Vec<String>) -> DResult<u64> {
+        let mut tx = self.begin().await?;
+        let inserted_id = RbatisPostService::insert_new_post(&mut tx, post).await?;
+        let tags = RbatisPostService::create_tags(&mut tx, tag_titles).await?;
+        RbatisPostService::merge_post_tags(&mut tx, &inserted_id, tags).await?;
+        tx.commit().await?;
         Ok(inserted_id)
     }
 
@@ -435,18 +524,18 @@ impl PostService for RbatisPostService {
         id: &u64,
         post_data: &BasePost,
         update_created_at: &bool,
+        tag_titles: Vec<String>,
     ) -> DResult<()> {
-        RbatisPostService::update_post_by_id(&self.rb, id, post_data, update_created_at).await?;
+        let mut tx = self.begin().await?;
+        RbatisPostService::update_post_by_id(&mut tx, id, post_data, update_created_at).await?;
+        let tags = RbatisPostService::create_tags(&mut tx, tag_titles).await?;
+        RbatisPostService::merge_post_tags(&mut tx, id, tags).await?;
+        tx.commit().await?;
         Ok(())
     }
 
     async fn delete_post_by_id(&self, id: &u64) -> DResult<()> {
-        let tx = self.rb.acquire_begin().await?;
-        let mut tx = tx.defer_async(|tx| async move {
-            if !tx.done() {
-                let _ = tx.rollback().await;
-            }
-        });
+        let mut tx = self.begin().await?;
         PostTag::delete_by_post_id(&mut tx, id).await?;
         RbatisPostService::delete_post_by_id(&mut tx, id).await?;
         tx.commit().await?;
@@ -467,75 +556,5 @@ impl PostService for RbatisPostService {
     async fn tag_by_id(&self, id: &u64) -> DResult<Option<Tag>> {
         let tag = Tag::select_by_id(&mut self.rb.clone(), id).await?;
         Ok(tag)
-    }
-    async fn create_tags(&self, tag_titles: Vec<String>) -> DResult<Vec<Tag>> {
-        if tag_titles.is_empty() {
-            return Ok(vec![]);
-        }
-        let tag_titles: Vec<String> = tag_titles
-            .into_iter()
-            .collect::<HashSet<String>>()
-            .into_iter()
-            .collect();
-        let search_titles = tag_titles.clone();
-
-        let to_insert: Vec<NewTag> =
-            transliteration::ru_to_latin(tag_titles, transliteration::TranslitOption::ToLowerCase)
-                .into_iter()
-                .map(|r| NewTag {
-                    slug: string_filter::remove_non_latin_or_number_chars(&r.transliterated),
-                    title: r.original,
-                })
-                .collect();
-
-        RbatisPostService::insert_tags_ignoring_conflicts(&self.rb, &to_insert).await?;
-
-        let all_tags = RbatisPostService::get_tags_by_titles(&self.rb, &search_titles).await?;
-        Ok(all_tags)
-    }
-
-    async fn merge_post_tags(&self, post_id: &u64, tags: Vec<Tag>) -> DResult<()> {
-        let new_tags_map: HashSet<u64> = tags.into_iter().fold(HashSet::new(), |mut set, tag| {
-            set.insert(tag.id);
-            set
-        });
-
-        let tx = self.rb.acquire_begin().await?;
-        let mut tx = tx.defer_async(|tx| async move {
-            if !tx.done() {
-                let _ = tx.rollback().await;
-            }
-        });
-
-        let existing_tags_map = PostTag::select_all_by_post_id(&tx, post_id)
-            .await?
-            .into_iter()
-            .fold(HashSet::new(), |mut set, post_tag| {
-                set.insert(post_tag.tag_id);
-                set
-            });
-
-        let to_insert: Vec<PostTag> = new_tags_map
-            .iter()
-            .filter(|new| !existing_tags_map.contains(new))
-            .map(|to_insert| PostTag {
-                post_id: *post_id,
-                tag_id: *to_insert,
-            })
-            .collect();
-        let to_delete: Vec<u64> = existing_tags_map
-            .into_iter()
-            .filter(|existing| !new_tags_map.contains(&existing))
-            .collect();
-
-        if !to_insert.is_empty() {
-            PostTag::insert_batch(&tx, &to_insert, to_insert.len() as u64).await?;
-        }
-        if !to_delete.is_empty() {
-            PostTag::delete_by_post_id_and_tag_ids(&mut tx, *post_id, to_delete).await?;
-        }
-
-        tx.commit().await?;
-        Ok(())
     }
 }

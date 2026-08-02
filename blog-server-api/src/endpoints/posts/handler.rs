@@ -170,6 +170,7 @@ mod tests {
         async fn create_post(
             &self,
             _post: &blog_server_services::traits::post_service::BasePost,
+            _tag_titles: Vec<String>,
         ) -> DResult<u64> {
             unimplemented!()
         }
@@ -179,6 +180,7 @@ mod tests {
             _id: &u64,
             _post: &blog_server_services::traits::post_service::BasePost,
             _update_created_at: &bool,
+            _tag_titles: Vec<String>,
         ) -> DResult<()> {
             unimplemented!()
         }
@@ -198,21 +200,6 @@ mod tests {
             unimplemented!()
         }
         async fn set_post_recommended_by_id(&self, _id: &u64, _recommended: &u8) -> DResult<()> {
-            unimplemented!()
-        }
-
-        async fn create_tags(
-            &self,
-            _tag_titles: Vec<String>,
-        ) -> DResult<Vec<blog_server_services::traits::post_service::Tag>> {
-            unimplemented!()
-        }
-
-        async fn merge_post_tags(
-            &self,
-            _post_id: &u64,
-            _tags: Vec<blog_server_services::traits::post_service::Tag>,
-        ) -> DResult<()> {
             unimplemented!()
         }
     }

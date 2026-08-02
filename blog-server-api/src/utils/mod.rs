@@ -6,3 +6,4 @@ pub mod header_rejection;
 pub mod jwt;
 pub mod password;
 pub mod post_access;
+pub mod post_publication;
