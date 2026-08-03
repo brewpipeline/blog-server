@@ -94,14 +94,23 @@ pub async fn init_config() -> config::Config {
 }
 
 pub async fn init_db() -> rbatis::RBatis {
+    use fast_pool::plugin::{CheckMode, DurationManager};
+    use rbdc_pool_fast::{ConnManagerProxy, FastPool};
+
+    let fast_pool = FastPool::new_url(rbdc_pg::driver::PgDriver {}, &*PG_URL)
+        .expect("DB pool init failed");
+    fast_pool
+        .inner
+        .downcast_manager::<DurationManager<ConnManagerProxy>>()
+        .expect("DB pool manager type changed")
+        .mode
+        .set_mode(CheckMode::SkipInterval(std::time::Duration::from_secs(30)));
+
     let rb = rbatis::RBatis::new();
-    rb.init(rbdc_pg::driver::PgDriver {}, &*PG_URL)
-        .expect("DB init failed");
+    rb.init_pool(fast_pool).expect("DB init failed");
     let pool = rb.get_pool().expect("DB pool not initialized");
     pool.set_max_open_conns(10).await;
     pool.set_max_idle_conns(5).await;
-    pool.set_conn_max_lifetime(Some(std::time::Duration::from_secs(1800)))
-        .await;
     migrations::exec(&rb).await.expect("DB migration failed");
     rb
 }
