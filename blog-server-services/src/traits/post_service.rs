@@ -5,6 +5,7 @@ use blog_generic::entities::Tag as ETag;
 use blog_generic::entities::{CommonPost as ECommonPost, PublishType};
 use screw_components::dyn_result::DResult;
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 
 use crate::utils::*;
 
@@ -101,8 +102,6 @@ impl From<(u64, ECommonPost)> for BasePost {
 pub struct Post {
     pub id: u64,
     pub recommended: u8,
-    #[serde(default)]
-    pub tags: Vec<Tag>,
     #[serde(flatten)]
     pub base: BasePost,
 }
@@ -178,4 +177,5 @@ pub trait PostService: Send + Sync {
     async fn set_post_recommended_by_id(&self, id: &u64, recommended: &u8) -> DResult<()>;
 
     async fn tag_by_id(&self, id: &u64) -> DResult<Option<Tag>>;
+    async fn tags_by_post_ids(&self, post_ids: &HashSet<u64>) -> DResult<HashMap<u64, Vec<Tag>>>;
 }

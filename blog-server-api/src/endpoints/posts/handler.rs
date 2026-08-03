@@ -193,6 +193,15 @@ mod tests {
             unimplemented!()
         }
 
+        async fn tags_by_post_ids(
+            &self,
+            _post_ids: &std::collections::HashSet<u64>,
+        ) -> DResult<
+            std::collections::HashMap<u64, Vec<blog_server_services::traits::post_service::Tag>>,
+        > {
+            unimplemented!()
+        }
+
         async fn random_recommended_post(&self, _post_id: &u64) -> DResult<Option<Post>> {
             unimplemented!()
         }

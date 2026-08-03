@@ -61,6 +61,7 @@ where
     U: Publish<NewPostPublished> + Publish<SubscriptionStateChanged> + 'static,
 {
     let author_service = create_rbatis_author_service(rbatis.clone());
+    let post_service = create_rbatis_post_service(rbatis.clone());
 
     let new_post_published_service: Arc<dyn Publish<NewPostPublished>>;
     let subscription_state_changed_service: Arc<dyn Publish<SubscriptionStateChanged>>;
@@ -142,10 +143,10 @@ where
 
     ExtensionsProvider {
         author_service: author_service.clone(),
-        post_service: create_rbatis_post_service(rbatis.clone()),
+        post_service: post_service.clone(),
         comment_service: create_rbatis_comment_service(rbatis.clone()),
         entity_comment_service: create_entity_comment_service(author_service.clone()),
-        entity_post_service: create_entity_post_service(author_service.clone()),
+        entity_post_service: create_entity_post_service(author_service.clone(), post_service),
         new_post_published_service: new_post_published_service.clone(),
         subscription_state_changed_service: subscription_state_changed_service.clone(),
         social_service: create_social_service(

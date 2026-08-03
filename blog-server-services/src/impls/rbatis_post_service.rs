@@ -162,10 +162,6 @@ impl Post {
     ) -> rbatis::Result<ExecResult> {
         impled!()
     }
-
-    fn apply_tags(&mut self, tags: Vec<Tag>) {
-        self.tags = tags;
-    }
 }
 
 struct RbatisPostService {
@@ -420,49 +416,6 @@ impl RbatisPostService {
 
         Ok(())
     }
-
-    async fn saturate_with_tags(&self, post_option: Option<Post>) -> DResult<Option<Post>> {
-        match post_option {
-            None => Ok(None),
-            Some(mut post) => {
-                let post_tags = Post::select_tags_by_posts(&self.rb, vec![post.id])
-                    .await?
-                    .into_iter()
-                    .map(|tag| tag.into())
-                    .collect();
-                post.apply_tags(post_tags);
-                Ok(Some(post))
-            }
-        }
-    }
-
-    async fn saturate_posts_with_tags(&self, mut posts: Vec<Post>) -> DResult<Vec<Post>> {
-        if posts.is_empty() {
-            return Ok(posts);
-        }
-
-        let post_ids = posts.iter().map(|post| post.id).collect();
-
-        let mut grouped_tags: HashMap<u64, Vec<Tag>> =
-            Post::select_tags_by_posts(&self.rb, post_ids)
-                .await?
-                .into_iter()
-                .fold(HashMap::new(), |mut map, dto| {
-                    let key = dto.post_id;
-                    let tag = dto.into();
-                    map.entry(key).or_insert_with(Vec::new).push(tag);
-                    map
-                });
-
-        for post in posts.iter_mut() {
-            match grouped_tags.remove(&post.id) {
-                Some(tags) => post.apply_tags(tags),
-                None => {}
-            }
-        }
-
-        Ok(posts)
-    }
 }
 
 #[async_trait]
@@ -497,17 +450,11 @@ impl PostService for RbatisPostService {
             ),
         )?;
 
-        let posts_with_tags = self.saturate_posts_with_tags(posts).await?;
-
-        Ok(PostsQueryAnswer {
-            total_count,
-            posts: posts_with_tags,
-        })
+        Ok(PostsQueryAnswer { total_count, posts })
     }
 
     async fn post_by_id(&self, id: &u64) -> DResult<Option<Post>> {
-        let post_option = Post::single_by_id(&self.rb, id).await?;
-        RbatisPostService::saturate_with_tags(&self, post_option).await
+        Ok(Post::single_by_id(&self.rb, id).await?)
     }
 
     async fn create_post(&self, post: &BasePost, tag_titles: Vec<String>) -> DResult<u64> {
@@ -544,8 +491,7 @@ impl PostService for RbatisPostService {
 
     async fn random_recommended_post(&self, post_id: &u64) -> DResult<Option<Post>> {
         let lang = BasePost::current_lang().unwrap_or_default();
-        let post_option = Post::random_recommended_post(&self.rb, post_id, &lang).await?;
-        RbatisPostService::saturate_with_tags(&self, post_option).await
+        Ok(Post::random_recommended_post(&self.rb, post_id, &lang).await?)
     }
 
     async fn set_post_recommended_by_id(&self, id: &u64, recommended: &u8) -> DResult<()> {
@@ -556,5 +502,18 @@ impl PostService for RbatisPostService {
     async fn tag_by_id(&self, id: &u64) -> DResult<Option<Tag>> {
         let tag = Tag::select_by_id(&mut self.rb.clone(), id).await?;
         Ok(tag)
+    }
+
+    async fn tags_by_post_ids(&self, post_ids: &HashSet<u64>) -> DResult<HashMap<u64, Vec<Tag>>> {
+        if post_ids.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        let mut grouped: HashMap<u64, Vec<Tag>> = HashMap::new();
+        for dto in Post::select_tags_by_posts(&self.rb, post_ids.iter().copied().collect()).await? {
+            grouped.entry(dto.post_id).or_default().push(dto.into());
+        }
+
+        Ok(grouped)
     }
 }
