@@ -3,3 +3,4 @@
 **/.git
 blog-ui
 Cargo.lock
+.cargo/config.toml

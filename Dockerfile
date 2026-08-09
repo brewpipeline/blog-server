@@ -9,7 +9,7 @@ RUN cargo generate-lockfile
 
 FROM rust:1.95-slim AS ui-builder
 
-RUN apt-get update && apt-get install -y pkg-config libssl-dev curl git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y pkg-config libssl-dev curl git nodejs npm && rm -rf /var/lib/apt/lists/*
 RUN rustup target add wasm32-unknown-unknown
 RUN curl -L --proto '=https' --tlsv1.2 -sSf \
     https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz \
@@ -50,17 +50,19 @@ COPY --from=sources /app /app
 WORKDIR /app/blog-ui
 
 RUN set -e; \
-    [ -n "${COLOR_PRIMARY_BG:-}" ] && sed -i "s/--bs-primary-bg-subtle:[^;]*;/--bs-primary-bg-subtle:${COLOR_PRIMARY_BG};/g" index.css || true; \
-    [ -n "${COLOR_BODY_BG:-}" ]    && sed -i "s/--bs-body-bg:[^;]*;/--bs-body-bg:${COLOR_BODY_BG};/g" index.css || true; \
-    [ -n "${COLOR_SECOND_BG:-}" ]  && sed -i "s/--bs-second-bg:[^;]*;/--bs-second-bg:${COLOR_SECOND_BG};/g" index.css || true; \
-    [ -n "${COLOR_LIGHT:-}" ]      && sed -i "s/--bs-light-color:[^;]*;/--bs-light-color:${COLOR_LIGHT};/g" index.css || true; \
-    [ -n "${COLOR_BODY:-}" ]       && sed -i "s/--bs-body-color:[^;]*;/--bs-body-color:${COLOR_BODY};/g" index.css || true; \
+    [ -n "${COLOR_PRIMARY_BG:-}" ] && sed -i "s/--bs-primary-bg-subtle:[^;]*;/--bs-primary-bg-subtle:${COLOR_PRIMARY_BG};/g" assets/index.css || true; \
+    [ -n "${COLOR_BODY_BG:-}" ]    && sed -i "s/--bs-body-bg:[^;]*;/--bs-body-bg:${COLOR_BODY_BG};/g" assets/index.css || true; \
+    [ -n "${COLOR_SECOND_BG:-}" ]  && sed -i "s/--bs-second-bg:[^;]*;/--bs-second-bg:${COLOR_SECOND_BG};/g" assets/index.css || true; \
+    [ -n "${COLOR_LIGHT:-}" ]      && sed -i "s/--bs-light-color:[^;]*;/--bs-light-color:${COLOR_LIGHT};/g" assets/index.css || true; \
+    [ -n "${COLOR_BODY:-}" ]       && sed -i "s/--bs-body-color:[^;]*;/--bs-body-color:${COLOR_BODY};/g" assets/index.css || true; \
     [ -n "${COLOR_PRIMARY_BG:-}" ] && sed -i "s/content=\"#[^\"]*\"/content=\"${COLOR_PRIMARY_BG}\"/g" index.html || true; \
     [ -n "${THEME:-}" ]            && sed -i "s/data-bs-theme=\"dark\"/data-bs-theme=\"${THEME}\"/g" index.html || true; \
-    [ -n "${LOGO_URL:-}" ]             && curl -fsSL "${LOGO_URL}" -o logo.svg || true; \
-    [ -n "${FAVICON_URL:-}" ]          && curl -fsSL "${FAVICON_URL}" -o favicon.ico || true; \
-    [ -n "${ICON512_MASKABLE_URL:-}" ] && curl -fsSL "${ICON512_MASKABLE_URL}" -o icon512_maskable.png || true; \
-    [ -n "${ICON512_ROUNDED_URL:-}" ]  && curl -fsSL "${ICON512_ROUNDED_URL}" -o icon512_rounded.png || true
+    [ -n "${LOGO_URL:-}" ]             && curl -fsSL "${LOGO_URL}" -o assets/logo.svg || true; \
+    [ -n "${FAVICON_URL:-}" ]          && curl -fsSL "${FAVICON_URL}" -o assets/favicon.ico || true; \
+    [ -n "${ICON512_MASKABLE_URL:-}" ] && curl -fsSL "${ICON512_MASKABLE_URL}" -o assets/icon512_maskable.png || true; \
+    [ -n "${ICON512_ROUNDED_URL:-}" ]  && curl -fsSL "${ICON512_ROUNDED_URL}" -o assets/icon512_rounded.png || true
+
+RUN npm install && npm run build
 
 RUN trunk build --release --locked --no-default-features --features "hydration,$FEATURES"
 
