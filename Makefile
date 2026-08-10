@@ -1,4 +1,4 @@
-BLOG_UI_TAG ?= 1.8.0-alpha7
+BLOG_UI_TAG ?= 1.8.0-alpha8
 
 blog-ui:
 	git clone --depth 1 --branch $(BLOG_UI_TAG) https://github.com/brewpipeline/blog-ui.git blog-ui
