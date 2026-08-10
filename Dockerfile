@@ -9,7 +9,7 @@ RUN cargo generate-lockfile
 
 FROM rust:1.95-slim AS ui-builder
 
-RUN apt-get update && apt-get install -y pkg-config libssl-dev curl git nodejs npm && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y pkg-config libssl-dev curl git nodejs npm brotli && rm -rf /var/lib/apt/lists/*
 RUN rustup target add wasm32-unknown-unknown
 RUN curl -L --proto '=https' --tlsv1.2 -sSf \
     https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz \
@@ -66,6 +66,9 @@ RUN npm install && npm run build
 
 RUN trunk build --release --locked --no-default-features --features "hydration,$FEATURES"
 
+RUN find dist -type f \( -name '*.wasm' -o -name '*.js' -o -name '*.css' -o -name '*.svg' -o -name '*.json' \) \
+    -exec brotli -q 11 -f -k {} \;
+
 FROM rust:1.95-slim AS server-builder
 
 RUN apt-get update && apt-get install -y pkg-config libssl-dev git && rm -rf /var/lib/apt/lists/*
@@ -95,7 +98,7 @@ RUN cargo build -p blog-server-api --release --locked --no-default-features --fe
 
 FROM debian:trixie-slim
 
-RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx gettext-base curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates libssl3 nginx libnginx-mod-http-brotli-static gettext-base curl && rm -rf /var/lib/apt/lists/*
 RUN rm -f /etc/nginx/sites-enabled/default \
           /etc/nginx/sites-available/default \
           /etc/nginx/conf.d/default.conf \
@@ -169,6 +172,8 @@ gzip_vary on;
 gzip_proxied any;
 gzip_comp_level 6;
 gzip_types text/plain text/markdown text/css application/json application/linkset+json application/vnd.oai.openapi+json application/javascript text/xml application/xml application/xml+rss text/javascript application/wasm image/svg+xml;
+
+brotli_static on;
 EOF
 
 COPY <<'EOF' /app/start.sh
