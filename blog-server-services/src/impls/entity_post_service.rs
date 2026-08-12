@@ -4,10 +4,12 @@ use crate::traits::author_service::{Author, AuthorService};
 use crate::traits::entity_post_service::EntityPostService as EntityPostServiceTrait;
 use crate::traits::post_service::{BasePost, Post, PostService, Tag};
 use crate::utils::authors::{authors_by_ids, authors_ids};
-use crate::utils::image_signer::{ImageVariant, processed_image_urls};
+use crate::utils::image_signer::{
+    ImageVariant, cached_image_urls, processed_image_urls, replace_with_cached,
+};
 use blog_generic::entities::{Post as EPost, PublishType};
 use screw_components::dyn_result::{DError, DResult};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub fn create_entity_post_service(
     author_service: Arc<dyn AuthorService>,
@@ -19,23 +21,29 @@ pub fn create_entity_post_service(
     })
 }
 
-fn post_entity(post: Post, tags: Vec<Tag>, author: Author) -> EPost {
+fn post_image_urls(post: &Post) -> HashMap<String, String> {
+    let cover: Vec<(&str, ImageVariant)> = post
+        .base
+        .image_url
+        .as_deref()
+        .map(|u| (u, ImageVariant::Medium))
+        .into_iter()
+        .collect();
+    processed_image_urls(&cover, post.base.content.as_deref())
+}
+
+fn post_entity(
+    post: Post,
+    tags: Vec<Tag>,
+    author: Author,
+    processed_image_urls: HashMap<String, String>,
+) -> EPost {
     let noindex = post.base.publish_type != PublishType::Published
         || post
             .base
             .lang
             .as_deref()
             .is_some_and(|l| BasePost::current_lang().is_some_and(|cl| l != cl));
-    let processed_image_urls = {
-        let cover: Vec<(&str, ImageVariant)> = post
-            .base
-            .image_url
-            .as_deref()
-            .map(|u| (u, ImageVariant::Medium))
-            .into_iter()
-            .collect();
-        processed_image_urls(&cover, post.base.content.as_deref())
-    };
     EPost {
         id: post.id,
         title: post.base.title,
@@ -67,21 +75,26 @@ impl EntityPostServiceTrait for EntityPostService {
 
         let post_ids: HashSet<u64> = posts.iter().map(|post| post.id).collect();
         let authors_ids = authors_ids(&posts);
+        let posts_image_urls: Vec<HashMap<String, String>> =
+            posts.iter().map(post_image_urls).collect();
 
-        let (mut tags, authors) = tokio::try_join!(
+        let (mut tags, authors, cached_image_urls) = tokio::try_join!(
             self.post_service.tags_by_post_ids(&post_ids),
             authors_by_ids(self.author_service.as_ref(), &authors_ids),
+            async { DResult::Ok(cached_image_urls(posts_image_urls.iter()).await) },
         )?;
 
         posts
             .into_iter()
-            .map(|post| {
+            .zip(posts_image_urls)
+            .map(|(post, mut image_urls)| {
                 let author = authors
                     .get(&post.base.author_id)
                     .cloned()
                     .ok_or::<DError>("wrong authors map".into())?;
                 let tags = tags.remove(&post.id).unwrap_or_default();
-                Ok(post_entity(post, tags, author))
+                replace_with_cached(&cached_image_urls, &mut image_urls);
+                Ok(post_entity(post, tags, author, image_urls))
             })
             .collect()
     }

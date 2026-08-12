@@ -23,6 +23,10 @@ pub(crate) static SERVER_ADDRESS: Lazy<String> =
     Lazy::new(|| std::env::var("SERVER_ADDRESS").expect("SERVER_ADDRESS not set"));
 pub(crate) static IMAGES_PROCESSOR_URL: Lazy<String> =
     Lazy::new(|| std::env::var("IMAGES_PROCESSOR_URL").expect("IMAGES_PROCESSOR_URL not set"));
+pub(crate) static IMAGES_PROCESSOR_INTERNAL_URL: Lazy<String> = Lazy::new(|| {
+    std::env::var("IMAGES_PROCESSOR_INTERNAL_URL")
+        .unwrap_or_else(|_| IMAGES_PROCESSOR_URL.to_string())
+});
 pub(crate) static IMAGES_HMAC_SECRET: Lazy<String> =
     Lazy::new(|| std::env::var("IMAGES_HMAC_SECRET").expect("IMAGES_HMAC_SECRET not set"));
 #[cfg(feature = "chatgpt")]
@@ -33,6 +37,7 @@ pub(crate) static OPENAI_API_KEY: Lazy<String> =
 async fn main() -> screw_components::dyn_result::DResult<()> {
     blog_server_services::utils::image_signer::init(
         IMAGES_PROCESSOR_URL.to_string(),
+        IMAGES_PROCESSOR_INTERNAL_URL.to_string(),
         IMAGES_HMAC_SECRET.to_string(),
     );
 

@@ -126,6 +126,7 @@ limit_req_zone $binary_remote_addr zone=server:10m rate=75r/m;
 
 server {
     listen 0.0.0.0:${PORT};
+    listen [::]:${PORT};
 
     if ($host ~ ^www\.(.+)$) {
         return 301 $scheme://$1$request_uri;
